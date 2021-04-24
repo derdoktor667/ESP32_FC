@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+
+# Visual Studio Code
+/VS/
+/.vs/
+/__vm/
