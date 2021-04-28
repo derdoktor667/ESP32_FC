@@ -5,28 +5,32 @@
 */
 
 #include <Arduino.h>
+#include <Preferences.h>
 #include "common.h"
 #include "DShotRMT.h"
-#include <SSD1306.h>
+
+constexpr auto MOTOR_1 = GPIO_NUM_16;
+constexpr auto MOTOR_2 = GPIO_NUM_17;
+constexpr auto MOTOR_3 = GPIO_NUM_26;
+constexpr auto MOTOR_4 = GPIO_NUM_27;
 
 // ...hardware init
 HardwareSerial* USB_Serial = &Serial;
-DShotRMT dshot(GPIO_NUM_2, RMT_CHANNEL_0);
-SSD1306 Display(OLED_ADDRESS, SDA_PIN, SCL_PIN);
+DShotRMT dshot_1(MOTOR_1, RMT_CHANNEL_0);
+DShotRMT dshot_2(MOTOR_2, RMT_CHANNEL_1);
+DShotRMT dshot_3(MOTOR_3, RMT_CHANNEL_2);
+DShotRMT dshot_4(MOTOR_4, RMT_CHANNEL_3);
 
 // the setup function runs once when you press reset or power the board
 void setup() {
 	USB_Serial->begin(USB_SERIAL_BAUD);
 	USB_Serial->setTimeout(portTICK_PERIOD_MS);
 
-	//
-	Display.init();
-	Display.flipScreenVertically();
-	Display.clear();
-	Display.display();
-
 	// ...select the DSHOT Mode
-	dshot.init(DSHOT300);
+	dshot_1.init(DSHOT300);
+	dshot_2.init(DSHOT300);
+	dshot_3.init(DSHOT300);
+	dshot_4.init(DSHOT300);
 }
 
 volatile auto x = 48;
@@ -34,27 +38,10 @@ volatile auto x = 48;
 // the loop function runs over and over again until power down or reset
 void loop() {
 	readSerialThrottle();
-	dshot.sendThrottle(x);
-	
-	// ...lags about 3ms if enabled
-	// updateDisplay();
-}
-
-void updateDisplay() {
-	String dshotNameString = dshot.get_dshot_mode();
-
-	Display.clear();
-	Display.setTextAlignment(TEXT_ALIGN_LEFT);
-	Display.drawString(0, 0, "DSHOT Mode:");
-	Display.drawString(0, 12, "DSHOT CMD:");
-	Display.drawString(0, 24, " ");
-	Display.drawString(0, 36, "Looptime ms:");
-	Display.setTextAlignment(TEXT_ALIGN_RIGHT);
-	Display.drawString(128, 0, dshotNameString);
-	Display.drawString(128, 12, String(x));
-	Display.drawString(128, 24, String(" "));
-	Display.drawString(128, 36, String(" "));
-	Display.display();
+	dshot_1.sendThrottle(x);
+	dshot_2.sendThrottle(x);
+	dshot_3.sendThrottle(x);
+	dshot_4.sendThrottle(x);
 }
 
 void readSerialThrottle() {

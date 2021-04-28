@@ -27,9 +27,15 @@
     <ClInclude Include="DShotRMT.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FlyskyIBUS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DShotRMT.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FlyskyIBUS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

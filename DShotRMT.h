@@ -14,7 +14,7 @@ constexpr auto DSHOT_PACKET_LENGTH = 17;
 constexpr auto DSHOT_THROTTLE_MIN = 48;
 constexpr auto DSHOT_THROTTLE_MAX = 2047;
 
-constexpr auto DSHOT_PAUSE = DSHOT_PACKET_LENGTH * 2;
+constexpr auto DSHOT_PAUSE = 21; // 21bit is recommended
 constexpr auto DSHOT_ARM_DELAY = (5000 / portTICK_PERIOD_MS);
 
 typedef enum dshot_mode {

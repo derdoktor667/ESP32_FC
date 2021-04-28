@@ -4,7 +4,7 @@ DShotRMT::DShotRMT(gpio_num_t gpio, rmt_channel_t rmtChannel, bool wait) {
 	dshot_config.dshot_gpio = gpio;
 	dshot_config.dshot_pin = gpio;
 	dshot_config.dshot_rmtChannel = rmtChannel;
-	dshot_config.dshot_mem_block_num = (RMT_CHANNEL_MAX - (int)rmtChannel);
+	dshot_config.dshot_mem_block_num = uint8_t(RMT_CHANNEL_MAX - (int)rmtChannel);
 
 	// initialize cmd buffer
 	setData(0);
@@ -22,32 +22,32 @@ DShotRMT::~DShotRMT() {
 
 void DShotRMT::init(dshot_mode_t mode) {
 	dshot_config.dshot_mode = mode;
-	dshot_config.dshot_clk_div = 8;
+	dshot_config.dshot_clk_div = 8; // ...setup 10Mhz ticker
 
 	switch (dshot_config.dshot_mode) {
 		case DSHOT150:
 			dshot_config.dshot_name = "DSHOT150";
-			dshot_config.dshot_packet_ticks = 67;
-			dshot_config.dshot_t0h = 25;
-			dshot_config.dshot_t1h = 50;
+			dshot_config.dshot_packet_ticks = 67; // ...Bit Period Time 6.67 탎
+			dshot_config.dshot_t0h = 25; // ...zero time 2.50 탎
+			dshot_config.dshot_t1h = 50; // ...one time 5.00 탎
 			break;
 		case DSHOT300:
 			dshot_config.dshot_name = "DSHOT300";
-			dshot_config.dshot_packet_ticks = 33;
-			dshot_config.dshot_t0h = 12;
-			dshot_config.dshot_t1h = 25;
+			dshot_config.dshot_packet_ticks = 33; // ...Bit Period Time 3.33 탎
+			dshot_config.dshot_t0h = 12; // ...zero time 1.25 탎
+			dshot_config.dshot_t1h = 25; // ...one time 2.50 탎
 			break;
 		case DSHOT600:
 			dshot_config.dshot_name = "DSHOT600";
-			dshot_config.dshot_packet_ticks = 17;
-			dshot_config.dshot_t0h = 6;
-			dshot_config.dshot_t1h = 13;
+			dshot_config.dshot_packet_ticks = 17; // ...Bit Period Time 1.67 탎
+			dshot_config.dshot_t0h = 6; // ...zero time 0.625 탎
+			dshot_config.dshot_t1h = 13; // ...one time 1.25 탎
 			break;
 		case DSHOT1200:
 			dshot_config.dshot_name = "DSHOT1200";
-			dshot_config.dshot_packet_ticks = 8;
-			dshot_config.dshot_t0h = 3;
-			dshot_config.dshot_t1h = 6;
+			dshot_config.dshot_packet_ticks = 8; // ...Bit Period Time 0.83 탎
+			dshot_config.dshot_t0h = 3; // ...zero time 0.313 탎
+			dshot_config.dshot_t1h = 6; // ...one time 0.625 탎
 			break;
 		default:
 			break;
@@ -56,8 +56,8 @@ void DShotRMT::init(dshot_mode_t mode) {
 	dshot_config.dshot_t0l = (dshot_config.dshot_packet_ticks - dshot_config.dshot_t0h);
 	dshot_config.dshot_t1l = (dshot_config.dshot_packet_ticks - dshot_config.dshot_t1h);
 
-	config.channel = dshot_config.dshot_rmtChannel;
 	config.rmt_mode = RMT_MODE_TX;
+	config.channel = dshot_config.dshot_rmtChannel;
 	config.gpio_num = dshot_config.dshot_gpio;
 	config.mem_block_num = dshot_config.dshot_mem_block_num;
 	config.clk_div = dshot_config.dshot_clk_div;
@@ -70,7 +70,7 @@ void DShotRMT::init(dshot_mode_t mode) {
 	rmt_config(&config);
 	rmt_driver_install(config.channel, 0, 0);
 	
-	for (int i = 0; i < DSHOT_PACKET_LENGTH; i++) {
+	for (int i = 0; i < 20; i++) {
 		writeData(0, true);
 	}
 
@@ -80,10 +80,14 @@ void DShotRMT::init(dshot_mode_t mode) {
 }
 
 void DShotRMT::sendThrottle(uint16_t throttle) {
-	if (throttle < DSHOT_THROTTLE_MIN || throttle > DSHOT_THROTTLE_MAX) {
-		
+	if (throttle < DSHOT_THROTTLE_MIN) {
+		throttle = DSHOT_THROTTLE_MIN;
 	}
 	
+	if (throttle > DSHOT_THROTTLE_MAX) {
+		throttle = DSHOT_THROTTLE_MAX;
+	}
+
 	dshot_packet_t throttle_packet = { throttle, 0 };
 
 	writePacket(throttle_packet, false);
@@ -132,7 +136,7 @@ volatile uint8_t DShotRMT::checksum(uint16_t data) {
 		data >>= 4;
 	}
 
-	return csum & 0xf;
+	return csum &= 0xf;
 }
 
 void DShotRMT::writeData(uint16_t data, bool wait) {
