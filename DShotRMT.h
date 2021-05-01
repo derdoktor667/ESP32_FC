@@ -9,15 +9,21 @@
 #include "driver/rmt.h"
 #include "freertos/task.h"
 
+constexpr auto DSHOT_CLK_DIVIDER = 8; // ...slow down RMT clock to 10Mhz
 constexpr auto DSHOT_PACKET_LENGTH = 17;
 
 constexpr auto DSHOT_THROTTLE_MIN = 48;
 constexpr auto DSHOT_THROTTLE_MAX = 2047;
 
-constexpr auto DSHOT_PAUSE = 21; // 21bit is recommended
+constexpr auto DSHOT_PAUSE = (DSHOT_PACKET_LENGTH * DSHOT_CLK_DIVIDER); // ...21bit is recommended, just for sure some more time
 constexpr auto DSHOT_ARM_DELAY = (5000 / portTICK_PERIOD_MS);
 
-typedef enum dshot_mode {
+// ...convert ESP32 CPU cycles to RMT device cycles, for info only
+constexpr auto F_CPU_RMT = 80000000L;
+constexpr auto RMT_CYCLES_PER_SEC = (F_CPU_RMT / DSHOT_CLK_DIVIDER);
+constexpr auto RMT_CYCLES_PER_ESP_CYCLE = (F_CPU / RMT_CYCLES_PER_SEC);
+
+typedef enum mode {
 	DSHOT_OFF,
 	DSHOT150,
 	DSHOT300,
@@ -27,32 +33,33 @@ typedef enum dshot_mode {
 
 class DShotRMT {
 	public:
-		DShotRMT(gpio_num_t gpio, rmt_channel_t rmtChannel, bool wait = true);
+		DShotRMT(gpio_num_t gpio, rmt_channel_t rmtChannel, bool wait = false);
 		~DShotRMT();
 
 		void init(dshot_mode_t mode);
 		void sendThrottle(uint16_t throttle);
-		void setReversed(bool reversed);
+		void setReversed(bool reversed = false);
 		void beep();
 
-		String get_dshot_mode();
+		virtual String get_dshot_mode();
+		virtual uint8_t get_dshot_clock_div();
 
 	private:
 		typedef String dshot_name_t;
 
 		typedef struct dshot_config_s {
-			dshot_mode_t dshot_mode;
-			dshot_name_t dshot_name;
-			gpio_num_t dshot_gpio;
-			uint8_t dshot_pin;
-			rmt_channel_t dshot_rmtChannel;
-			uint8_t dshot_mem_block_num;
-			uint8_t dshot_packet_ticks;
-			uint8_t dshot_clk_div;
-			uint8_t dshot_t0h;
-			uint8_t dshot_t0l;
-			uint8_t dshot_t1h;
-			uint8_t dshot_t1l;
+			dshot_mode_t mode;
+			dshot_name_t name_str;
+			gpio_num_t gpio_num;
+			uint8_t pin_num;
+			rmt_channel_t rmt_channel;
+			uint8_t mem_block_num;
+			uint8_t ticks_per_packet;
+			uint8_t clk_div;
+			uint8_t ticks_zero_high;
+			uint8_t ticks_zero_low;
+			uint8_t ticks_one_high;
+			uint8_t ticks_one_low;
 		} dshot_config_t;
 
 		// source: https://github.com/bitdump/BLHeli/blob/master/BLHeli_S%20SiLabs/Dshotprog%20spec%20BLHeli_S.txt
@@ -96,7 +103,7 @@ class DShotRMT {
 		void repeatPacket(dshot_packet_t packet, int n);
 		void repeatPacketTicks(dshot_packet_t packet, TickType_t ticks);
 				
-		rmt_item32_t _dshotCmd[DSHOT_PACKET_LENGTH];
+		rmt_item32_t* dshot_command = new rmt_item32_t[DSHOT_PACKET_LENGTH];
 		dshot_config_t dshot_config;
 		rmt_config_t config;
 };

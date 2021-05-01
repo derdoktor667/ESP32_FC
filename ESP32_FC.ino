@@ -38,10 +38,7 @@ volatile auto x = 48;
 // the loop function runs over and over again until power down or reset
 void loop() {
 	readSerialThrottle();
-	dshot_1.sendThrottle(x);
-	dshot_2.sendThrottle(x);
-	dshot_3.sendThrottle(x);
-	dshot_4.sendThrottle(x);
+	sendThrottleSynced(x);
 }
 
 void readSerialThrottle() {
@@ -49,4 +46,11 @@ void readSerialThrottle() {
 		String str = USB_Serial->readStringUntil('\n');
 		x = str.toInt();
 	}
+}
+
+void sendThrottleSynced(uint16_t throttle_value) {
+	dshot_1.sendThrottle(throttle_value);
+	dshot_2.sendThrottle(throttle_value);
+	dshot_3.sendThrottle(throttle_value);
+	dshot_4.sendThrottle(throttle_value);
 }
