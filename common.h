@@ -3,8 +3,8 @@
 #include <Arduino.h>
 #include <esp_task_wdt.h>
 
-constexpr auto SCL_PIN = 22;
-constexpr auto SDA_PIN = 21;
+constexpr gpio_num_t SCL_PIN = GPIO_NUM_22;
+constexpr gpio_num_t SDA_PIN = GPIO_NUM_21;
 
 constexpr auto USB_SERIAL_BAUD = 115200;
 constexpr auto UART_1_BAUD = 115200;

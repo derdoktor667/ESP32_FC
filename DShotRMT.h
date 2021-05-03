@@ -1,8 +1,7 @@
-#pragma once
+// Author:	derdoktor667
+//
 
-//
-//
-//
+#pragma once
 
 #include <Arduino.h>
 #include <string>
@@ -15,7 +14,8 @@ constexpr auto DSHOT_PACKET_LENGTH = 17;
 constexpr auto DSHOT_THROTTLE_MIN = 48;
 constexpr auto DSHOT_THROTTLE_MAX = 2047;
 
-constexpr auto DSHOT_PAUSE = (DSHOT_PACKET_LENGTH * DSHOT_CLK_DIVIDER); // ...21bit is recommended, just for sure some more time
+constexpr auto DSHOT_PAUSE = (2000 * DSHOT_CLK_DIVIDER); // ...21bit is recommended, just for sure some more time
+constexpr auto DSHOT_PAUSE_BIT = (DSHOT_PACKET_LENGTH - 1);
 constexpr auto DSHOT_ARM_DELAY = (5000 / portTICK_PERIOD_MS);
 
 // ...convert ESP32 CPU cycles to RMT device cycles, for info only
@@ -31,6 +31,11 @@ typedef enum mode {
 	DSHOT1200
 } dshot_mode_t;
 
+typedef struct dshot_packet_s {
+	uint16_t payload;
+	bool telemetry;
+} dshot_packet_t;
+
 class DShotRMT {
 	public:
 		DShotRMT(gpio_num_t gpio, rmt_channel_t rmtChannel, bool wait = false);
@@ -43,6 +48,9 @@ class DShotRMT {
 
 		virtual String get_dshot_mode();
 		virtual uint8_t get_dshot_clock_div();
+
+		bool isArmed = false;
+		dshot_packet_t throttle_packet;
 
 	private:
 		typedef String dshot_name_t;
@@ -89,17 +97,14 @@ class DShotRMT {
 			DIGITAL_CMD_LED3_OFF, 							// No wait required
 			DSHOT_CMD_MAX = 47
 		};
-	
-		struct dshot_packet_t {
-			uint16_t payload;
-			bool telemetry;
-		};
 
-		volatile uint8_t checksum(uint16_t data);
+		uint8_t checksum(uint16_t data);
+
+		dshot_packet_t prepareDShotPacket(uint16_t throttle, bool telemetry = false);
 
 		void setData(uint16_t data);
 		void writeData(uint16_t data, bool wait);
-		void writePacket(dshot_packet_t packet, bool wait);
+		void writePacket(dshot_packet_t packet, bool wait = false);
 		void repeatPacket(dshot_packet_t packet, int n);
 		void repeatPacketTicks(dshot_packet_t packet, TickType_t ticks);
 				

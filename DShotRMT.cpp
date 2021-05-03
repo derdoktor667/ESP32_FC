@@ -1,9 +1,6 @@
 #include "DShotRMT.h"
 
 DShotRMT::DShotRMT(gpio_num_t gpio, rmt_channel_t rmtChannel, bool wait) {
-	// ...safety first
-	dshot_config = {};
-	
 	dshot_config.gpio_num = gpio;
 	dshot_config.pin_num = gpio;
 	dshot_config.rmt_channel = rmtChannel;
@@ -13,10 +10,10 @@ DShotRMT::DShotRMT(gpio_num_t gpio, rmt_channel_t rmtChannel, bool wait) {
 	setData(0);
 
 	// DShot packet delay + RMT end marker
-	dshot_command[16].duration0 = DSHOT_PAUSE;
-	dshot_command[16].level0 = 0;
-	dshot_command[16].duration1 = 0;
-	dshot_command[16].level1 = 0;
+	dshot_command[DSHOT_PAUSE_BIT].duration0 = DSHOT_PAUSE;
+	dshot_command[DSHOT_PAUSE_BIT].level0 = 0;
+	dshot_command[DSHOT_PAUSE_BIT].duration1 = 0;
+	dshot_command[DSHOT_PAUSE_BIT].level1 = 0;
 }
 
 DShotRMT::~DShotRMT() {
@@ -30,21 +27,21 @@ void DShotRMT::init(dshot_mode_t mode) {
 	switch (dshot_config.mode) {
 		case DSHOT150:
 			dshot_config.name_str = "DSHOT150";
-			dshot_config.ticks_per_packet = 67; // ...Bit Period Time 6.67 탎
+			dshot_config.ticks_per_packet = 64; // ...Bit Period Time 6.67 탎
 			dshot_config.ticks_zero_high = 25; // ...zero time 2.50 탎
 			dshot_config.ticks_one_high = 50; // ...one time 5.00 탎
 			break;
 		case DSHOT300:
 			dshot_config.name_str = "DSHOT300";
-			dshot_config.ticks_per_packet = 33; // ...Bit Period Time 3.33 탎
+			dshot_config.ticks_per_packet = 32; // ...Bit Period Time 3.33 탎
 			dshot_config.ticks_zero_high = 12; // ...zero time 1.25 탎
-			dshot_config.ticks_one_high = 25; // ...one time 2.50 탎
+			dshot_config.ticks_one_high = 24; // ...one time 2.50 탎
 			break;
 		case DSHOT600:
 			dshot_config.name_str = "DSHOT600";
-			dshot_config.ticks_per_packet = 17; // ...Bit Period Time 1.67 탎
+			dshot_config.ticks_per_packet = 16; // ...Bit Period Time 1.67 탎
 			dshot_config.ticks_zero_high = 6; // ...zero time 0.625 탎
-			dshot_config.ticks_one_high = 13; // ...one time 1.25 탎
+			dshot_config.ticks_one_high = 12; // ...one time 1.25 탎
 			break;
 		case DSHOT1200:
 			dshot_config.name_str = "DSHOT1200";
@@ -68,30 +65,22 @@ void DShotRMT::init(dshot_mode_t mode) {
 	config.tx_config.loop_en = false;
 	config.tx_config.carrier_en = false;
 	config.tx_config.idle_level = RMT_IDLE_LEVEL_LOW;
-	config.tx_config.idle_output_en = false;
+	config.tx_config.idle_output_en = true;
 
 	rmt_config(&config);
 	rmt_driver_install(config.channel, 0, 0);
-	
-	for (int i = 0; i < 20; i++) {
-		writeData(0, false);
-	}
-
-	dshot_packet_t repeat_packet = { DSHOT_THROTTLE_MIN, 0 };
-
-	repeatPacketTicks(repeat_packet, DSHOT_ARM_DELAY);
 }
 
-void DShotRMT::sendThrottle(uint16_t throttle) {
+void DShotRMT::sendThrottle(uint16_t throttle) {	
 	if (throttle < DSHOT_THROTTLE_MIN) {
 		throttle = DSHOT_THROTTLE_MIN;
 	}
-	
+
 	if (throttle > DSHOT_THROTTLE_MAX) {
 		throttle = DSHOT_THROTTLE_MAX;
 	}
-
-	dshot_packet_t throttle_packet = { throttle, 0 };
+		
+	throttle_packet = prepareDShotPacket(throttle, false);
 
 	writePacket(throttle_packet, false);
 }
@@ -117,7 +106,7 @@ uint8_t DShotRMT::get_dshot_clock_div() {
 }
 
 void DShotRMT::setData(uint16_t data) {
-	for (int i = 0; i < 16; i++, data <<= 1) 	{
+	for (int i = 0; i < DSHOT_PAUSE_BIT; i++, data <<= 1) 	{
 		if (data & 0x8000) {
 			// set one
 			dshot_command[i].duration0 = dshot_config.ticks_one_high;
@@ -135,7 +124,7 @@ void DShotRMT::setData(uint16_t data) {
 	}
 }
 
-volatile uint8_t DShotRMT::checksum(uint16_t data) {
+uint8_t DShotRMT::checksum(uint16_t data) {
 	uint16_t csum = 0;
 
 	for (int i = 0; i < 3; i++) 	{
@@ -146,6 +135,30 @@ volatile uint8_t DShotRMT::checksum(uint16_t data) {
 	return csum &= 0xf;
 }
 
+dshot_packet_t DShotRMT::prepareDShotPacket(uint16_t throttle, bool telemetry) {
+	uint16_t packet = (throttle << 1);
+
+	// compute checksum
+	int csum = 0;
+	int csum_data = packet;
+
+	for (int i = 0; i < 3; i++) {
+		csum ^= csum_data;   // xor data by nibbles
+		csum_data >>= 4;
+	}
+	csum &= 0xf;
+
+	// append checksum
+	packet = (packet << 4) | csum;
+
+	dshot_packet_t readyPack = {};
+
+	readyPack.payload = packet;
+	readyPack.telemetry = telemetry;
+
+	return readyPack;
+}
+
 void DShotRMT::writeData(uint16_t data, bool wait) {
 	setData(data);
 	rmt_write_items(config.channel, dshot_command, DSHOT_PACKET_LENGTH, wait);
@@ -153,12 +166,6 @@ void DShotRMT::writeData(uint16_t data, bool wait) {
 
 void DShotRMT::writePacket(dshot_packet_t packet, bool wait) {
 	uint16_t data = packet.payload;
-
-	data <<= 1;
-	data |= packet.telemetry;
-
-	data = (data << 4) | checksum(data);
-
 	writeData(data, wait);
 }
 
