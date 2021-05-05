@@ -12,7 +12,7 @@ class I2C {
 
 		static const gpio_num_t DEFAULT_SDA_PIN = GPIO_NUM_21;
 		static const gpio_num_t DEFAULT_CLK_PIN = GPIO_NUM_22;
-		static const uint32_t DEFAULT_CLK_SPEED = 1000000;
+		static const uint32_t DEFAULT_CLK_SPEED = 100000;
 
 		void init();
 		void init(uint8_t address, gpio_num_t sdaPin = DEFAULT_SDA_PIN, gpio_num_t sclPin = DEFAULT_CLK_PIN, uint32_t clkSpeed = DEFAULT_CLK_SPEED, i2c_port_t portNum = I2C_NUM_0, bool pullup = true);

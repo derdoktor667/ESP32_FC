@@ -17,7 +17,7 @@ constexpr auto MOTOR_4 = GPIO_NUM_27;
 
 // ...hardware init
 HardwareSerial* USB_Serial = &Serial;
-I2C i2c01_test(0x68, SDA_PIN, SCL_PIN, 400000, I2C_NUM_0, true);
+I2C i2c01_test(0x68, SDA_PIN, SCL_PIN, 100000, I2C_NUM_0, true);
 DShotRMT dshot_1(MOTOR_1, RMT_CHANNEL_0);
 DShotRMT dshot_2(MOTOR_2, RMT_CHANNEL_1);
 DShotRMT dshot_3(MOTOR_3, RMT_CHANNEL_2);

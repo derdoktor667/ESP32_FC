@@ -14,8 +14,8 @@ constexpr auto DSHOT_PACKET_LENGTH = 17;
 constexpr auto DSHOT_THROTTLE_MIN = 48;
 constexpr auto DSHOT_THROTTLE_MAX = 2047;
 
-constexpr auto DSHOT_PAUSE = (2000 * DSHOT_CLK_DIVIDER); // ...21bit is recommended, just for sure some more time
-constexpr auto DSHOT_PAUSE_BIT = (DSHOT_PACKET_LENGTH - 1);
+constexpr auto DSHOT_PAUSE = ( 600 * DSHOT_CLK_DIVIDER ); // ...21bit is recommended, just for sure some more time
+constexpr auto DSHOT_PAUSE_BIT = 16;
 constexpr auto DSHOT_ARM_DELAY = (5000 / portTICK_PERIOD_MS);
 
 // ...convert ESP32 CPU cycles to RMT device cycles, for info only
@@ -32,17 +32,17 @@ typedef enum mode {
 } dshot_mode_t;
 
 typedef struct dshot_packet_s {
-	uint16_t payload;
-	bool telemetry;
+	uint16_t raw_packet;
+	bool telemetry_request;
 } dshot_packet_t;
 
 class DShotRMT {
 	public:
-		DShotRMT(gpio_num_t gpio, rmt_channel_t rmtChannel, bool wait = false);
+		DShotRMT(gpio_num_t gpio, rmt_channel_t rmtChannel);
 		~DShotRMT();
 
-		void init(dshot_mode_t mode);
-		void sendThrottle(uint16_t throttle);
+		void init(dshot_mode_t dshot_mode);
+		void sendThrottle(uint16_t throttle_value);
 		void setReversed(bool reversed = false);
 		void beep();
 
@@ -62,12 +62,12 @@ class DShotRMT {
 			uint8_t pin_num;
 			rmt_channel_t rmt_channel;
 			uint8_t mem_block_num;
-			uint8_t ticks_per_packet;
+			uint16_t ticks_per_bit;
 			uint8_t clk_div;
-			uint8_t ticks_zero_high;
-			uint8_t ticks_zero_low;
-			uint8_t ticks_one_high;
-			uint8_t ticks_one_low;
+			uint16_t ticks_zero_high;
+			uint16_t ticks_zero_low;
+			uint16_t ticks_one_high;
+			uint16_t ticks_one_low;
 		} dshot_config_t;
 
 		// source: https://github.com/bitdump/BLHeli/blob/master/BLHeli_S%20SiLabs/Dshotprog%20spec%20BLHeli_S.txt
@@ -98,17 +98,16 @@ class DShotRMT {
 			DSHOT_CMD_MAX = 47
 		};
 
-		uint8_t checksum(uint16_t data);
+		dshot_packet_t prepareDShotPacket(uint16_t throttle_value, bool telemetry_request = false);
 
-		dshot_packet_t prepareDShotPacket(uint16_t throttle, bool telemetry = false);
+		rmt_item32_t* dshot_command = new rmt_item32_t[DSHOT_PACKET_LENGTH];
+		dshot_config_t dshot_config = {};
+		rmt_config_t config = {};
 
-		void setData(uint16_t data);
-		void writeData(uint16_t data, bool wait);
-		void writePacket(dshot_packet_t packet, bool wait = false);
+		void encodeDShotPacket(uint16_t data);
+		void writeRaw(uint16_t data, bool wait = true);
+		void writeDShotPacket(dshot_packet_t packet, bool wait = true);
 		void repeatPacket(dshot_packet_t packet, int n);
 		void repeatPacketTicks(dshot_packet_t packet, TickType_t ticks);
-				
-		rmt_item32_t* dshot_command = new rmt_item32_t[DSHOT_PACKET_LENGTH];
-		dshot_config_t dshot_config;
-		rmt_config_t config;
+
 };

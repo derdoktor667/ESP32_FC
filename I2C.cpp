@@ -10,7 +10,7 @@ I2C::I2C() {
 	I2C_setup_t.sdaPin = DEFAULT_SDA_PIN;
 	I2C_setup_t.sclPin = DEFAULT_CLK_PIN;
 	I2C_setup_t.portNum = I2C_NUM_0;
-	I2C_setup_t.speed = 1000000;
+	I2C_setup_t.speed = 100000;
 	I2C_setup_t.directionKnown = false;
 	I2C_setup_t.clk_flags = (1 << 0);
 }
@@ -21,7 +21,6 @@ I2C::I2C(uint8_t address, gpio_num_t sdaPin, gpio_num_t sclPin, uint32_t clkSpee
 	I2C_setup_t.sdaPin = sdaPin;
 	I2C_setup_t.sclPin = sclPin;
 	I2C_setup_t.speed = clkSpeed;
-
 
 	conf.mode = I2C_MODE_MASTER;
 	conf.sda_io_num = I2C_setup_t.sdaPin;
@@ -69,7 +68,7 @@ void I2C::beginTransaction() {
 void I2C::endTransaction() {
 	i2c_master_stop(I2C_setup_t.cmd);
 
-	i2c_master_cmd_begin(I2C_setup_t.portNum, I2C_setup_t.cmd, 10 / portTICK_PERIOD_MS);
+	i2c_master_cmd_begin(I2C_setup_t.portNum, I2C_setup_t.cmd, 1000 / portTICK_PERIOD_MS);
 	i2c_cmd_link_delete(I2C_setup_t.cmd);
 	I2C_setup_t.directionKnown = false;
 }
@@ -155,7 +154,7 @@ bool I2C::slavePresent(uint8_t address) {
 	i2c_master_write_byte(cmd, (address << 1) | I2C_MASTER_WRITE, 1 /* expect ack */);
 	i2c_master_stop(cmd);
 
-	bool foundSome = i2c_master_cmd_begin(I2C_setup_t.portNum, cmd, 10 / portTICK_PERIOD_MS);
+	bool foundSome = i2c_master_cmd_begin(I2C_setup_t.portNum, cmd, 1000 / portTICK_PERIOD_MS);
 	i2c_cmd_link_delete(cmd);
 	return foundSome == 0;  // Return true if the slave is present and false otherwise.
 }

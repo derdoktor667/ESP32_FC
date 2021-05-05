@@ -18,6 +18,8 @@ typedef enum UART_Num{
 	UART_3,
 };
 
+hw_timer_t* timer = NULL;
+
 // ...and there was light
 template<typename T>
 constexpr int MHZ_TO_HZ(T x) {	return ((x) * 1000000); }
