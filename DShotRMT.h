@@ -14,7 +14,7 @@ constexpr auto DSHOT_PACKET_LENGTH = 17;
 constexpr auto DSHOT_THROTTLE_MIN = 48;
 constexpr auto DSHOT_THROTTLE_MAX = 2047;
 
-constexpr auto DSHOT_PAUSE = ( 600 * DSHOT_CLK_DIVIDER ); // ...21bit is recommended, just for sure some more time
+constexpr auto DSHOT_PAUSE = (DSHOT_PACKET_LENGTH * DSHOT_CLK_DIVIDER) * 150; // ...21bit is recommended, just for sure some more time
 constexpr auto DSHOT_PAUSE_BIT = 16;
 constexpr auto DSHOT_ARM_DELAY = (5000 / portTICK_PERIOD_MS);
 
@@ -31,9 +31,15 @@ typedef enum mode {
 	DSHOT1200
 } dshot_mode_t;
 
+typedef enum request {
+	NO_TELEMETRIC,
+	ENABLE_TELEMETRIC,
+} telemetric_request_t;
+
 typedef struct dshot_packet_s {
-	uint16_t raw_packet;
-	bool telemetry_request;
+	int throttle_value :		11;
+	bool telemetric_request :	1;
+	int checksum :				4;
 } dshot_packet_t;
 
 class DShotRMT {
@@ -41,16 +47,17 @@ class DShotRMT {
 		DShotRMT(gpio_num_t gpio, rmt_channel_t rmtChannel);
 		~DShotRMT();
 
-		void init(dshot_mode_t dshot_mode);
+		void init(dshot_mode_t dshot_mode = DSHOT_OFF, telemetric_request_t telemetric_request = NO_TELEMETRIC);
 		void sendThrottle(uint16_t throttle_value);
-		void setReversed(bool reversed = false);
+		void setReversed(bool isReversed = false);
 		void beep();
+
+		DShotRMT& set_dshot_mode(dshot_mode_t dshot_mode);
 
 		virtual String get_dshot_mode();
 		virtual uint8_t get_dshot_clock_div();
 
 		bool isArmed = false;
-		dshot_packet_t throttle_packet;
 
 	private:
 		typedef String dshot_name_t;
@@ -98,15 +105,14 @@ class DShotRMT {
 			DSHOT_CMD_MAX = 47
 		};
 
-		dshot_packet_t prepareDShotPacket(uint16_t throttle_value, bool telemetry_request = false);
+		dshot_packet_t signDShotPacket(uint16_t throttle_value, bool telemetric_request = false);
 
 		rmt_item32_t* dshot_command = new rmt_item32_t[DSHOT_PACKET_LENGTH];
 		dshot_config_t dshot_config = {};
 		rmt_config_t config = {};
 
-		void encodeDShotPacket(uint16_t data);
-		void writeRaw(uint16_t data, bool wait = true);
-		void writeDShotPacket(dshot_packet_t packet, bool wait = true);
+		rmt_item32_t encodeDShotRMT(uint16_t data);
+		void writeDShotRMT(dshot_packet_t packet);
 		void repeatPacket(dshot_packet_t packet, int n);
 		void repeatPacketTicks(dshot_packet_t packet, TickType_t ticks);
 

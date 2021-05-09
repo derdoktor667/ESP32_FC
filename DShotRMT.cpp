@@ -1,21 +1,24 @@
 #include "DShotRMT.h"
 
+// ...fast forward
+class DShotRMT;
+
 DShotRMT::DShotRMT(gpio_num_t gpio, rmt_channel_t rmtChannel) {
 	dshot_config.gpio_num = gpio;
 	dshot_config.pin_num = gpio;
 	dshot_config.rmt_channel = rmtChannel;
 	dshot_config.mem_block_num = uint8_t(RMT_CHANNEL_MAX - (int)rmtChannel);
 
-	// initialize cmd buffer
-	encodeDShotPacket(0);
+	// ...create clean packet
+	encodeDShotRMT(0);
 }
 
 DShotRMT::~DShotRMT() {
 	rmt_driver_uninstall(dshot_config.rmt_channel);
 }
 
-void DShotRMT::init(dshot_mode_t mode) {
-	dshot_config.mode = mode;
+void DShotRMT::init(dshot_mode_t dshot_mode, telemetric_request_t telemetric_request) {
+	dshot_config.mode = dshot_mode;
 	dshot_config.clk_div = DSHOT_CLK_DIVIDER;
 
 	switch (dshot_config.mode) {
@@ -69,31 +72,36 @@ void DShotRMT::init(dshot_mode_t mode) {
 	rmt_driver_install(config.channel, 0, 0);
 }
 
-void DShotRMT::sendThrottle(uint16_t throttle) {	
-	if (throttle < DSHOT_THROTTLE_MIN) {
-		throttle = DSHOT_THROTTLE_MIN;
+void DShotRMT::sendThrottle(uint16_t throttle_value) {
+	if (throttle_value < DSHOT_THROTTLE_MIN) {
+		throttle_value = DSHOT_THROTTLE_MIN;
 	}
 
-	if (throttle > DSHOT_THROTTLE_MAX) {
-		throttle = DSHOT_THROTTLE_MAX;
+	if (throttle_value > DSHOT_THROTTLE_MAX) {
+		throttle_value = DSHOT_THROTTLE_MAX;
 	}
 		
-	throttle_packet = prepareDShotPacket(throttle);
+	dshot_packet_t throttle_packet = signDShotPacket(throttle_value);
 
-	writeDShotPacket(throttle_packet);
+	writeDShotRMT(throttle_packet);
 }
 
-void DShotRMT::setReversed(bool reversed) {
+void DShotRMT::setReversed(bool isReversed) {
 	dshot_packet_t reverse_packet = { DSHOT_THROTTLE_MIN, 0 };
 
 	repeatPacketTicks(reverse_packet, 200 / portTICK_PERIOD_MS);
-	repeatPacket( { reversed ? DIGITAL_CMD_SPIN_DIRECTION_REVERSED : DIGITAL_CMD_SPIN_DIRECTION_NORMAL, 1 }, 10);
+	repeatPacket( { isReversed ? DIGITAL_CMD_SPIN_DIRECTION_REVERSED : DIGITAL_CMD_SPIN_DIRECTION_NORMAL, 1 }, 10);
 }
 
 void DShotRMT::beep() {
-	throttle_packet = prepareDShotPacket(DIGITAL_CMD_BEEP1);
+	dshot_packet_t beep_packet = signDShotPacket(DIGITAL_CMD_BEEP1);
 
-	writeDShotPacket(throttle_packet);
+	writeDShotRMT(beep_packet);
+}
+
+DShotRMT& DShotRMT::set_dshot_mode(dshot_mode_t dshot_mode) {
+	dshot_config.mode = dshot_mode;
+	return *this;
 }
 
 String DShotRMT::get_dshot_mode() {
@@ -104,7 +112,7 @@ uint8_t DShotRMT::get_dshot_clock_div() {
 	return dshot_config.clk_div;
 }
 
-void DShotRMT::encodeDShotPacket(uint16_t data) {
+rmt_item32_t DShotRMT::encodeDShotRMT(uint16_t data) {
 	for (int i = 0; i < DSHOT_PAUSE_BIT; i++, data <<= 1) 	{
 		if (data & 0x8000) {
 			// set one
@@ -127,44 +135,45 @@ void DShotRMT::encodeDShotPacket(uint16_t data) {
 	dshot_command[DSHOT_PAUSE_BIT].level0 = 0;
 	dshot_command[DSHOT_PAUSE_BIT].duration1 = 0;
 	dshot_command[DSHOT_PAUSE_BIT].level1 = 0;
+
+	return *dshot_command;
 }
 
-dshot_packet_t DShotRMT::prepareDShotPacket(uint16_t throttle_value, bool telemetry_request) {
-	dshot_packet_t readyPack = {};
-	uint16_t packet = (throttle_value << 1);
+dshot_packet_t DShotRMT::signDShotPacket(uint16_t throttle_value, bool telemetric_request) {
+	dshot_packet_t temp_pack = {};
+
+	temp_pack.throttle_value = throttle_value;
+	temp_pack.telemetric_request = telemetric_request;
+
+	uint16_t packet = (throttle_value << 1) | telemetric_request;
 
 	// ...calculate checksum
-	int csum = 0;
-	int csum_data = packet;
+	uint16_t chksum = 0;
+	uint16_t csum_data = packet;
 
 	for (int i = 0; i < 3; i++) {
-		csum ^= csum_data;   // xor data by nibbles
+		chksum ^= csum_data;   // xor data by nibbles
 		csum_data >>= 4;
 	}
-	csum &= 0xf;
+	chksum &= 0xf;
 
 	// ...append checksum
-	packet = (packet << 4) | csum;
+	temp_pack.checksum = chksum;
 
-	readyPack.raw_packet = packet;
-	readyPack.telemetry_request = telemetry_request;
-
-	return readyPack;
+	return temp_pack;
 }
 
-void DShotRMT::writeRaw(uint16_t data, bool wait) {
-	encodeDShotPacket(data);
-	rmt_write_items(config.channel, dshot_command, DSHOT_PACKET_LENGTH, wait);
-}
+void DShotRMT::writeDShotRMT(dshot_packet_t packet) {
+	uint16_t packet_parsed = (packet.throttle_value << 1) | packet.telemetric_request;
+	packet_parsed = (packet_parsed << 4) | packet.checksum;
 
-void DShotRMT::writeDShotPacket(dshot_packet_t packet, bool wait) {
-	uint16_t data_raw = packet.raw_packet;
-	writeRaw(data_raw, wait);
+	encodeDShotRMT(packet_parsed);
+	rmt_write_items(config.channel, dshot_command, DSHOT_PACKET_LENGTH, false);
 }
 
 void DShotRMT::repeatPacket(dshot_packet_t packet, int n) {
 	for (int i = 0; i < n; i++) 	{
-		writeDShotPacket(packet, true);
+		writeDShotRMT(packet);
 		portYIELD();
 	}
 }
@@ -173,7 +182,7 @@ void DShotRMT::repeatPacketTicks(dshot_packet_t packet, TickType_t ticks) {
 	TickType_t repeatStop = xTaskGetTickCount() + ticks;
 
 	while (xTaskGetTickCount() < repeatStop) 	{
-		writeDShotPacket(packet, true);
+		writeDShotRMT(packet);
 		vTaskDelay(1);
 	}
 }

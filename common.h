@@ -1,3 +1,6 @@
+// Author:	derdoktor667
+//
+
 #pragma once
 
 #include <Arduino.h>
