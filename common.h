@@ -6,10 +6,22 @@
 #include <Arduino.h>
 #include <esp_task_wdt.h>
 
-constexpr gpio_num_t SCL_PIN = GPIO_NUM_22;
-constexpr gpio_num_t SDA_PIN = GPIO_NUM_21;
+#ifndef __cplusplus
+#define bool int
+#define true !(0)
+#define false 0
+#endif
 
+#ifdef SERIAL
+HardwareSerial* USB_Serial = &Serial;
 constexpr auto USB_SERIAL_BAUD = 115200;
+#endif // SERIAL
+
+// ...ESP32 DEV Kit Hardware I2C pins
+constexpr gpio_num_t I2C1_SDA_PIN = GPIO_NUM_21;
+constexpr gpio_num_t I2C1_SCL_PIN = GPIO_NUM_22;
+
+// ...ESP32 UART Hardware pins
 constexpr auto UART_1_BAUD = 115200;
 constexpr auto UART_1_TX_PIN = 16;
 constexpr auto UART_1_RX_PIN = 17;

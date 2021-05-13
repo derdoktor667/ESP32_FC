@@ -50,6 +50,6 @@ class I2C {
 			uint8_t				clk_flags;
 		};
 
-		I2C_setup_s I2C_setup_t;
-		i2c_config_t conf;
+		I2C_setup_s I2C_setup_t = {};
+		i2c_config_t conf = {};
 };
