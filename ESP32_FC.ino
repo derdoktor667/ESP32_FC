@@ -6,9 +6,9 @@
 
 #include <Arduino.h>
 
-#include "components/fc_config.h"
-#include "components/SystemState/SystemState.h"
 #include "components/DShotRMT/DShotRMT.h"
+#include "components/SystemState/SystemState.h"
+#include "components/fc_config.h"
 
 constexpr auto MOTOR_1 = GPIO_NUM_4;
 constexpr auto MOTOR_2 = GPIO_NUM_0;
