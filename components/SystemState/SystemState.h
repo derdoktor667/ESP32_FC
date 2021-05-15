@@ -25,7 +25,7 @@ class SystemState {
 			MODE_2,
 			MODE_3,
 			MODE_4,
-		};
+		} rx_mode_t;
 		
 		typedef enum motor_type {
 			NONE,
@@ -38,7 +38,7 @@ class SystemState {
 			LEVEL,
 			STUNT,
 			ACRO,
-		};
+		} flight_mode_t;
 
 		bool setup_done = false;
 

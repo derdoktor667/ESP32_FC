@@ -156,7 +156,7 @@ uint16_t DShotRMT::calculateChecksum(const dshot_packet_t& dshot_packet_unsigned
 	return chksum;
 }
 
-uint16_t DShotRMT::parseDShotPacket(const dshot_packet_t &signedDShotPacket) {
+uint16_t DShotRMT::parseDShotPacket(const dshot_packet_t& signedDShotPacket) {
 	uint16_t parsed_pack = NULL;
 
 	parsed_pack = (signedDShotPacket.throttle_value << 1) | signedDShotPacket.telemetric_request;
@@ -165,7 +165,7 @@ uint16_t DShotRMT::parseDShotPacket(const dshot_packet_t &signedDShotPacket) {
 	return parsed_pack;
 }
 
-dshot_packet_t DShotRMT::signDShotPacket(const uint16_t &throttle_value, const telemetric_request_t& telemetric_request) {
+dshot_packet_t DShotRMT::signDShotPacket(const uint16_t& throttle_value, const telemetric_request_t& telemetric_request) {
 	dshot_packet_t signed_packet = { };
 
 	signed_packet.isSigned = SIGNED;
@@ -177,7 +177,7 @@ dshot_packet_t DShotRMT::signDShotPacket(const uint16_t &throttle_value, const t
 	return signed_packet;
 }
 
-void DShotRMT::writeDShotRMT(dshot_packet_t packet) {
-	encodeDShotRMT(parseDShotPacket(packet));
+void DShotRMT::writeDShotRMT(const dshot_packet_t& dshot_packet) {
+	encodeDShotRMT(parseDShotPacket(dshot_packet));
 	rmt_write_items(config.channel, dshotItem, DSHOT_PACKET_LENGTH, false);
 }

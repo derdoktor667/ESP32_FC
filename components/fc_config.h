@@ -4,10 +4,8 @@
 #pragma once
 
 #include <Arduino.h>
-#include <esp_task_wdt.h>
 
 #ifndef __cplusplus
-#define bool int
 #define true !(0)
 #define false 0
 #endif
@@ -32,9 +30,6 @@ typedef enum UART_Num{
 	UART_2,
 	UART_3,
 };
-
-// ...start a all purpose timer by default
-hw_timer_t* timer = NULL;
 
 // ...some calculations
 template<typename T>

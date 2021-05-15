@@ -16,9 +16,8 @@ constexpr auto DSHOT_THROTTLE_MIN = 48;
 constexpr auto DSHOT_THROTTLE_MAX = 2047;
 constexpr auto DSHOT_NULL_PACKET = 0b0000000000000000;
 
-constexpr auto DSHOT_PAUSE = (DSHOT_PACKET_LENGTH * DSHOT_CLK_DIVIDER) * 150; // ...21bit is recommended, just for sure some more time
+constexpr auto DSHOT_PAUSE = (DSHOT_PACKET_LENGTH * 21); // ...21bit is recommended
 constexpr auto DSHOT_PAUSE_BIT = 16;
-constexpr auto DSHOT_ARM_DELAY = (5000 / portTICK_PERIOD_MS);
 
 // ...convert ESP32 CPU cycles to RMT device cycles, for info only
 constexpr auto F_CPU_RMT = 80000000L;
@@ -91,5 +90,5 @@ class DShotRMT {
 	rmt_item32_t* encodeDShotRMT(uint16_t parsed_packet);
 	uint16_t calculateChecksum(const dshot_packet_t& dshot_packet);
 	uint16_t parseDShotPacket(const dshot_packet_t& dshot_packet);
-	void writeDShotRMT(dshot_packet_t dshot_packet);
+	void writeDShotRMT(const dshot_packet_t& dshot_packet);
 };
