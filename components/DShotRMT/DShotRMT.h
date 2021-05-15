@@ -54,7 +54,8 @@ class DShotRMT {
 	DShotRMT(gpio_num_t gpio, rmt_channel_t rmtChannel);
 	DShotRMT(uint8_t pin, uint8_t channel);
 	~DShotRMT();
-	DShotRMT(const DShotRMT& origin);
+	DShotRMT(DShotRMT const &);
+	DShotRMT& operator=(DShotRMT const&);
 
 	void init(dshot_mode_t dshot_mode = DSHOT_OFF);
 	void sendThrottle(uint16_t throttle_value, telemetric_request_t telemetric_request = NO_TELEMETRIC);

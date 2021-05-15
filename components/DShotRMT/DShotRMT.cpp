@@ -27,8 +27,12 @@ DShotRMT::~DShotRMT() {
 	rmt_driver_uninstall(dshot_config.rmt_channel);
 }
 
-DShotRMT::DShotRMT(const DShotRMT& origin) {
+DShotRMT::DShotRMT(DShotRMT const &) {
 	// ...write me	
+}
+
+DShotRMT& DShotRMT::operator=(DShotRMT const&) {
+	// TODO: hier return-Anweisung eingeben
 }
 
 void DShotRMT::init(dshot_mode_t dshot_mode) {
