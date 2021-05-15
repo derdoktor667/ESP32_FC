@@ -6,10 +6,9 @@
 
 #include <Arduino.h>
 
-#include "common.h"
-#include "DShotRMT.h"
-#include "I2C.h"
-#include "StopWatch.h"
+#include "components/fc_config.h"
+#include "components/SystemState/SystemState.h"
+#include "components/DShotRMT/DShotRMT.h"
 
 constexpr auto MOTOR_1 = GPIO_NUM_4;
 constexpr auto MOTOR_2 = GPIO_NUM_0;
@@ -33,18 +32,17 @@ void setup() {
 	dshot_2.init(DSHOT600);
 	dshot_3.init(DSHOT600);
 	dshot_4.init(DSHOT600);
-
-	vTaskDelay(1000);
 }
 
 
 // the loop function runs over and over again until power down or reset
 void loop() {
-		readSerialThrottle();
-		dshot_1.sendThrottle(throttle_value);
-		dshot_2.sendThrottle(throttle_value);
-		dshot_3.sendThrottle(throttle_value);
-		dshot_4.sendThrottle(throttle_value);
+	readSerialThrottle();
+	
+	dshot_1.sendThrottle(throttle_value);
+	dshot_2.sendThrottle(throttle_value);
+	dshot_3.sendThrottle(throttle_value);
+	dshot_4.sendThrottle(throttle_value);
 }
 
 void readSerialThrottle() {

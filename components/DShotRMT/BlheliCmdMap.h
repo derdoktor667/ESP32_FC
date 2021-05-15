@@ -1,6 +1,7 @@
 #pragma once
 
 // source: https://github.com/bitdump/BLHeli/blob/master/BLHeli_S%20SiLabs/Dshotprog%20spec%20BLHeli_S.txt
+
 enum dshot_cmd_t {
 	DIGITAL_CMD_MOTOR_STOP,							// Currently not implemented
 	DIGITAL_CMD_BEEP1, 								// Wait at least length of beep (380ms) before next command

@@ -31,7 +31,7 @@ DShotRMT::DShotRMT(const DShotRMT& origin) {
 	// ...write me	
 }
 
-void DShotRMT::init(dshot_mode_t dshot_mode, telemetric_request_t telemetric_request) {
+void DShotRMT::init(dshot_mode_t dshot_mode) {
 	dshot_config.mode = dshot_mode;
 	dshot_config.clk_div = DSHOT_CLK_DIVIDER;
 

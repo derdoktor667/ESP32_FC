@@ -25,7 +25,7 @@ constexpr auto F_CPU_RMT = 80000000L;
 constexpr auto RMT_CYCLES_PER_SEC = (F_CPU_RMT / DSHOT_CLK_DIVIDER);
 constexpr auto RMT_CYCLES_PER_ESP_CYCLE = (F_CPU / RMT_CYCLES_PER_SEC);
 
-typedef enum mode {
+typedef enum dshot_mode {
 	DSHOT_OFF,
 	DSHOT150,
 	DSHOT300,
@@ -57,7 +57,7 @@ class DShotRMT {
 	~DShotRMT();
 	DShotRMT(const DShotRMT& origin);
 
-	void init(dshot_mode_t dshot_mode = DSHOT_OFF, telemetric_request_t telemetric_request = NO_TELEMETRIC);
+	void init(dshot_mode_t dshot_mode = DSHOT_OFF);
 	void sendThrottle(uint16_t throttle_value, telemetric_request_t telemetric_request = NO_TELEMETRIC);
 
 	virtual String get_dshot_mode();

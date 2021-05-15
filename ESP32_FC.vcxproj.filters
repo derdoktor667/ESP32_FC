@@ -18,39 +18,33 @@
     <None Include="ESP32_FC.ino" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="common.h">
+    <ClInclude Include="components\fc_config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DShotRMT.h">
+    <ClInclude Include="components\DShotRMT\DShotRMT.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FlyskyIBUS.h">
+    <ClInclude Include="components\StopWatch\StopWatch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="components\DShotRMT\BlheliCmdMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="components\SystemState\SystemState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="__vm\.ESP32_FC.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="I2C.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="StopWatch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BlheliCmdMap.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DShotRMT.cpp">
+    <ClCompile Include="components\DShotRMT\DShotRMT.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FlyskyIBUS.cpp">
+    <ClCompile Include="components\StopWatch\StopWatch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="I2C.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="StopWatch.cpp">
+    <ClCompile Include="components\SystemState\SystemState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
