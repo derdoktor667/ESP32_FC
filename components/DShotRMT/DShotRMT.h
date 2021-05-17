@@ -81,7 +81,6 @@ class DShotRMT {
 		uint16_t ticks_one_low;
 	} dshot_config_t;
 
-	// dshot_packet_t dshotPacket = {};
 	dshot_packet_t signDShotPacket(const uint16_t& throttle_value, const telemetric_request_t& telemetric_request = NO_TELEMETRIC);
 
 	rmt_item32_t dshotItem[DSHOT_PACKET_LENGTH];

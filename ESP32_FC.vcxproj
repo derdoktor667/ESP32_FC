@@ -115,12 +115,14 @@
     </ClInclude>
     <ClInclude Include="components\StopWatch\StopWatch.h" />
     <ClInclude Include="components\SystemState\SystemState.h" />
+    <ClInclude Include="components\I2C\I2C.h" />
     <ClInclude Include="__vm\.ESP32_FC.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="components\DShotRMT\DShotRMT.cpp" />
     <ClCompile Include="components\StopWatch\StopWatch.cpp" />
     <ClCompile Include="components\SystemState\SystemState.cpp" />
+    <ClCompile Include="components\I2C\I2C.cpp" />
   </ItemGroup>
   <PropertyGroup>
     <DebuggerFlavor>VisualMicroDebugger</DebuggerFlavor>

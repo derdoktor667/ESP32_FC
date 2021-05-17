@@ -1,5 +1,8 @@
-// Author:	derdoktor667
-//
+/*
+ Name:		ESP32_ESC.ino
+ Created:	20.03.2021 00:49:15
+ Author:	derdoktor667
+*/
 
 #pragma once
 
@@ -10,14 +13,20 @@
 #define false 0
 #endif
 
+// ...clearly name usb port
 #ifdef SERIAL
 HardwareSerial* USB_Serial = &Serial;
 constexpr auto USB_SERIAL_BAUD = 115200;
 #endif // SERIAL
 
+// ...I2C_CLK_MODE default and fast
+constexpr auto I2C_DEFAULT_SPEED = 100000;
+constexpr auto I2C_FAST_SPEED = 400000;
+
 // ...ESP32 DEV Kit Hardware I2C pins
-constexpr gpio_num_t I2C1_SDA_PIN = GPIO_NUM_21;
-constexpr gpio_num_t I2C1_SCL_PIN = GPIO_NUM_22;
+constexpr auto I2C1_SDA_PIN = GPIO_NUM_21;
+constexpr auto I2C1_SCL_PIN = GPIO_NUM_22;
+constexpr auto I2C1_CLK_SPEED = I2C_FAST_SPEED;
 
 // ...ESP32 UART Hardware pins
 constexpr auto UART_1_BAUD = 115200;
