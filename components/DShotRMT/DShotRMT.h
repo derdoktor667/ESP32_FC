@@ -44,10 +44,10 @@ typedef enum sign_state {
 } sign_state_t;
 
 typedef struct dshot_packet_s {
-	sign_state_t isSigned					:				1;
-	uint16_t throttle_value					:				11;
-	telemetric_request_t telemetric_request :				1;
-	uint16_t checksum						:				4;
+	sign_state_t isSigned					:1;
+	uint16_t throttle_value					:11;
+	telemetric_request_t telemetric_request :1;
+	uint16_t checksum						:4;
 } dshot_packet_t;
 
 class DShotRMT {
