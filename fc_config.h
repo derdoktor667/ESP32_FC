@@ -40,13 +40,6 @@ typedef enum UART_Num{
 	UART_3,
 };
 
-// ...some calculations
-template<typename T>
-constexpr int MHZ_TO_HZ(T x) {	return ((x) * 1000000); }
-
-template<typename T>
-constexpr int ARRAY_SIZE(T x) {return (sizeof(x) / sizeof(x[0])); }
-
 // ...ESP32 Info
 struct hardware_info {
 	const char* chipModel = ESP.getChipModel();
@@ -54,4 +47,11 @@ struct hardware_info {
 	uint8_t chipCores = ESP.getChipCores();
 	uint32_t flashChipSpeed = ESP.getFlashChipSpeed();
 	uint32_t flashChipSize = ESP.getFlashChipSize();
-} hardware_info_s;
+};
+
+// ...some calculations
+template<typename T>
+constexpr int MHZ_TO_HZ(T x) { return ((x) * 1000000); }
+
+template<typename T>
+constexpr int ARRAY_SIZE(T x) { return (sizeof(x) / sizeof(x[0])); }

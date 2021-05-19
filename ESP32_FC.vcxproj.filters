@@ -36,7 +36,7 @@
     <ClInclude Include="__vm\.ESP32_FC.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="components\I2C\I2C.h">
+    <ClInclude Include="fc_config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -48,9 +48,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="components\SystemState\SystemState.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="components\I2C\I2C.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

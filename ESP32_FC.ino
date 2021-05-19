@@ -6,9 +6,9 @@
 
 #include <Arduino.h>
 
-#include "components/DShotRMT/DShotRMT.h"
-#include "components/SystemState/SystemState.h"
-#include "components/fc_config.h"
+#include "./components/DShotRMT/DShotRMT.h"
+#include "./components/SystemState/SystemState.h"
+#include "./fc_config.h"
 
 constexpr auto MOTOR_1 = GPIO_NUM_4;
 constexpr auto MOTOR_2 = GPIO_NUM_0;
@@ -23,10 +23,13 @@ DShotRMT dshot_4(MOTOR_4, RMT_CHANNEL_3);
 
 volatile auto throttle_value = 48;
 
+
 // the setup function runs once when you press reset or power the board
 void setup() {
+	// ...always start the onboard usb support
 	USB_Serial->begin(USB_SERIAL_BAUD);
 
+	// ...testing I2C
 	// ...select the DSHOT Mode
 	dshot_1.init(DSHOT600);
 	dshot_2.init(DSHOT600);
