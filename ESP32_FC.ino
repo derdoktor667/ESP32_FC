@@ -6,9 +6,10 @@
 
 #include <Arduino.h>
 
-#include "./components/DShotRMT/DShotRMT.h"
-#include "./components/SystemState/SystemState.h"
-#include "./fc_config.h"
+#include "fc_config.h"
+#include "components/FlySkyIBUS/FlySkyIBUS.h"
+#include "components/DShotRMT/DShotRMT.h"
+#include "components/SystemState/SystemState.h"
 
 constexpr auto MOTOR_1 = GPIO_NUM_4;
 constexpr auto MOTOR_2 = GPIO_NUM_0;
@@ -16,6 +17,8 @@ constexpr auto MOTOR_3 = GPIO_NUM_27;
 constexpr auto MOTOR_4 = GPIO_NUM_26;
 
 // ...hardware init
+FlySkyIBUS ibus(Serial2);
+
 DShotRMT dshot_1(MOTOR_1, RMT_CHANNEL_0);
 DShotRMT dshot_2(MOTOR_2, RMT_CHANNEL_1);
 DShotRMT dshot_3(MOTOR_3, RMT_CHANNEL_2);
@@ -23,11 +26,13 @@ DShotRMT dshot_4(MOTOR_4, RMT_CHANNEL_3);
 
 volatile auto throttle_value = 48;
 
-
 // the setup function runs once when you press reset or power the board
 void setup() {
 	// ...always start the onboard usb support
-	USB_Serial->begin(USB_SERIAL_BAUD);
+	USB_Serial.begin(USB_SERIAL_BAUD);
+
+	// IBUS
+	ibus.begin();
 
 	// ...testing I2C
 	// ...select the DSHOT Mode
@@ -40,17 +45,24 @@ void setup() {
 
 // the loop function runs over and over again until power down or reset
 void loop() {
-	readSerialThrottle();
-	
+	readIbusThrottle();
+
 	dshot_1.sendThrottle(throttle_value);
 	dshot_2.sendThrottle(throttle_value);
 	dshot_3.sendThrottle(throttle_value);
 	dshot_4.sendThrottle(throttle_value);
+
+	USB_Serial.println(throttle_value);
 }
 
 void readSerialThrottle() {
-	if (USB_Serial->available() > 0) {
-		long throttle_input = (USB_Serial->readStringUntil('\n')).toInt();
+	if (USB_Serial.available() > 0) {
+		long throttle_input = (USB_Serial.readStringUntil('\n')).toInt();
 		throttle_value = throttle_input;
 	}
+}
+
+void readIbusThrottle() {
+	long ibus_input = ibus.readChannel(2);
+	throttle_value = ibus_input;
 }

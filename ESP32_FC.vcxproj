@@ -116,12 +116,14 @@
     <ClInclude Include="components\StopWatch\StopWatch.h" />
     <ClInclude Include="components\SystemState\SystemState.h" />
     <ClInclude Include="fc_config.h" />
+    <ClInclude Include="components\FlySkyIBUS\FlySkyIBUS.h" />
     <ClInclude Include="__vm\.ESP32_FC.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="components\DShotRMT\DShotRMT.cpp" />
     <ClCompile Include="components\StopWatch\StopWatch.cpp" />
     <ClCompile Include="components\SystemState\SystemState.cpp" />
+    <ClCompile Include="components\FlySkyIBUS\FlySkyIBUS.cpp" />
   </ItemGroup>
   <PropertyGroup>
     <DebuggerFlavor>VisualMicroDebugger</DebuggerFlavor>

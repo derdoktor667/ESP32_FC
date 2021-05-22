@@ -1,14 +1,14 @@
 // Author:	derdoktor667
 //
 
-#pragma once
+#ifndef DShotRMT_h
+#define DShotRMT_h
 
 #include <Arduino.h>
+#include "BlheliCmdMap.h"
 
 #include <string>
-#include "BlheliCmdMap.h"
-#include "driver/rmt.h"
-#include "freertos/task.h"
+#include <driver/rmt.h>
 
 constexpr auto DSHOT_CLK_DIVIDER = 8; // ...slow down RMT clock to 10 ticks => 1ns
 constexpr auto DSHOT_PACKET_LENGTH = 17;
@@ -20,7 +20,6 @@ constexpr auto DSHOT_NULL_PACKET = 0b0000000000000000;
 constexpr auto DSHOT_PAUSE = (DSHOT_PACKET_LENGTH * 21); // ...21bit is recommended
 constexpr auto DSHOT_PAUSE_BIT = 16;
 
-// ...convert ESP32 CPU cycles to RMT device cycles, for info only
 constexpr auto F_CPU_RMT = 80000000L;
 constexpr auto RMT_CYCLES_PER_SEC = (F_CPU_RMT / DSHOT_CLK_DIVIDER);
 constexpr auto RMT_CYCLES_PER_ESP_CYCLE = (F_CPU / RMT_CYCLES_PER_SEC);
@@ -93,3 +92,5 @@ class DShotRMT {
 	uint16_t parseDShotPacket(const dshot_packet_t& dshot_packet);
 	void writeDShotRMT(const dshot_packet_t& dshot_packet);
 };
+
+#endif DShotRMT_h

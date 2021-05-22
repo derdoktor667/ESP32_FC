@@ -39,6 +39,9 @@
     <ClInclude Include="fc_config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="components\FlySkyIBUS\FlySkyIBUS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="components\DShotRMT\DShotRMT.cpp">
@@ -48,6 +51,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="components\SystemState\SystemState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="components\FlySkyIBUS\FlySkyIBUS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

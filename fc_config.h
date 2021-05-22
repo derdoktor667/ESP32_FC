@@ -4,18 +4,15 @@
  Author:	derdoktor667
 */
 
-#pragma once
+#ifndef fc_config_h
+#define fc_config_h
 
 #include <Arduino.h>
 
-#ifndef __cplusplus
-#define true !(0)
-#define false 0
-#endif
-
 // ...clearly name usb port
 #ifdef SERIAL
-HardwareSerial* USB_Serial = &Serial;
+// HardwareSerial* USB_Serial = &Serial;
+#define USB_Serial Serial
 constexpr auto USB_SERIAL_BAUD = 115200;
 #endif // SERIAL
 
@@ -33,12 +30,12 @@ constexpr auto UART_1_BAUD = 115200;
 constexpr auto UART_1_TX_PIN = 16;
 constexpr auto UART_1_RX_PIN = 17;
 
-typedef enum UART_Num{
+typedef enum uart_num_e {
 	NONE,
 	UART_1,
 	UART_2,
 	UART_3,
-};
+} uart_num_t;
 
 // ...ESP32 Info
 struct hardware_info {
@@ -55,3 +52,5 @@ constexpr int MHZ_TO_HZ(T x) { return ((x) * 1000000); }
 
 template<typename T>
 constexpr int ARRAY_SIZE(T x) { return (sizeof(x) / sizeof(x[0])); }
+
+#endif // fc_config_h
