@@ -7,9 +7,9 @@
 #include <Arduino.h>
 
 #include "fc_config.h"
-#include "components/FlySkyIBUS/FlySkyIBUS.h"
-#include "components/DShotRMT/DShotRMT.h"
-#include "components/SystemState/SystemState.h"
+#include "src/FlySkyIBUS/FlySkyIBUS.h"
+#include "src/DShotRMT/DShotRMT.h"
+#include "src/SystemState/SystemState.h"
 
 constexpr auto MOTOR_1 = GPIO_NUM_4;
 constexpr auto MOTOR_2 = GPIO_NUM_0;

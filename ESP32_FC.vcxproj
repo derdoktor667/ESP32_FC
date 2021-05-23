@@ -106,24 +106,24 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="components\DShotRMT\BlheliCmdMap.h" />
+    <ClInclude Include="src\DShotRMT\BlheliCmdMap.h" />
     <ClInclude Include="components\fc_config.h">
       <FileType>CppCode</FileType>
     </ClInclude>
-    <ClInclude Include="components\DShotRMT\DShotRMT.h">
+    <ClInclude Include="src\DShotRMT\DShotRMT.h">
       <FileType>CppCode</FileType>
     </ClInclude>
-    <ClInclude Include="components\StopWatch\StopWatch.h" />
-    <ClInclude Include="components\SystemState\SystemState.h" />
+    <ClInclude Include="src\StopWatch\StopWatch.h" />
+    <ClInclude Include="src\SystemState\SystemState.h" />
     <ClInclude Include="fc_config.h" />
-    <ClInclude Include="components\FlySkyIBUS\FlySkyIBUS.h" />
+    <ClInclude Include="src\FlySkyIBUS\FlySkyIBUS.h" />
     <ClInclude Include="__vm\.ESP32_FC.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="components\DShotRMT\DShotRMT.cpp" />
-    <ClCompile Include="components\StopWatch\StopWatch.cpp" />
-    <ClCompile Include="components\SystemState\SystemState.cpp" />
-    <ClCompile Include="components\FlySkyIBUS\FlySkyIBUS.cpp" />
+    <ClCompile Include="src\DShotRMT\DShotRMT.cpp" />
+    <ClCompile Include="src\StopWatch\StopWatch.cpp" />
+    <ClCompile Include="src\SystemState\SystemState.cpp" />
+    <ClCompile Include="src\FlySkyIBUS\FlySkyIBUS.cpp" />
   </ItemGroup>
   <PropertyGroup>
     <DebuggerFlavor>VisualMicroDebugger</DebuggerFlavor>
