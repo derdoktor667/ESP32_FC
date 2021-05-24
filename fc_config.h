@@ -37,6 +37,13 @@ typedef enum uart_num_e {
 	UART_3,
 } uart_num_t;
 
+enum rx_mode_2_e {
+	AILERON,
+	ELEVATOR,
+	THROTTLE,
+	RUDDER,
+};
+
 // ...ESP32 Info
 struct hardware_info {
 	const char* chipModel = ESP.getChipModel();

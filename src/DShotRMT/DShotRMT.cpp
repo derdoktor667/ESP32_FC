@@ -35,7 +35,7 @@ DShotRMT& DShotRMT::operator=(DShotRMT const&) {
 	// TODO: hier return-Anweisung eingeben
 }
 
-void DShotRMT::init(dshot_mode_t dshot_mode) {
+bool DShotRMT::init(dshot_mode_t dshot_mode) {
 	dshot_config.mode = dshot_mode;
 	dshot_config.clk_div = DSHOT_CLK_DIVIDER;
 
@@ -46,24 +46,28 @@ void DShotRMT::init(dshot_mode_t dshot_mode) {
 			dshot_config.ticks_zero_high = 25; // ...zero time 2.50 탎
 			dshot_config.ticks_one_high = 50; // ...one time 5.00 탎
 			break;
+
 		case DSHOT300:
 			dshot_config.name_str = "DSHOT300";
 			dshot_config.ticks_per_bit = 32; // ...Bit Period Time 3.33 탎
 			dshot_config.ticks_zero_high = 12; // ...zero time 1.25 탎
 			dshot_config.ticks_one_high = 24; // ...one time 2.50 탎
 			break;
+
 		case DSHOT600:
 			dshot_config.name_str = "DSHOT600";
 			dshot_config.ticks_per_bit = 16; // ...Bit Period Time 1.67 탎
 			dshot_config.ticks_zero_high = 6; // ...zero time 0.625 탎
 			dshot_config.ticks_one_high = 12; // ...one time 1.25 탎
 			break;
+
 		case DSHOT1200:
 			dshot_config.name_str = "DSHOT1200";
 			dshot_config.ticks_per_bit = 8; // ...Bit Period Time 0.83 탎
 			dshot_config.ticks_zero_high = 3; // ...zero time 0.313 탎
 			dshot_config.ticks_one_high = 6; // ...one time 0.625 탎
 			break;
+
 		default:
 			dshot_config.name_str = "DSHOT_OFF";
 			dshot_config.ticks_per_bit = 0; // ...Bit Period Time endless
@@ -86,8 +90,18 @@ void DShotRMT::init(dshot_mode_t dshot_mode) {
 	config.tx_config.idle_level = RMT_IDLE_LEVEL_LOW;
 	config.tx_config.idle_output_en = true;
 	
+	// ...setup selected dshot mode
 	rmt_config(&config);
-	rmt_driver_install(config.channel, 0, 0);
+
+	// ...essential step, return the result
+	auto init_failed = rmt_driver_install(config.channel, 0, 0);
+
+	// ...all good
+	if (init_failed != 0) {
+		return true;
+	} else {
+		return false;
+	}
 }
 
 void DShotRMT::sendThrottle(uint16_t throttle_value, telemetric_request_t telemetric_request) {
@@ -169,7 +183,7 @@ uint16_t DShotRMT::parseDShotPacket(const dshot_packet_t& signedDShotPacket) {
 	return parsed_pack;
 }
 
-dshot_packet_t DShotRMT::signDShotPacket(const uint16_t& throttle_value, const telemetric_request_t& telemetric_request) {
+dshot_packet_t* DShotRMT::signDShotPacket(const uint16_t& throttle_value, const telemetric_request_t& telemetric_request) {
 	dshot_packet_t signed_packet = { };
 
 	signed_packet.isSigned = SIGNED;
@@ -178,7 +192,7 @@ dshot_packet_t DShotRMT::signDShotPacket(const uint16_t& throttle_value, const t
 
 	signed_packet.checksum = (calculateChecksum(signed_packet));
 
-	return signed_packet;
+	return &signed_packet;
 }
 
 void DShotRMT::writeDShotRMT(const dshot_packet_t& dshot_packet) {

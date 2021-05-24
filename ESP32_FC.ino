@@ -17,14 +17,14 @@ constexpr auto MOTOR_3 = GPIO_NUM_27;
 constexpr auto MOTOR_4 = GPIO_NUM_26;
 
 // ...hardware init
-FlySkyIBUS ibus(Serial2);
+FlySkyIBUS ibus;
 
 DShotRMT dshot_1(MOTOR_1, RMT_CHANNEL_0);
 DShotRMT dshot_2(MOTOR_2, RMT_CHANNEL_1);
 DShotRMT dshot_3(MOTOR_3, RMT_CHANNEL_2);
 DShotRMT dshot_4(MOTOR_4, RMT_CHANNEL_3);
 
-volatile auto throttle_value = 48;
+volatile auto throttle_value = 0x30;
 
 // the setup function runs once when you press reset or power the board
 void setup() {
@@ -34,7 +34,6 @@ void setup() {
 	// IBUS
 	ibus.begin();
 
-	// ...testing I2C
 	// ...select the DSHOT Mode
 	dshot_1.init(DSHOT600);
 	dshot_2.init(DSHOT600);
@@ -57,12 +56,15 @@ void loop() {
 
 void readSerialThrottle() {
 	if (USB_Serial.available() > 0) {
-		long throttle_input = (USB_Serial.readStringUntil('\n')).toInt();
+		auto throttle_input = (USB_Serial.readStringUntil('\n')).toInt();
 		throttle_value = throttle_input;
 	}
 }
 
 void readIbusThrottle() {
-	long ibus_input = ibus.readChannel(2);
-	throttle_value = ibus_input;
+	auto ibus_input = ibus.read_Ibus_Channel_Nr(THROTTLE);
+	auto mapped_throttle = map(ibus_input, IBUS_VALUE_MIN, IBUS_VALUE_MAX, DSHOT_THROTTLE_MIN, DSHOT_THROTTLE_MAX);
+
+	// ...remapped raw ibus to dshot throttle
+	throttle_value = mapped_throttle;
 }

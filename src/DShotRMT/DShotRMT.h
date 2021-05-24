@@ -4,11 +4,11 @@
 #ifndef DShotRMT_h
 #define DShotRMT_h
 
-#include <Arduino.h>
 #include "BlheliCmdMap.h"
+#include <Arduino.h>
 
-#include <string>
 #include <driver/rmt.h>
+#include <string>
 
 constexpr auto DSHOT_CLK_DIVIDER = 8; // ...slow down RMT clock to 10 ticks => 1ns
 constexpr auto DSHOT_PACKET_LENGTH = 17;
@@ -57,7 +57,7 @@ class DShotRMT {
 	DShotRMT(DShotRMT const &);
 	DShotRMT& operator=(DShotRMT const&);
 
-	void init(dshot_mode_t dshot_mode = DSHOT_OFF);
+	bool init(dshot_mode_t dshot_mode = DSHOT_OFF);
 	void sendThrottle(uint16_t throttle_value, telemetric_request_t telemetric_request = NO_TELEMETRIC);
 
 	virtual String get_dshot_mode();
@@ -81,7 +81,7 @@ class DShotRMT {
 		uint16_t ticks_one_low;
 	} dshot_config_t;
 
-	dshot_packet_t signDShotPacket(const uint16_t& throttle_value, const telemetric_request_t& telemetric_request = NO_TELEMETRIC);
+	dshot_packet_t* signDShotPacket(const uint16_t& throttle_value, const telemetric_request_t& telemetric_request = NO_TELEMETRIC);
 
 	rmt_item32_t dshotItem[DSHOT_PACKET_LENGTH];
 	dshot_config_t dshot_config = {};

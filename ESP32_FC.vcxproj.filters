@@ -18,9 +18,6 @@
     <None Include="ESP32_FC.ino" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="components\fc_config.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\DShotRMT\DShotRMT.h">
       <Filter>Header Files</Filter>
     </ClInclude>

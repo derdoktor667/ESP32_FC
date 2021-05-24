@@ -107,9 +107,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\DShotRMT\BlheliCmdMap.h" />
-    <ClInclude Include="components\fc_config.h">
-      <FileType>CppCode</FileType>
-    </ClInclude>
     <ClInclude Include="src\DShotRMT\DShotRMT.h">
       <FileType>CppCode</FileType>
     </ClInclude>
