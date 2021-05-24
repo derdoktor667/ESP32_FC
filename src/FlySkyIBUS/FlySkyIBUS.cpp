@@ -58,6 +58,10 @@ uint16_t FlySkyIBUS::read_Ibus_Channel_Nr(uint8_t channelNr) {
 	}
 }
 
+uint16_t* FlySkyIBUS::read_All_Channels() {
+	return this->ibus_config.channel_data;
+}
+
 void FlySkyIBUS::process_ibus_data() {
 	// ...call one after the other
 	if (FlySkyIBUSNext) {

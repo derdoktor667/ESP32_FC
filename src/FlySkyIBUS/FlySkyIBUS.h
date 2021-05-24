@@ -59,6 +59,7 @@ class FlySkyIBUS {
 	void begin(uint32_t ibus_baud = IBUS_BAUD);
 
 	uint16_t read_Ibus_Channel_Nr(uint8_t channelNr);
+	uint16_t* read_All_Channels();
 
 	// ...move to private
 	void process_ibus_data();

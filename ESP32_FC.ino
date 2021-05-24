@@ -44,7 +44,7 @@ void setup() {
 
 // the loop function runs over and over again until power down or reset
 void loop() {
-	readIbusThrottle();
+	get_Ibus_Packet();
 
 	dshot_1.sendThrottle(throttle_value);
 	dshot_2.sendThrottle(throttle_value);
@@ -67,4 +67,12 @@ void readIbusThrottle() {
 
 	// ...remapped raw ibus to dshot throttle
 	throttle_value = mapped_throttle;
+}
+
+void get_Ibus_Packet() {
+	auto ibus_pack = ibus.read_All_Channels();
+	auto unpacked_throttle = ibus_pack[THROTTLE];
+
+	auto unpacked_mapped_throttle = map(unpacked_throttle, IBUS_VALUE_MIN, IBUS_VALUE_MAX, DSHOT_THROTTLE_MIN, DSHOT_THROTTLE_MAX);
+	throttle_value = unpacked_mapped_throttle;
 }
