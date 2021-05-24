@@ -1,11 +1,10 @@
+#pragma once
+
 /*
  Name:		ESP32_ESC.ino
  Created:	20.03.2021 00:49:15
  Author:	derdoktor667
 */
-
-#ifndef fc_config_h
-#define fc_config_h
 
 #include <Arduino.h>
 
@@ -59,5 +58,3 @@ constexpr int MHZ_TO_HZ(T x) { return ((x) * 1000000); }
 
 template<typename T>
 constexpr int ARRAY_SIZE(T x) { return (sizeof(x) / sizeof(x[0])); }
-
-#endif // fc_config_h

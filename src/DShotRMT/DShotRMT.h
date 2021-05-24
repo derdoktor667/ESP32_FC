@@ -1,8 +1,8 @@
+#pragma once
+
 // Author:	derdoktor667
 //
 
-#ifndef DShotRMT_h
-#define DShotRMT_h
 
 #include "BlheliCmdMap.h"
 #include <Arduino.h>
@@ -92,5 +92,3 @@ class DShotRMT {
 	uint16_t parseDShotPacket(const dshot_packet_t& dshot_packet);
 	void writeDShotRMT(const dshot_packet_t& dshot_packet);
 };
-
-#endif DShotRMT_h

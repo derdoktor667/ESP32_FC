@@ -1,6 +1,4 @@
-
-#ifndef  FlySkyIBUS_h
-#define FlySkyIBUS_h
+#pragma once
 
 //
 // supports max 14 channels in this lib (with messagelength of 0x20 there is room for 14 channels)
@@ -87,5 +85,3 @@ class FlySkyIBUS {
 		DISCARD
 	};
 };
-
-#endif // ! FlySkyIBUS_h
