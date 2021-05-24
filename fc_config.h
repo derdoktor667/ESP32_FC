@@ -44,7 +44,7 @@ enum rx_mode_2_e {
 };
 
 // ...ESP32 Info
-struct hardware_info {
+struct hardware_info_s {
 	const char* chipModel = ESP.getChipModel();
 	uint32_t chipMhz = ESP.getCpuFreqMHz();
 	uint8_t chipCores = ESP.getChipCores();

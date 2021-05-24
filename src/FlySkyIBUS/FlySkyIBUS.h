@@ -1,7 +1,7 @@
 #pragma once
 
 //
-// supports max 14 channels in this lib (with messagelength of 0x20 there is room for 14 channels)
+// max 14 channels in this lib (with messagelength of 0x20 there is room for 14 channels)
 //
 // Example set of bytes coming over the iBUS line for setting servos:
 // 20 40 DB 5 DC 5 54 5 DC 5 E8 3 D0 7 D2 5 E8 3 DC 5 DC 5 DC 5 DC 5 DC 5 DC 5 DA F3
@@ -31,7 +31,7 @@
 #include <Arduino.h>
 #include <HardwareSerial.h>
 
-constexpr auto IBUS_MAX_LENGTH = 0x20;
+constexpr auto IBUS_MAX_LENGTH = 32;
 constexpr auto IBUS_OVERHEAD_LENGTH = 3;
 constexpr auto IBUS_PAUSE = 3;
 constexpr auto IBUS_MAX_CHANNELS = 14;
@@ -60,7 +60,7 @@ class FlySkyIBUS {
 	uint16_t* read_All_Channels();
 
 	// ...move to private
-	void process_ibus_data();
+	void IRAM_ATTR process_ibus_data();
 
 	private:
 	struct ibus_config_s {

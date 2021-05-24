@@ -5,7 +5,7 @@ FlySkyIBUS* FlySkyIBUSFirst = nullptr;
 FlySkyIBUS* FlySkyIBUSNext = nullptr;
 
 // ...dirty helper workround
-void onTimer() {
+void IRAM_ATTR onTimer() {
 	if (FlySkyIBUSFirst) {
 		FlySkyIBUSFirst->process_ibus_data();
 	}
@@ -41,6 +41,7 @@ void FlySkyIBUS::begin(uint32_t ibus_baud) {
 
 	// ...try to get in sync with RMT someday
 	hw_timer_t* timer = nullptr;
+
 	timer = timerBegin(ibus_config.timer_id, IBUS_TIMER_DIVIDER, true);
 	timerAttachInterrupt(timer, &onTimer, true);
 	timerAlarmWrite(timer, IBUS_TIMER_1_MS, true);
@@ -62,7 +63,7 @@ uint16_t* FlySkyIBUS::read_All_Channels() {
 	return this->ibus_config.channel_data;
 }
 
-void FlySkyIBUS::process_ibus_data() {
+void IRAM_ATTR FlySkyIBUS::process_ibus_data() {
 	// ...call one after the other
 	if (FlySkyIBUSNext) {
 		FlySkyIBUSNext->process_ibus_data();
