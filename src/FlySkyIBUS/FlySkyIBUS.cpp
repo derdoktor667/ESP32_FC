@@ -51,9 +51,9 @@ void FlySkyIBUS::begin(uint32_t ibus_baud) {
 	FlySkyIBUSFirst = this;
 }
 
-uint16_t FlySkyIBUS::read_Ibus_Channel_Nr(uint8_t channelNr) {
-	if (channelNr < IBUS_MAX_CHANNELS) {
-		return this->ibus_config.channel_data[channelNr];
+uint16_t FlySkyIBUS::read_Ibus_Channel(uint8_t channel_Nr) {
+	if (channel_Nr < IBUS_MAX_CHANNELS) {
+		return this->ibus_config.channel_data[channel_Nr];
 	} else {
 		return 0;
 	}
@@ -123,6 +123,10 @@ void IRAM_ATTR FlySkyIBUS::process_ibus_data() {
 						for (uint8_t i = 1; i < IBUS_MAX_CHANNELS * 2 + 1; i += 2) {
 							this->ibus_config.channel_data[i / 2] = this->ibus_config.buffer[i] | (this->ibus_config.buffer[i + 1] << 8);
 						}
+					}
+
+					if (this->ibus_config.channel_data[THROTTLE] <= IBUS_VALUE_MIN) 	{
+						this->ibus_config.channel_data[THROTTLE] = 0;
 					}
 
 					// ...all done

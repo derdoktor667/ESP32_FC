@@ -11,7 +11,7 @@
 #include <string>
 
 constexpr auto DSHOT_CLK_DIVIDER = 8; // ...slow down RMT clock to 10 ticks => 1ns
-constexpr auto DSHOT_PACKET_LENGTH = 17;
+constexpr auto DSHOT_PACKET_LENGTH = 17; // ...last pack is the pause
 
 constexpr auto DSHOT_THROTTLE_MIN = 48;
 constexpr auto DSHOT_THROTTLE_MAX = 2047;
@@ -24,7 +24,7 @@ constexpr auto F_CPU_RMT = 80000000L;
 constexpr auto RMT_CYCLES_PER_SEC = (F_CPU_RMT / DSHOT_CLK_DIVIDER);
 constexpr auto RMT_CYCLES_PER_ESP_CYCLE = (F_CPU / RMT_CYCLES_PER_SEC);
 
-typedef enum dshot_mode {
+typedef enum dshot_mode_e {
 	DSHOT_OFF,
 	DSHOT150,
 	DSHOT300,
@@ -32,12 +32,14 @@ typedef enum dshot_mode {
 	DSHOT1200
 } dshot_mode_t;
 
-typedef enum request {
+static const char* const dshot_mode_name[] = { "DSHOT_OFF", "DSHOT150",	"DSHOT300", "DSHOT600",	"DSHOT1200" };
+
+typedef enum request_e {
 	NO_TELEMETRIC,
 	ENABLE_TELEMETRIC,
 } telemetric_request_t;
 
-typedef enum sign_state {
+typedef enum sign_state_e {
 	UNSIGNED,
 	SIGNED,
 } sign_state_t;
@@ -83,7 +85,7 @@ class DShotRMT {
 
 	dshot_packet_t* signDShotPacket(const uint16_t& throttle_value, const telemetric_request_t& telemetric_request = NO_TELEMETRIC);
 
-	rmt_item32_t dshotItem[DSHOT_PACKET_LENGTH];
+	rmt_item32_t dshotItem[DSHOT_PACKET_LENGTH] = { };
 	dshot_config_t dshot_config = {};
 	rmt_config_t config = {};
 

@@ -31,6 +31,8 @@
 #include <Arduino.h>
 #include <HardwareSerial.h>
 
+#include "../../fc_config.h"
+
 constexpr auto IBUS_MAX_LENGTH = 32;
 constexpr auto IBUS_OVERHEAD_LENGTH = 3;
 constexpr auto IBUS_PAUSE = 3;
@@ -45,6 +47,7 @@ constexpr auto IBUS_COMMAND40 = 0x40;
 
 constexpr auto IBUS_VALUE_MIN = 988;
 constexpr auto IBUS_VALUE_MAX = 2012;
+constexpr auto IBUS_RANGE = IBUS_VALUE_MAX - IBUS_VALUE_MIN;
 
 // ...only HardwareSerial aka UART supported at the moment
 class FlySkyIBUS {
@@ -56,7 +59,7 @@ class FlySkyIBUS {
 
 	void begin(uint32_t ibus_baud = IBUS_BAUD);
 
-	uint16_t read_Ibus_Channel_Nr(uint8_t channelNr);
+	uint16_t read_Ibus_Channel(uint8_t channe_lNr);
 	uint16_t* read_All_Channels();
 
 	// ...move to private
@@ -64,17 +67,19 @@ class FlySkyIBUS {
 
 	private:
 	struct ibus_config_s {
-		uint8_t state;
-		HardwareSerial* ibus_input;
-		uint8_t buffer[IBUS_MAX_LENGTH];
-		uint8_t timer_id;
-		uint8_t buffer_position;
-		uint8_t packet_length;
-		uint16_t channel_data[IBUS_MAX_CHANNELS];
-		uint16_t chksum;
-		uint8_t lchksum;
-		uint8_t sensor_count = 0;
-		uint32_t last_millis;
+		uint8_t state = NULL;
+		HardwareSerial* ibus_input = nullptr;
+		uint8_t buffer[IBUS_MAX_LENGTH] = { };
+		uint8_t timer_id = NULL;
+		uint8_t buffer_position = NULL;
+		uint8_t packet_length = NULL;
+		uint16_t channel_data[IBUS_MAX_CHANNELS] = { };
+		uint16_t chksum = NULL;
+		uint8_t lchksum = NULL;
+		uint8_t sensor_count = NULL;
+		uint32_t last_millis = NULL;
+		uint32_t fs_counter = 0;
+		uint32_t fs_last_counter = 0;
 	} ibus_config;
 
 	enum ibus_state_e {

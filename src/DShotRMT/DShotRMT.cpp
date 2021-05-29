@@ -1,7 +1,7 @@
-#include "DShotRMT.h"
+#include <Arduino.h>
+#include <stdio.h>
 
-// ...fast forward
-class DShotRMT;
+#include "DShotRMT.h"
 
 DShotRMT::DShotRMT(gpio_num_t gpio, rmt_channel_t rmtChannel) {
 	dshot_config.gpio_num = gpio;
@@ -38,38 +38,34 @@ DShotRMT& DShotRMT::operator=(DShotRMT const&) {
 bool DShotRMT::init(dshot_mode_t dshot_mode) {
 	dshot_config.mode = dshot_mode;
 	dshot_config.clk_div = DSHOT_CLK_DIVIDER;
+	dshot_config.name_str = dshot_mode_name[dshot_mode];
 
 	switch (dshot_config.mode) {
 		case DSHOT150:
-			dshot_config.name_str = "DSHOT150";
 			dshot_config.ticks_per_bit = 64; // ...Bit Period Time 6.67 탎
-			dshot_config.ticks_zero_high = 25; // ...zero time 2.50 탎
-			dshot_config.ticks_one_high = 50; // ...one time 5.00 탎
+			dshot_config.ticks_zero_high = 24; // ...zero time 2.50 탎
+			dshot_config.ticks_one_high = 48; // ...one time 5.00 탎
 			break;
 
 		case DSHOT300:
-			dshot_config.name_str = "DSHOT300";
 			dshot_config.ticks_per_bit = 32; // ...Bit Period Time 3.33 탎
 			dshot_config.ticks_zero_high = 12; // ...zero time 1.25 탎
 			dshot_config.ticks_one_high = 24; // ...one time 2.50 탎
 			break;
 
 		case DSHOT600:
-			dshot_config.name_str = "DSHOT600";
 			dshot_config.ticks_per_bit = 16; // ...Bit Period Time 1.67 탎
 			dshot_config.ticks_zero_high = 6; // ...zero time 0.625 탎
 			dshot_config.ticks_one_high = 12; // ...one time 1.25 탎
 			break;
 
 		case DSHOT1200:
-			dshot_config.name_str = "DSHOT1200";
 			dshot_config.ticks_per_bit = 8; // ...Bit Period Time 0.83 탎
 			dshot_config.ticks_zero_high = 3; // ...zero time 0.313 탎
 			dshot_config.ticks_one_high = 6; // ...one time 0.625 탎
 			break;
 
 		default:
-			dshot_config.name_str = "DSHOT_OFF";
 			dshot_config.ticks_per_bit = 0; // ...Bit Period Time endless
 			dshot_config.ticks_zero_high = 0; // ...no bits, no time
 			dshot_config.ticks_one_high = 0; // ......no bits, no time
@@ -162,7 +158,7 @@ uint16_t DShotRMT::calculateChecksum(const dshot_packet_t& dshot_packet_unsigned
 	uint16_t chksum = 0b0000000000000000;
 
 	// ...calculate checksum
-	packet = (dshot_packet_unsigned.throttle_value << 1) | dshot_packet_unsigned.telemetric_request;;
+	packet = (dshot_packet_unsigned.throttle_value << 1) | dshot_packet_unsigned.telemetric_request;
 
 	for (int i = 0; i < 3; i++) {
 		chksum ^= packet;   // xor data by nibbles
@@ -175,7 +171,7 @@ uint16_t DShotRMT::calculateChecksum(const dshot_packet_t& dshot_packet_unsigned
 }
 
 uint16_t DShotRMT::parseDShotPacket(const dshot_packet_t& signedDShotPacket) {
-	uint16_t parsed_pack = NULL;
+	uint16_t parsed_pack = 0b0000000000000000;
 
 	parsed_pack = (signedDShotPacket.throttle_value << 1) | signedDShotPacket.telemetric_request;
 	parsed_pack = (parsed_pack << 4) | signedDShotPacket.checksum;

@@ -36,11 +36,26 @@ typedef enum uart_num_e {
 	UART_3,
 } uart_num_t;
 
+// ...decode rc input as MODE 2
 enum rx_mode_2_e {
 	AILERON,
 	ELEVATOR,
 	THROTTLE,
 	RUDDER,
+};
+
+// ...add an "ARMED" channel and up to 9 AUX channels
+enum rx_aux_channels {
+	ARMED = 5,
+	AUX1,
+	AUX2,
+	AUX3,
+	AUX4,
+	AUX5,
+	AUX6,
+	AUX7,
+	AUX8,
+	AUX9,
 };
 
 // ...ESP32 Info

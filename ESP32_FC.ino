@@ -50,8 +50,6 @@ void loop() {
 	dshot_2.sendThrottle(throttle_value);
 	dshot_3.sendThrottle(throttle_value);
 	dshot_4.sendThrottle(throttle_value);
-
-	USB_Serial.println(throttle_value);
 }
 
 void readSerialThrottle() {
@@ -61,18 +59,7 @@ void readSerialThrottle() {
 	}
 }
 
-void readIbusThrottle() {
-	auto ibus_input = ibus.read_Ibus_Channel_Nr(THROTTLE);
-	auto mapped_throttle = map(ibus_input, IBUS_VALUE_MIN, IBUS_VALUE_MAX, DSHOT_THROTTLE_MIN, DSHOT_THROTTLE_MAX);
-
-	// ...remapped raw ibus to dshot throttle
-	throttle_value = mapped_throttle;
-}
-
 void get_Ibus_Packet() {
 	auto ibus_pack = ibus.read_All_Channels();
-	auto unpacked_throttle = ibus_pack[THROTTLE];
-
-	auto unpacked_mapped_throttle = map(unpacked_throttle, IBUS_VALUE_MIN, IBUS_VALUE_MAX, DSHOT_THROTTLE_MIN, DSHOT_THROTTLE_MAX);
-	throttle_value = unpacked_mapped_throttle;
+	throttle_value = ibus_pack[THROTTLE];
 }
