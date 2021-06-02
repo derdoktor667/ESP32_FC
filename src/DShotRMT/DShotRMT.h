@@ -51,6 +51,23 @@ typedef struct dshot_packet_s {
 	uint16_t checksum : 4;
 } dshot_packet_t;
 
+typedef String dshot_name_t;
+
+typedef struct dshot_config_s {
+	dshot_mode_t mode;
+	dshot_name_t name_str;
+	gpio_num_t gpio_num;
+	uint8_t pin_num;
+	rmt_channel_t rmt_channel;
+	uint8_t mem_block_num;
+	uint16_t ticks_per_bit;
+	uint8_t clk_div;
+	uint16_t ticks_zero_high;
+	uint16_t ticks_zero_low;
+	uint16_t ticks_one_high;
+	uint16_t ticks_one_low;
+} dshot_config_t;
+
 class DShotRMT {
 	public:
 	DShotRMT(gpio_num_t gpio, rmt_channel_t rmtChannel);
@@ -62,27 +79,10 @@ class DShotRMT {
 	bool init(dshot_mode_t dshot_mode = DSHOT_OFF);
 	void sendThrottle(uint16_t throttle_value, telemetric_request_t telemetric_request = NO_TELEMETRIC);
 
-	virtual String get_dshot_mode();
-	virtual uint8_t get_dshot_clock_div();
+	dshot_config_t* get_dshot_info();
+	uint8_t get_dshot_clock_div();
 
 	private:
-	typedef String dshot_name_t;
-
-	typedef struct dshot_config_s {
-		dshot_mode_t mode;
-		dshot_name_t name_str;
-		gpio_num_t gpio_num;
-		uint8_t pin_num;
-		rmt_channel_t rmt_channel;
-		uint8_t mem_block_num;
-		uint16_t ticks_per_bit;
-		uint8_t clk_div;
-		uint16_t ticks_zero_high;
-		uint16_t ticks_zero_low;
-		uint16_t ticks_one_high;
-		uint16_t ticks_one_low;
-	} dshot_config_t;
-
 	dshot_packet_t* signDShotPacket(const uint16_t& throttle_value, const telemetric_request_t& telemetric_request = NO_TELEMETRIC);
 
 	rmt_item32_t dshotItem[DSHOT_PACKET_LENGTH] = { };

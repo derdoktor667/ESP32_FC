@@ -26,7 +26,6 @@ DShotRMT dshot_4(MOTOR_4, RMT_CHANNEL_3);
 
 volatile auto throttle_value = 0x30;
 
-// the setup function runs once when you press reset or power the board
 void setup() {
 	// ...always start the onboard usb support
 	USB_Serial.begin(USB_SERIAL_BAUD);
@@ -41,8 +40,6 @@ void setup() {
 	dshot_4.init(DSHOT600);
 }
 
-
-// the loop function runs over and over again until power down or reset
 void loop() {
 	get_Ibus_Packet();
 

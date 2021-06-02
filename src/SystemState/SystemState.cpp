@@ -3,5 +3,3 @@
 SystemState::SystemState() {}
 
 SystemState::~SystemState() {}
-
-

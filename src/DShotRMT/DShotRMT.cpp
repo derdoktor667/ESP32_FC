@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <stdio.h>
 
 #include "DShotRMT.h"
 
@@ -118,8 +117,8 @@ void DShotRMT::sendThrottle(uint16_t throttle_value, telemetric_request_t teleme
 	writeDShotRMT(dshot_rmt_packet);
 }
 
-String DShotRMT::get_dshot_mode() {
-	return dshot_config.name_str;
+dshot_config_t* DShotRMT::get_dshot_info() {
+	return &dshot_config;
 }
 
 uint8_t DShotRMT::get_dshot_clock_div() {
