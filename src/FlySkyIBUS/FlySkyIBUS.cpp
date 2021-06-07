@@ -22,7 +22,7 @@ FlySkyIBUS::FlySkyIBUS(FlySkyIBUS const&) {
 }
 
 FlySkyIBUS& FlySkyIBUS::operator=(FlySkyIBUS const&) {
-	// TODO: hier return-Anweisung eingeben
+	
 }
 
 FlySkyIBUS::~FlySkyIBUS() {
@@ -40,18 +40,18 @@ void FlySkyIBUS::begin(uint32_t ibus_baud) {
 	FlySkyIBUSNext = FlySkyIBUSFirst;
 
 	// ...try to get in sync with RMT someday
-	hw_timer_t* timer = nullptr;
+	hw_timer_t* timer_IBUS = nullptr;
 
-	timer = timerBegin(ibus_config.timer_id, IBUS_TIMER_DIVIDER, true);
-	timerAttachInterrupt(timer, &onTimer, true);
-	timerAlarmWrite(timer, IBUS_TIMER_1_MS, true);
-	timerAlarmEnable(timer);
+	timer_IBUS = timerBegin(ibus_config.timer_id, IBUS_TIMER_DIVIDER, true);
+	timerAttachInterrupt(timer_IBUS, &onTimer, true);
+	timerAlarmWrite(timer_IBUS, IBUS_TIMER_1_MS, true);
+	timerAlarmEnable(timer_IBUS);
 
 	// ...first things first
 	FlySkyIBUSFirst = this;
 }
 
-uint16_t FlySkyIBUS::read_Ibus_Channel(uint8_t channel_Nr) {
+uint16_t FlySkyIBUS::get_IBUS_Channel(uint8_t channel_Nr) {
 	if (channel_Nr < IBUS_MAX_CHANNELS) {
 		return this->ibus_config.channel_data[channel_Nr];
 	} else {
@@ -59,11 +59,11 @@ uint16_t FlySkyIBUS::read_Ibus_Channel(uint8_t channel_Nr) {
 	}
 }
 
-uint16_t* FlySkyIBUS::read_All_Channels() {
+uint16_t* FlySkyIBUS::get_IBUS_Channels() {
 	return this->ibus_config.channel_data;
 }
 
-void IRAM_ATTR FlySkyIBUS::process_ibus_data() {
+void FlySkyIBUS::process_ibus_data() {
 	// ...call one after the other
 	if (FlySkyIBUSNext) {
 		FlySkyIBUSNext->process_ibus_data();
@@ -96,6 +96,7 @@ void IRAM_ATTR FlySkyIBUS::process_ibus_data() {
 					// ...no packet found, nothing to do
 					this->ibus_config.state = DISCARD;
 				}
+
 				break;
 
 			case PARSE_IBUS_PACKET:

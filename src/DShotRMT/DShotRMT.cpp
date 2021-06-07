@@ -9,7 +9,7 @@ DShotRMT::DShotRMT(gpio_num_t gpio, rmt_channel_t rmtChannel) {
 	dshot_config.mem_block_num = uint8_t(RMT_CHANNEL_MAX - uint8_t(rmtChannel));
 
 	// ...create clean packet
-	encodeDShotRMT(DSHOT_NULL_PACKET);
+	encode_dshot_to_rmt(DSHOT_NULL_PACKET);
 }
 
 DShotRMT::DShotRMT(uint8_t pin, uint8_t channel) {
@@ -19,7 +19,7 @@ DShotRMT::DShotRMT(uint8_t pin, uint8_t channel) {
 	dshot_config.mem_block_num = (RMT_CHANNEL_MAX - channel);
 
 	// ...create clean packet
-	encodeDShotRMT(DSHOT_NULL_PACKET);
+	encode_dshot_to_rmt(DSHOT_NULL_PACKET);
 }
 
 DShotRMT::~DShotRMT() {
@@ -34,10 +34,11 @@ DShotRMT& DShotRMT::operator=(DShotRMT const&) {
 	// TODO: hier return-Anweisung eingeben
 }
 
-bool DShotRMT::init(dshot_mode_t dshot_mode) {
+bool DShotRMT::begin(dshot_mode_t dshot_mode, bool is_bidirectional) {
 	dshot_config.mode = dshot_mode;
 	dshot_config.clk_div = DSHOT_CLK_DIVIDER;
 	dshot_config.name_str = dshot_mode_name[dshot_mode];
+	dshot_config.is_inverted = is_bidirectional;
 
 	switch (dshot_config.mode) {
 		case DSHOT150:
@@ -74,24 +75,24 @@ bool DShotRMT::init(dshot_mode_t dshot_mode) {
 	dshot_config.ticks_zero_low = (dshot_config.ticks_per_bit - dshot_config.ticks_zero_high);
 	dshot_config.ticks_one_low = (dshot_config.ticks_per_bit - dshot_config.ticks_one_high);
 
-	config.rmt_mode = RMT_MODE_TX;
-	config.channel = dshot_config.rmt_channel;
-	config.gpio_num = dshot_config.gpio_num;
-	config.mem_block_num = dshot_config.mem_block_num;
-	config.clk_div = dshot_config.clk_div;
+	rmt_dshot_config.rmt_mode = RMT_MODE_TX;
+	rmt_dshot_config.channel = dshot_config.rmt_channel;
+	rmt_dshot_config.gpio_num = dshot_config.gpio_num;
+	rmt_dshot_config.mem_block_num = dshot_config.mem_block_num;
+	rmt_dshot_config.clk_div = dshot_config.clk_div;
 
-	config.tx_config.loop_en = false;
-	config.tx_config.carrier_en = false;
-	config.tx_config.idle_level = RMT_IDLE_LEVEL_LOW;
-	config.tx_config.idle_output_en = true;
+	rmt_dshot_config.tx_config.loop_en = false;
+	rmt_dshot_config.tx_config.carrier_en = false;
+	rmt_dshot_config.tx_config.idle_level = RMT_IDLE_LEVEL_LOW;
+	rmt_dshot_config.tx_config.idle_output_en = true;
 	
 	// ...setup selected dshot mode
-	rmt_config(&config);
+	rmt_config(&rmt_dshot_config);
 
 	// ...essential step, return the result
-	auto init_failed = rmt_driver_install(config.channel, 0, 0);
+	auto init_failed = rmt_driver_install(rmt_dshot_config.channel, 0, 0);
 
-	// ...all good
+	// ...because esp_err_t returns more than true or false
 	if (init_failed != 0) {
 		return true;
 	} else {
@@ -99,7 +100,7 @@ bool DShotRMT::init(dshot_mode_t dshot_mode) {
 	}
 }
 
-void DShotRMT::sendThrottle(uint16_t throttle_value, telemetric_request_t telemetric_request) {
+void DShotRMT::send_dshot_value(uint16_t throttle_value, telemetric_request_t telemetric_request) {
 	dshot_packet_t dshot_rmt_packet = { };
 
 	if (throttle_value < DSHOT_THROTTLE_MIN) {
@@ -109,12 +110,18 @@ void DShotRMT::sendThrottle(uint16_t throttle_value, telemetric_request_t teleme
 	if (throttle_value > DSHOT_THROTTLE_MAX) {
 		throttle_value = DSHOT_THROTTLE_MAX;
 	}
-	
-	dshot_rmt_packet.throttle_value = throttle_value;
-	dshot_rmt_packet.telemetric_request = telemetric_request;
-	dshot_rmt_packet.checksum = calculateChecksum(dshot_rmt_packet);
 
-	writeDShotRMT(dshot_rmt_packet);
+	if (dshot_config.is_inverted) {
+
+		// ...implement bidirectional mode
+
+	} else {
+		dshot_rmt_packet.throttle_value = throttle_value;
+		dshot_rmt_packet.telemetric_request = telemetric_request;
+		dshot_rmt_packet.checksum = this->calc_dshot_chksum(dshot_rmt_packet);
+
+		output_rmt_data(dshot_rmt_packet);
+	}
 }
 
 dshot_config_t* DShotRMT::get_dshot_info() {
@@ -125,72 +132,72 @@ uint8_t DShotRMT::get_dshot_clock_div() {
 	return dshot_config.clk_div;
 }
 
-rmt_item32_t* DShotRMT::encodeDShotRMT(uint16_t parsed_packet) {
+rmt_item32_t* DShotRMT::encode_dshot_to_rmt(uint16_t parsed_packet) {
 	for (int i = 0; i < DSHOT_PAUSE_BIT; i++, parsed_packet <<= 1) 	{
 		if (parsed_packet & 0b1000000000000000) {
 			// set one
-			dshotItem[i].duration0 = dshot_config.ticks_one_high;
-			dshotItem[i].level0 = 1;
-			dshotItem[i].duration1 = dshot_config.ticks_one_low;
-			dshotItem[i].level1 = 0;
+			dshot_rmt_item[i].duration0 = dshot_config.ticks_one_high;
+			dshot_rmt_item[i].level0 = 1;
+			dshot_rmt_item[i].duration1 = dshot_config.ticks_one_low;
+			dshot_rmt_item[i].level1 = 0;
 		}
 		else {
 			// set zero
-			dshotItem[i].duration0 = dshot_config.ticks_zero_high;
-			dshotItem[i].level0 = 1;
-			dshotItem[i].duration1 = dshot_config.ticks_zero_low;
-			dshotItem[i].level1 = 0;
+			dshot_rmt_item[i].duration0 = dshot_config.ticks_zero_high;
+			dshot_rmt_item[i].level0 = 1;
+			dshot_rmt_item[i].duration1 = dshot_config.ticks_zero_low;
+			dshot_rmt_item[i].level1 = 0;
 		}
 	}
 
 	// ...end marker added to each frame
-	dshotItem[DSHOT_PAUSE_BIT].duration0 = DSHOT_PAUSE;
-	dshotItem[DSHOT_PAUSE_BIT].level0 = 0;
-	dshotItem[DSHOT_PAUSE_BIT].duration1 = 0;
-	dshotItem[DSHOT_PAUSE_BIT].level1 = 0;
+	dshot_rmt_item[DSHOT_PAUSE_BIT].duration0 = DSHOT_PAUSE_BIDIRECTIONAL;
+	dshot_rmt_item[DSHOT_PAUSE_BIT].level0 = 0;
+	dshot_rmt_item[DSHOT_PAUSE_BIT].duration1 = 0;
+	dshot_rmt_item[DSHOT_PAUSE_BIT].level1 = 0;
 
-	return dshotItem;
+	return dshot_rmt_item;
 }
 
-uint16_t DShotRMT::calculateChecksum(const dshot_packet_t& dshot_packet_unsigned) {
+// ...just returns the checksum
+// DOES NOT APPEND CHECKSUM!!!
+uint16_t DShotRMT::calc_dshot_chksum(const dshot_packet_t& dshot_packet) {
 	uint16_t packet = 0b0000000000000000;
 	uint16_t chksum = 0b0000000000000000;
 
-	// ...calculate checksum
-	packet = (dshot_packet_unsigned.throttle_value << 1) | dshot_packet_unsigned.telemetric_request;
+	if (dshot_config.is_inverted) {
 
-	for (int i = 0; i < 3; i++) {
-		chksum ^= packet;   // xor data by nibbles
-		packet >>= 4;
+		// ...implement bidirectional mode
+
+	} else {
+		packet = (dshot_packet.throttle_value << 1) | dshot_packet.telemetric_request;
+
+		for (int i = 0; i < 3; i++) {
+			chksum ^= packet;   // xor data by nibbles
+			packet >>= 4;
+		}
+
+		chksum &= 0b0000000000001111;
 	}
-
-	chksum &= 0b0000000000001111;
 
 	return chksum;
 }
 
-uint16_t DShotRMT::parseDShotPacket(const dshot_packet_t& signedDShotPacket) {
-	uint16_t parsed_pack = 0b0000000000000000;
+uint16_t DShotRMT::prepare_rmt_data(const dshot_packet_t& dshot_packet) {
+	uint16_t prepared_to_encode = 0b0000000000000000;
 
-	parsed_pack = (signedDShotPacket.throttle_value << 1) | signedDShotPacket.telemetric_request;
-	parsed_pack = (parsed_pack << 4) | signedDShotPacket.checksum;
+	uint16_t chksum = calc_dshot_chksum(dshot_packet);
 
-	return parsed_pack;
+	prepared_to_encode = (dshot_packet.throttle_value << 1) | dshot_packet.telemetric_request;
+	prepared_to_encode = (prepared_to_encode << 4) | chksum;
+
+	return prepared_to_encode;
 }
 
-dshot_packet_t* DShotRMT::signDShotPacket(const uint16_t& throttle_value, const telemetric_request_t& telemetric_request) {
-	dshot_packet_t signed_packet = { };
+// ...finally output using ESP32 RMT
+void DShotRMT::output_rmt_data(const dshot_packet_t& dshot_packet) {
+	encode_dshot_to_rmt(prepare_rmt_data(dshot_packet));
 
-	signed_packet.isSigned = SIGNED;
-	signed_packet.throttle_value = throttle_value;
-	signed_packet.telemetric_request = telemetric_request;
-
-	signed_packet.checksum = (calculateChecksum(signed_packet));
-
-	return &signed_packet;
-}
-
-void DShotRMT::writeDShotRMT(const dshot_packet_t& dshot_packet) {
-	encodeDShotRMT(parseDShotPacket(dshot_packet));
-	rmt_write_items(config.channel, dshotItem, DSHOT_PACKET_LENGTH, false);
+	//
+	rmt_write_items(rmt_dshot_config.channel, dshot_rmt_item, DSHOT_PACKET_LENGTH, false);
 }

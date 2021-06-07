@@ -59,11 +59,14 @@ class FlySkyIBUS {
 
 	void begin(uint32_t ibus_baud = IBUS_BAUD);
 
-	uint16_t read_Ibus_Channel(uint8_t channe_lNr);
-	uint16_t* read_All_Channels();
+	// ...returns a single channel value
+	uint16_t get_IBUS_Channel(uint8_t channel_Nr);
 
-	// ...move to private
-	void IRAM_ATTR process_ibus_data();
+	// ...returns all decoded channels as an array
+	uint16_t* get_IBUS_Channels();
+
+	// ...move to private somehow
+	void process_ibus_data();
 
 	private:
 	struct ibus_config_s {

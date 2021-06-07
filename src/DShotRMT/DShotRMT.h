@@ -18,6 +18,7 @@ constexpr auto DSHOT_THROTTLE_MAX = 2047;
 constexpr auto DSHOT_NULL_PACKET = 0b0000000000000000;
 
 constexpr auto DSHOT_PAUSE = (DSHOT_PACKET_LENGTH * 21); // ...21bit is recommended
+constexpr auto DSHOT_PAUSE_BIDIRECTIONAL = DSHOT_PACKET_LENGTH;
 constexpr auto DSHOT_PAUSE_BIT = 16;
 
 constexpr auto F_CPU_RMT = 80000000L;
@@ -32,7 +33,13 @@ typedef enum dshot_mode_e {
 	DSHOT1200
 } dshot_mode_t;
 
-static const char* const dshot_mode_name[] = { "DSHOT_OFF", "DSHOT150",	"DSHOT300", "DSHOT600",	"DSHOT1200" };
+static const char* const dshot_mode_name[] = {
+	"DSHOT_OFF",
+	"DSHOT150",
+	"DSHOT300",
+	"DSHOT600",
+	"DSHOT1200"
+};
 
 typedef enum request_e {
 	NO_TELEMETRIC,
@@ -45,7 +52,6 @@ typedef enum sign_state_e {
 } sign_state_t;
 
 typedef struct dshot_packet_s {
-	sign_state_t isSigned : 1;
 	uint16_t throttle_value	: 11;
 	telemetric_request_t telemetric_request : 1;
 	uint16_t checksum : 4;
@@ -56,6 +62,7 @@ typedef String dshot_name_t;
 typedef struct dshot_config_s {
 	dshot_mode_t mode;
 	dshot_name_t name_str;
+	bool is_inverted;
 	gpio_num_t gpio_num;
 	uint8_t pin_num;
 	rmt_channel_t rmt_channel;
@@ -73,24 +80,23 @@ class DShotRMT {
 	DShotRMT(gpio_num_t gpio, rmt_channel_t rmtChannel);
 	DShotRMT(uint8_t pin, uint8_t channel);
 	~DShotRMT();
-	DShotRMT(DShotRMT const &);
+	DShotRMT(DShotRMT const&);
 	DShotRMT& operator=(DShotRMT const&);
 
-	bool init(dshot_mode_t dshot_mode = DSHOT_OFF);
-	void sendThrottle(uint16_t throttle_value, telemetric_request_t telemetric_request = NO_TELEMETRIC);
+	bool begin(dshot_mode_t dshot_mode = DSHOT_OFF, bool is_bidirectional = false);
+	void send_dshot_value(uint16_t throttle_value, telemetric_request_t telemetric_request = NO_TELEMETRIC);
 
 	dshot_config_t* get_dshot_info();
 	uint8_t get_dshot_clock_div();
 
 	private:
-	dshot_packet_t* signDShotPacket(const uint16_t& throttle_value, const telemetric_request_t& telemetric_request = NO_TELEMETRIC);
+	rmt_item32_t dshot_rmt_item[DSHOT_PACKET_LENGTH] = { };
+	dshot_config_t dshot_config = { };
+	rmt_config_t rmt_dshot_config = { };
 
-	rmt_item32_t dshotItem[DSHOT_PACKET_LENGTH] = { };
-	dshot_config_t dshot_config = {};
-	rmt_config_t config = {};
+	rmt_item32_t* encode_dshot_to_rmt(uint16_t parsed_packet);
+	uint16_t calc_dshot_chksum(const dshot_packet_t& dshot_packet);
+	uint16_t prepare_rmt_data(const dshot_packet_t& dshot_packet);
 
-	rmt_item32_t* encodeDShotRMT(uint16_t parsed_packet);
-	uint16_t calculateChecksum(const dshot_packet_t& dshot_packet);
-	uint16_t parseDShotPacket(const dshot_packet_t& dshot_packet);
-	void writeDShotRMT(const dshot_packet_t& dshot_packet);
+	void output_rmt_data(const dshot_packet_t& dshot_packet);
 };
