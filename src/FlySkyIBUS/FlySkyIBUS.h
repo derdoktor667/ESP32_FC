@@ -40,6 +40,7 @@ constexpr auto IBUS_MAX_CHANNELS = 14;
 constexpr auto IBUS_SENSORS_MAX = 10;
 constexpr auto IBUS_BAUD = 115200;
 constexpr auto IBUS_TIMER_DIVIDER = 80;
+constexpr auto IBUS_TIMER_SCALE = F_CPU / 1000000L;
 constexpr auto IBUS_TIMER_1_MS = 1000;
 
 constexpr auto IBUS_PACKET_START = 0x20;

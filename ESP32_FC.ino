@@ -58,16 +58,24 @@ void loop() {
 	dshot_2.send_dshot_value(throttle_value);
 	dshot_3.send_dshot_value(throttle_value);
 	dshot_4.send_dshot_value(throttle_value);
+
+	USB_Serial.println(throttle_value);
 }
 
-void readSerialThrottle() {
-	if (USB_Serial.available() > 0) {
-		auto throttle_input = (USB_Serial.readStringUntil('\n')).toInt();
-		throttle_value = throttle_input;
-	}
-}
+//void readSerialThrottle() {
+//	if (USB_Serial.available() > 0) {
+//		auto throttle_input = (USB_Serial.readStringUntil('\n')).toInt();
+//		throttle_value = throttle_input;
+//	}
+//}
 
 void get_Ibus_Packet() {
 	auto ibus_pack = ibus.get_IBUS_Channels();
 	throttle_value = ibus_pack[THROTTLE];
+	
+	if (throttle_value <= IBUS_VALUE_MIN) {
+		throttle_value = IBUS_VALUE_MIN;
+	}
+
+	throttle_value = map(throttle_value, IBUS_VALUE_MIN, IBUS_VALUE_MAX, DSHOT_THROTTLE_MIN, DSHOT_THROTTLE_MAX);
 }

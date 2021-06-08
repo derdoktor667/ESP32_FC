@@ -41,8 +41,7 @@ void FlySkyIBUS::begin(uint32_t ibus_baud) {
 
 	// ...try to get in sync with RMT someday
 	hw_timer_t* timer_IBUS = nullptr;
-
-	timer_IBUS = timerBegin(ibus_config.timer_id, IBUS_TIMER_DIVIDER, true);
+	timer_IBUS = timerBegin(ibus_config.timer_id, IBUS_TIMER_SCALE, true);
 	timerAttachInterrupt(timer_IBUS, &onTimer, true);
 	timerAlarmWrite(timer_IBUS, IBUS_TIMER_1_MS, true);
 	timerAlarmEnable(timer_IBUS);
