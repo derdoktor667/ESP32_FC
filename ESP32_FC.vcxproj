@@ -132,7 +132,7 @@
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties config.Release.customdebug_esp32_esp32_debugger_type="none" config.Release.customdebug_esp32_esp32_hwdebugger="esp32devkit" />
+      <UserProperties arduino.upload.port="COM7" config.Release.customdebug_esp32_esp32_debugger_type="none" config.Release.customdebug_esp32_esp32_hwdebugger="esp32devkit" custom_esp32_esp32_FlashFreq="80" custom_esp32_esp32_FlashMode="qout" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>

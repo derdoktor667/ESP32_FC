@@ -46,11 +46,6 @@ typedef enum request_e {
 	ENABLE_TELEMETRIC,
 } telemetric_request_t;
 
-typedef enum sign_state_e {
-	UNSIGNED,
-	SIGNED,
-} sign_state_t;
-
 typedef struct dshot_packet_s {
 	uint16_t throttle_value	: 11;
 	telemetric_request_t telemetric_request : 1;

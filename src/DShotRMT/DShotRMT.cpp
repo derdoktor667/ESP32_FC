@@ -65,6 +65,7 @@ bool DShotRMT::begin(dshot_mode_t dshot_mode, bool is_bidirectional) {
 			dshot_config.ticks_one_high = 6; // ...one time 0.625 µs
 			break;
 
+		// ...because having a default is "good style"
 		default:
 			dshot_config.ticks_per_bit = 0; // ...Bit Period Time endless
 			dshot_config.ticks_zero_high = 0; // ...no bits, no time
@@ -72,6 +73,7 @@ bool DShotRMT::begin(dshot_mode_t dshot_mode, bool is_bidirectional) {
 			break;
 	}
 
+	// ...calc low signal timing
 	dshot_config.ticks_zero_low = (dshot_config.ticks_per_bit - dshot_config.ticks_zero_high);
 	dshot_config.ticks_one_low = (dshot_config.ticks_per_bit - dshot_config.ticks_one_high);
 
@@ -162,8 +164,8 @@ rmt_item32_t* DShotRMT::encode_dshot_to_rmt(uint16_t parsed_packet) {
 // ...just returns the checksum
 // DOES NOT APPEND CHECKSUM!!!
 uint16_t DShotRMT::calc_dshot_chksum(const dshot_packet_t& dshot_packet) {
-	uint16_t packet = 0b0000000000000000;
-	uint16_t chksum = 0b0000000000000000;
+	uint16_t packet = DSHOT_NULL_PACKET;
+	uint16_t chksum = DSHOT_NULL_PACKET;
 
 	if (dshot_config.is_inverted) {
 
@@ -184,7 +186,7 @@ uint16_t DShotRMT::calc_dshot_chksum(const dshot_packet_t& dshot_packet) {
 }
 
 uint16_t DShotRMT::prepare_rmt_data(const dshot_packet_t& dshot_packet) {
-	uint16_t prepared_to_encode = 0b0000000000000000;
+	uint16_t prepared_to_encode = DSHOT_NULL_PACKET;
 
 	uint16_t chksum = calc_dshot_chksum(dshot_packet);
 
