@@ -36,6 +36,12 @@ typedef enum uart_num_e {
 	UART_3,
 } uart_num_t;
 
+// ...the OLED Display
+constexpr auto OLED_ADDRESS = 0x3C;;
+constexpr auto SCREEN_WIDTH = 128;
+constexpr auto SCREEN_HEIGHT = 64;
+constexpr auto OLED_RESET = -1;
+
 // ...decode rc input as MODE 2
 enum rx_mode_2_e {
 	AILERON,

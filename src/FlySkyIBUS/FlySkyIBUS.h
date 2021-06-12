@@ -48,6 +48,7 @@ constexpr auto IBUS_COMMAND40 = 0x40;
 
 constexpr auto IBUS_VALUE_MIN = 988;
 constexpr auto IBUS_VALUE_MAX = 2012;
+constexpr auto IBUS_SAFETY_VALUE = 7;
 constexpr auto IBUS_RANGE = IBUS_VALUE_MAX - IBUS_VALUE_MIN;
 
 // ...only HardwareSerial aka UART supported at the moment

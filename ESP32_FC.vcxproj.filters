@@ -36,13 +36,13 @@
     <ClInclude Include="src\MPU6050\MP6050_registers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="__vm\.ESP32_FC.vsarduino.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\FlySkyIBUS\FlySkyIBUS.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\PID\PID.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="__vm\.ESP32_FC.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

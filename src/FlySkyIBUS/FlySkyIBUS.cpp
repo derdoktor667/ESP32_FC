@@ -125,7 +125,7 @@ void FlySkyIBUS::process_ibus_data() {
 						}
 					}
 
-					if (this->ibus_config.channel_data[THROTTLE] <= IBUS_VALUE_MIN) 	{
+					if (this->ibus_config.channel_data[THROTTLE] < (IBUS_VALUE_MIN + IBUS_SAFETY_VALUE)) {
 						this->ibus_config.channel_data[THROTTLE] = 0;
 					}
 
