@@ -36,7 +36,7 @@ THE SOFTWARE.
 
 #pragma once
 
-#include "I2Cdev.h"
+#include <I2Cdev.h>
 
 // supporting link:  http://forum.arduino.cc/index.php?&topic=143444.msg1079517#msg1079517
 // also: http://forum.arduino.cc/index.php?&topic=141571.msg1062899#msg1062899s

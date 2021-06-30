@@ -37,3 +37,7 @@
 /__vm/
 /Release/
 /.vscode/
+*.sln
+*.filters
+*.user
+*.vcxproj

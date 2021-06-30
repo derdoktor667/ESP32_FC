@@ -8,8 +8,8 @@
 
 #include "fc_config.h"
 
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+// #include <Adafruit_GFX.h>
+// #include <Adafruit_SSD1306.h>
 
 #include "src/FlySkyIBUS/FlySkyIBUS.h"
 #include "src/DShotRMT/DShotRMT.h"
@@ -66,7 +66,7 @@ void setup() {
 }
 
 void loop() {
-	update_throttle_reading();
+	read_SerialThrottle();
 
 	dshot_1.send_dshot_value(throttle_value);
 	dshot_2.send_dshot_value(throttle_value);
@@ -76,14 +76,14 @@ void loop() {
 	USB_Serial.println(throttle_value);
 }
 
-//void readSerialThrottle() {
-//	if (USB_Serial.available() > 0) {
-//		auto throttle_input = (USB_Serial.readStringUntil('\n')).toInt();
-//		throttle_value = throttle_input;
-//	}
-//}
-
-void update_throttle_reading() {
-	auto rc_readings_All = ibus.get_IBUS_Channels();
-	throttle_value = rc_readings_All[THROTTLE];
+void read_SerialThrottle() {
+	if (USB_Serial.available() > 0) {
+		auto throttle_input = (USB_Serial.readStringUntil('\n')).toInt();
+		throttle_value = throttle_input;
+	}
 }
+
+// void update_throttle_reading() {
+//	auto rc_readings_All = ibus.get_IBUS_Channels();
+//	throttle_value = rc_readings_All[THROTTLE];
+// }
