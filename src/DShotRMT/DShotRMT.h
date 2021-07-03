@@ -1,8 +1,10 @@
-#pragma once
-
-// Author:	derdoktor667
+//
+// Name:		ESP32_ESC.ino
+// Created: 	20.03.2021 00:49:15
+// Author:  	derdoktor667
 //
 
+#pragma once
 
 #include "BlheliCmdMap.h"
 #include <Arduino.h>
@@ -78,7 +80,7 @@ class DShotRMT {
 	DShotRMT(uint8_t pin, uint8_t channel);
 	~DShotRMT();
 	DShotRMT(DShotRMT const&);
-	DShotRMT& operator=(DShotRMT const&);
+	// DShotRMT& operator=(DShotRMT const&);
 
 	bool begin(dshot_mode_t dshot_mode = DSHOT_OFF, bool is_bidirectional = false);
 	void send_dshot_value(uint16_t throttle_value, telemetric_request_t telemetric_request = NO_TELEMETRIC);

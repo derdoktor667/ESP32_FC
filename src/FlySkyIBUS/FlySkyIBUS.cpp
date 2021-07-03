@@ -1,3 +1,8 @@
+//
+// Name:		ESP32_ESC.ino
+// Created: 	20.03.2021 00:49:15
+// Author:  	derdoktor667
+//
 
 #include "FlySkyIBUS.h"
 
@@ -21,9 +26,7 @@ FlySkyIBUS::FlySkyIBUS(FlySkyIBUS const&) {
 
 }
 
-FlySkyIBUS& FlySkyIBUS::operator=(FlySkyIBUS const&) {
-	
-}
+// FlySkyIBUS& FlySkyIBUS::operator=(FlySkyIBUS const&) { }
 
 FlySkyIBUS::~FlySkyIBUS() {
 
@@ -32,10 +35,10 @@ FlySkyIBUS::~FlySkyIBUS() {
 void FlySkyIBUS::begin(uint32_t ibus_baud) {
 	this->ibus_config.state = DISCARD;
 	this->ibus_config.last_millis = millis();
-	this->ibus_config.buffer_position = NULL;
-	this->ibus_config.packet_length = NULL;
-	this->ibus_config.chksum = NULL;
-	this->ibus_config.lchksum = NULL;
+	this->ibus_config.buffer_position = 0;
+	this->ibus_config.packet_length = 0;
+	this->ibus_config.chksum = 0;
+	this->ibus_config.lchksum = 0;
 
 	FlySkyIBUSNext = FlySkyIBUSFirst;
 

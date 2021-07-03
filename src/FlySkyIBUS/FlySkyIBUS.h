@@ -1,3 +1,9 @@
+//
+// Name:		ESP32_ESC.ino
+// Created: 	20.03.2021 00:49:15
+// Author:  	derdoktor667
+//
+
 #pragma once
 
 //
@@ -56,7 +62,7 @@ class FlySkyIBUS {
 	public:
 	FlySkyIBUS(HardwareSerial& ibus_serial = Serial2, uint8_t ibus_timer_id = 0, int8_t rx_pin = -1, int8_t tx_pin = -1);
 	FlySkyIBUS(FlySkyIBUS const&);
-	FlySkyIBUS& operator=(FlySkyIBUS const&);
+	// FlySkyIBUS& operator=(FlySkyIBUS const&);
 	~FlySkyIBUS();
 
 	void begin(uint32_t ibus_baud = IBUS_BAUD);
@@ -72,17 +78,17 @@ class FlySkyIBUS {
 
 	private:
 	struct ibus_config_s {
-		uint8_t state = NULL;
+		uint8_t state = 0;
 		HardwareSerial* ibus_input = nullptr;
 		uint8_t buffer[IBUS_MAX_LENGTH] = { };
-		uint8_t timer_id = NULL;
-		uint8_t buffer_position = NULL;
-		uint8_t packet_length = NULL;
+		uint8_t timer_id = 0;
+		uint8_t buffer_position = 0;
+		uint8_t packet_length = 0;
 		uint16_t channel_data[IBUS_MAX_CHANNELS] = { };
-		uint16_t chksum = NULL;
-		uint8_t lchksum = NULL;
-		uint8_t sensor_count = NULL;
-		uint32_t last_millis = NULL;
+		uint16_t chksum = 0;
+		uint8_t lchksum = 0;
+		uint8_t sensor_count = 0;
+		uint32_t last_millis = 0;
 		uint32_t fs_counter = 0;
 		uint32_t fs_last_counter = 0;
 	} ibus_config;

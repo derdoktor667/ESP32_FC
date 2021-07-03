@@ -1,16 +1,15 @@
-#pragma once
+//
+// Name:		ESP32_ESC.ino
+// Created: 	20.03.2021 00:49:15
+// Author:  	derdoktor667
+//
 
-/*
- Name:		ESP32_ESC.ino
- Created:	20.03.2021 00:49:15
- Author:	derdoktor667
-*/
+#pragma once
 
 #include <Arduino.h>
 
 // ...clearly name usb port
 #ifdef SERIAL
-// HardwareSerial* USB_Serial = &Serial;
 #define USB_Serial Serial
 constexpr auto USB_SERIAL_BAUD = 115200;
 #endif // SERIAL
