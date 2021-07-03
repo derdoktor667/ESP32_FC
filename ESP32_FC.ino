@@ -19,7 +19,7 @@
 
 // ...is Bluetooth enabled, we will need it later???
 #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+	#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
 #endif
 
 constexpr auto MOTOR_1 = GPIO_NUM_4;
