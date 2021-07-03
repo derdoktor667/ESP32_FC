@@ -38,6 +38,6 @@
 /Release/
 /.vscode/
 *.sln
-*.filters
+*.*.filters
 *.user
 *.vcxproj
