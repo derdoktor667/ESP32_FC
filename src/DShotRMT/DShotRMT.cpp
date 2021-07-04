@@ -1,12 +1,13 @@
 //
-// Name:		ESP32_ESC.ino
+// Name:		DShotRMT.cpp
 // Created: 	20.03.2021 00:49:15
 // Author:  	derdoktor667
 //
 
-#include <Arduino.h>
-
 #include "DShotRMT.h"
+
+DShotRMT* DShotFirst = nullptr;
+DShotRMT* DShotNext = nullptr;
 
 DShotRMT::DShotRMT(gpio_num_t gpio, rmt_channel_t rmtChannel) {
 	dshot_config.gpio_num = gpio;
@@ -32,19 +33,15 @@ DShotRMT::~DShotRMT() {
 	rmt_driver_uninstall(dshot_config.rmt_channel);
 }
 
-DShotRMT::DShotRMT(DShotRMT const &) {
+DShotRMT::DShotRMT(DShotRMT const&) {
 	// ...write me	
 }
-
-// DShotRMT& DShotRMT::operator=(DShotRMT const&) {
-	// TODO: hier return-Anweisung eingeben
-// }
 
 bool DShotRMT::begin(dshot_mode_t dshot_mode, bool is_bidirectional) {
 	dshot_config.mode = dshot_mode;
 	dshot_config.clk_div = DSHOT_CLK_DIVIDER;
 	dshot_config.name_str = dshot_mode_name[dshot_mode];
-	dshot_config.is_inverted = is_bidirectional;
+	dshot_config.bidirectional = is_bidirectional;
 
 	switch (dshot_config.mode) {
 		case DSHOT150:
@@ -119,7 +116,7 @@ void DShotRMT::send_dshot_value(uint16_t throttle_value, telemetric_request_t te
 		throttle_value = DSHOT_THROTTLE_MAX;
 	}
 
-	if (dshot_config.is_inverted) {
+	if (dshot_config.bidirectional) {
 
 		// ...implement bidirectional mode
 
@@ -132,39 +129,41 @@ void DShotRMT::send_dshot_value(uint16_t throttle_value, telemetric_request_t te
 	}
 }
 
+// ...get all setup data about current mode
 dshot_config_t* DShotRMT::get_dshot_info() {
 	return &dshot_config;
 }
 
-uint8_t DShotRMT::get_dshot_clock_div() {
-	return dshot_config.clk_div;
+// ...get the ABP_Clock Divider for further calculations
+uint8_t* DShotRMT::get_dshot_clock_div() {
+	return &dshot_config.clk_div;
 }
 
 rmt_item32_t* DShotRMT::encode_dshot_to_rmt(uint16_t parsed_packet) {
 	for (int i = 0; i < DSHOT_PAUSE_BIT; i++, parsed_packet <<= 1) 	{
 		if (parsed_packet & 0b1000000000000000) {
 			// set one
-			dshot_rmt_item[i].duration0 = dshot_config.ticks_one_high;
-			dshot_rmt_item[i].level0 = 1;
-			dshot_rmt_item[i].duration1 = dshot_config.ticks_one_low;
-			dshot_rmt_item[i].level1 = 0;
+			dshot_tx_rmt_item[i].duration0 = dshot_config.ticks_one_high;
+			dshot_tx_rmt_item[i].level0 = 1;
+			dshot_tx_rmt_item[i].duration1 = dshot_config.ticks_one_low;
+			dshot_tx_rmt_item[i].level1 = 0;
 		}
 		else {
 			// set zero
-			dshot_rmt_item[i].duration0 = dshot_config.ticks_zero_high;
-			dshot_rmt_item[i].level0 = 1;
-			dshot_rmt_item[i].duration1 = dshot_config.ticks_zero_low;
-			dshot_rmt_item[i].level1 = 0;
+			dshot_tx_rmt_item[i].duration0 = dshot_config.ticks_zero_high;
+			dshot_tx_rmt_item[i].level0 = 1;
+			dshot_tx_rmt_item[i].duration1 = dshot_config.ticks_zero_low;
+			dshot_tx_rmt_item[i].level1 = 0;
 		}
 	}
 
 	// ...end marker added to each frame
-	dshot_rmt_item[DSHOT_PAUSE_BIT].duration0 = DSHOT_PAUSE_BIDIRECTIONAL;
-	dshot_rmt_item[DSHOT_PAUSE_BIT].level0 = 0;
-	dshot_rmt_item[DSHOT_PAUSE_BIT].duration1 = 0;
-	dshot_rmt_item[DSHOT_PAUSE_BIT].level1 = 0;
+	dshot_tx_rmt_item[DSHOT_PAUSE_BIT].duration0 = DSHOT_PAUSE_BIDIRECTIONAL;
+	dshot_tx_rmt_item[DSHOT_PAUSE_BIT].level0 = 0;
+	dshot_tx_rmt_item[DSHOT_PAUSE_BIT].duration1 = 0;
+	dshot_tx_rmt_item[DSHOT_PAUSE_BIT].level1 = 0;
 
-	return dshot_rmt_item;
+	return dshot_tx_rmt_item;
 }
 
 // ...just returns the checksum
@@ -173,7 +172,7 @@ uint16_t DShotRMT::calc_dshot_chksum(const dshot_packet_t& dshot_packet) {
 	uint16_t packet = DSHOT_NULL_PACKET;
 	uint16_t chksum = DSHOT_NULL_PACKET;
 
-	if (dshot_config.is_inverted) {
+	if (dshot_config.bidirectional) {
 
 		// ...implement bidirectional mode
 
@@ -207,5 +206,5 @@ void DShotRMT::output_rmt_data(const dshot_packet_t& dshot_packet) {
 	encode_dshot_to_rmt(prepare_rmt_data(dshot_packet));
 
 	//
-	rmt_write_items(rmt_dshot_config.channel, dshot_rmt_item, DSHOT_PACKET_LENGTH, false);
+	rmt_write_items(rmt_dshot_config.channel, dshot_tx_rmt_item, DSHOT_PACKET_LENGTH, false);
 }

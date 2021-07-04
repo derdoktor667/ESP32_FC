@@ -8,11 +8,11 @@
 
 #include <Arduino.h>
 
-// ...clearly name usb port
-#ifdef SERIAL
-#define USB_Serial Serial
-constexpr auto USB_SERIAL_BAUD = 115200;
-#endif // SERIAL
+
+// ...Version Info
+constexpr auto VERSION_MAJOR = 0;
+constexpr auto VERSION_MINOR = 1;
+constexpr auto VERSION_REV = 1;
 
 // ...I2C_CLK_MODE default and fast
 constexpr auto I2C_DEFAULT_SPEED = 100000;
@@ -35,12 +35,6 @@ typedef enum uart_num_e {
 	UART_3,
 } uart_num_t;
 
-// ...the OLED Display
-constexpr auto OLED_ADDRESS = 0x3C;;
-constexpr auto SCREEN_WIDTH = 128;
-constexpr auto SCREEN_HEIGHT = 64;
-constexpr auto OLED_RESET = -1;
-
 // ...decode rc input as MODE 2
 enum rx_mode_2_e {
 	AILERON,
@@ -50,7 +44,7 @@ enum rx_mode_2_e {
 };
 
 // ...add an "ARMED" channel and up to 9 AUX channels
-enum rx_aux_channels {
+enum rx_aux_channels_e {
 	ARMED = 5,
 	AUX1,
 	AUX2,
@@ -63,18 +57,12 @@ enum rx_aux_channels {
 	AUX9,
 };
 
-// ...ESP32 Info
-struct hardware_info_s {
-	const char* chipModel = ESP.getChipModel();
-	uint32_t chipMhz = ESP.getCpuFreqMHz();
-	uint8_t chipCores = ESP.getChipCores();
-	uint32_t flashChipSpeed = ESP.getFlashChipSpeed();
-	uint32_t flashChipSize = ESP.getFlashChipSize();
-};
+// ...return Firmware Info asa pointer to firmware_info
+typedef struct firmware_info_s {
+	const uint8_t version_major = VERSION_MAJOR;
+	const uint8_t version_minor = VERSION_MINOR;
+	const uint8_t version_rev = VERSION_REV;
+	const char* device_name = ESP.getChipModel();
+} firmware_info_t;
 
-// ...some calculations
-template<typename T>
-constexpr int MHZ_TO_HZ(T x) { return ((x) * 1000000); }
-
-template<typename T>
-constexpr int ARRAY_SIZE(T x) { return (sizeof(x) / sizeof(x[0])); }
+firmware_info_t* get_Firmware_Info();

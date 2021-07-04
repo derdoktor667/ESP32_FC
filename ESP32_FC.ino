@@ -6,10 +6,17 @@
 
 #include <Arduino.h>
 
-#include "fc_config.h"
+#include "src/fc_config.h"
+#include "src/I2Cdev/I2Cdev.h"
 #include "src/FlySkyIBUS/FlySkyIBUS.h"
 #include "src/DShotRMT/DShotRMT.h"
 #include "src/SystemState/SystemState.h"
+
+// ...better usb port naming
+#ifdef SERIAL
+#define USB_Serial Serial
+constexpr auto USB_SERIAL_BAUD = 115200;
+#endif // SERIAL
 
 // Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
 // is used in I2Cdev.h

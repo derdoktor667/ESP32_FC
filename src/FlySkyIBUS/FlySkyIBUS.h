@@ -1,10 +1,12 @@
 //
-// Name:		ESP32_ESC.ino
+// Name:		FlySkyIBUS.h
 // Created: 	20.03.2021 00:49:15
 // Author:  	derdoktor667
 //
 
 #pragma once
+
+#include <Arduino.h>
 
 //
 // max 14 channels in this lib (with messagelength of 0x20 there is room for 14 channels)
@@ -34,11 +36,6 @@
 // Checksum: DA F3 -> calculated by adding up all previous bytes, total must be FFFF
 //
 
-#include <Arduino.h>
-#include <HardwareSerial.h>
-
-#include "../../fc_config.h"
-
 constexpr auto IBUS_MAX_LENGTH = 32;
 constexpr auto IBUS_OVERHEAD_LENGTH = 3;
 constexpr auto IBUS_PAUSE = 3;
@@ -62,7 +59,6 @@ class FlySkyIBUS {
 	public:
 	FlySkyIBUS(HardwareSerial& ibus_serial = Serial2, uint8_t ibus_timer_id = 0, int8_t rx_pin = -1, int8_t tx_pin = -1);
 	FlySkyIBUS(FlySkyIBUS const&);
-	// FlySkyIBUS& operator=(FlySkyIBUS const&);
 	~FlySkyIBUS();
 
 	void begin(uint32_t ibus_baud = IBUS_BAUD);

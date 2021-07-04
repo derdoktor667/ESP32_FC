@@ -1,6 +1,10 @@
-#pragma once
+//
+// Name:		SystemState.h
+// Created: 	20.03.2021 00:49:15
+// Author:  	derdoktor667
+//
 
-#include <Arduino.h>
+#pragma once
 
 class SystemState {
 	public:
@@ -43,6 +47,4 @@ class SystemState {
 		bool setup_done = false;
 
 	private:
-		const uint8_t RX_MAX_CHANNELS_PPM = 8;
-		const uint8_t RX_MAX_CHANNELS_IBUS = 14;
 };

@@ -1,10 +1,11 @@
 //
-// Name:		ESP32_ESC.ino
+// Name:		FlySkyIBUS.cpp
 // Created: 	20.03.2021 00:49:15
 // Author:  	derdoktor667
 //
 
 #include "FlySkyIBUS.h"
+#include "../fc_config.h"
 
 FlySkyIBUS* FlySkyIBUSFirst = nullptr;
 FlySkyIBUS* FlySkyIBUSNext = nullptr;
@@ -25,8 +26,6 @@ FlySkyIBUS::FlySkyIBUS(HardwareSerial& ibus_serial, uint8_t ibus_timer_id, int8_
 FlySkyIBUS::FlySkyIBUS(FlySkyIBUS const&) {
 
 }
-
-// FlySkyIBUS& FlySkyIBUS::operator=(FlySkyIBUS const&) { }
 
 FlySkyIBUS::~FlySkyIBUS() {
 
@@ -72,7 +71,7 @@ void FlySkyIBUS::process_ibus_data() {
 	}
 
 	while (this->ibus_config.ibus_input->available() > 0) {
-		// ...force ibus pause
+		// ...timestamp
 		uint32_t now = millis();
 
 		if (now - this->ibus_config.last_millis >= IBUS_PAUSE) {
