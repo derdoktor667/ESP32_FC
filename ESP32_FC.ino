@@ -6,6 +6,7 @@
 
 #include <Arduino.h>
 
+// ...the good parts
 #include "src/fc_config.h"
 #include "src/I2Cdev/I2Cdev.h"
 #include "src/FlySkyIBUS/FlySkyIBUS.h"

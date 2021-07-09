@@ -95,16 +95,10 @@ bool DShotRMT::begin(dshot_mode_t dshot_mode, bool is_bidirectional) {
 	rmt_config(&rmt_dshot_config);
 
 	// ...essential step, return the result
-	auto init_failed = rmt_driver_install(rmt_dshot_config.channel, 0, 0);
-
-	// ...because esp_err_t returns more than true or false
-	if (init_failed != 0) {
-		return true;
-	} else {
-		return false;
-	}
+    return rmt_driver_install(rmt_dshot_config.channel, 0, 0);
 }
 
+//´...the config part is done, now the calculating and sending part
 void DShotRMT::send_dshot_value(uint16_t throttle_value, telemetric_request_t telemetric_request) {
 	dshot_packet_t dshot_rmt_packet = { };
 
