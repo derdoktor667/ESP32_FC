@@ -146,7 +146,7 @@ rmt_item32_t* DShotRMT::encode_dshot_to_rmt(uint16_t parsed_packet) {
 	}
 
 	// ...end marker added to each frame
-	dshot_tx_rmt_item[DSHOT_PAUSE_BIT].duration0 = DSHOT_PAUSE_BIDIRECTIONAL;
+	dshot_tx_rmt_item[DSHOT_PAUSE_BIT].duration0 = (dshot_config.ticks_per_bit * DSHOT_PAUSE);
 	dshot_tx_rmt_item[DSHOT_PAUSE_BIT].level0 = 0;
 	dshot_tx_rmt_item[DSHOT_PAUSE_BIT].duration1 = 0;
 	dshot_tx_rmt_item[DSHOT_PAUSE_BIT].level1 = 0;

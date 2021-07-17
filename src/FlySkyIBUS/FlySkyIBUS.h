@@ -73,8 +73,16 @@ class FlySkyIBUS {
 	void process_ibus_data();
 
 	private:
+    typedef enum ibus_state_e {
+		READ_IBUS_PACKET,
+		PARSE_IBUS_PACKET,
+		CHECK_PARSED_PACKET,
+		DECODE_IBUS_VALUES,
+		DISCARD
+	} ibus_state_t;
+
 	struct ibus_config_s {
-		uint8_t state = 0;
+		ibus_state_t state = DISCARD;
 		HardwareSerial* ibus_input = nullptr;
 		uint8_t buffer[IBUS_MAX_LENGTH] = { };
 		uint8_t timer_id = 0;
@@ -88,12 +96,4 @@ class FlySkyIBUS {
 		uint32_t fs_counter = 0;
 		uint32_t fs_last_counter = 0;
 	} ibus_config;
-
-	enum ibus_state_e {
-		READ_IBUS_PACKET,
-		PARSE_IBUS_PACKET,
-		CHECK_PARSED_PACKET,
-		DECODE_IBUS_VALUES,
-		DISCARD
-	};
 };

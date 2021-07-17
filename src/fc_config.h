@@ -4,10 +4,7 @@
 // Author:  	derdoktor667
 //
 
-#pragma once
-
 #include <Arduino.h>
-
 
 // ...Version Info
 constexpr auto VERSION_MAJOR = 0;
@@ -58,11 +55,9 @@ enum rx_aux_channels_e {
 };
 
 // ...return Firmware Info asa pointer to firmware_info
-typedef struct firmware_info_s {
+struct firmware_info_s {
 	const uint8_t version_major = VERSION_MAJOR;
 	const uint8_t version_minor = VERSION_MINOR;
 	const uint8_t version_rev = VERSION_REV;
 	const char* device_name = ESP.getChipModel();
-} firmware_info_t;
-
-firmware_info_t* get_Firmware_Info();
+};

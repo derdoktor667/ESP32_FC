@@ -14,10 +14,8 @@
 #include "src/SystemState/SystemState.h"
 
 // ...better usb port naming
-#ifdef SERIAL
-#define USB_Serial Serial
+HardwareSerial &USB_Serial = Serial;
 constexpr auto USB_SERIAL_BAUD = 115200;
-#endif // SERIAL
 
 // Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
 // is used in I2Cdev.h
@@ -27,7 +25,7 @@ constexpr auto USB_SERIAL_BAUD = 115200;
 
 // ...is Bluetooth enabled, we will need it later???
 #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-	#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+	#error ...Bluetooth is not enabled!!!
 #endif
 
 constexpr auto MOTOR_1 = GPIO_NUM_4;
@@ -45,11 +43,13 @@ DShotRMT dshot_4(MOTOR_4, RMT_CHANNEL_3);
 
 volatile auto throttle_value = 0;
 
+firmware_info_s firmware_info;
+
 void setup() {
 	// ...always start the onboard usb support
 	USB_Serial.begin(USB_SERIAL_BAUD);
 
-	// IBUS
+	// IBUS will be read on Serial2 on ESP32 by default
 	ibus.begin();
 
 	// ...select the DSHOT Mode
@@ -57,6 +57,10 @@ void setup() {
 	dshot_2.begin(DSHOT600);
 	dshot_3.begin(DSHOT600);
 	dshot_4.begin(DSHOT600);
+
+    USB_Serial.println(firmware_info.device_name);
+    USB_Serial.println(F_CPU);
+    USB_Serial.println(APB_CLK_FREQ);
 }
 
 void loop() {
@@ -67,7 +71,7 @@ void loop() {
 	dshot_3.send_dshot_value(throttle_value);
 	dshot_4.send_dshot_value(throttle_value);
 
-	USB_Serial.println(throttle_value);
+	// USB_Serial.println(throttle_value);
 }
 
 void read_SerialThrottle() {

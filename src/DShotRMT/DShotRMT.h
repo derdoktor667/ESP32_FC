@@ -9,18 +9,17 @@
 #include <Arduino.h>
 #include "BlheliCmdMap.h"
 
+// ...utilizing the IR Module library for generating the DShot signal
 #include <driver/rmt.h>
-#include <string>
 
-constexpr auto DSHOT_CLK_DIVIDER = 8; // ...slow down RMT clock to 0.1 microseconds per cycle
+constexpr auto DSHOT_CLK_DIVIDER = 8; // ...slow down RMT clock to 0.1 microseconds / 100 nanoseconds per cycle
 constexpr auto DSHOT_PACKET_LENGTH = 17; // ...last pack is the pause
 
 constexpr auto DSHOT_THROTTLE_MIN = 48;
 constexpr auto DSHOT_THROTTLE_MAX = 2047;
 constexpr auto DSHOT_NULL_PACKET = 0b0000000000000000;
 
-constexpr auto DSHOT_PAUSE = 2; // ...21bit is recommended, but to be sure
-constexpr auto DSHOT_PAUSE_BIDIRECTIONAL = DSHOT_PAUSE;
+constexpr auto DSHOT_PAUSE = 21; // ...21bit is recommended, but to be sure
 constexpr auto DSHOT_PAUSE_BIT = 16;
 
 constexpr auto F_CPU_RMT = APB_CLK_FREQ;
@@ -51,6 +50,7 @@ typedef enum telemetric_request_e {
 	ENABLE_TELEMETRIC,
 } telemetric_request_t;
 
+// ...set bitcount for DShot packet structure
 typedef struct dshot_packet_s {
 	uint16_t throttle_value	: 11;
 	telemetric_request_t telemetric_request : 1;

@@ -5,11 +5,3 @@
 //
 
 #include "SystemState.h"
-
-// ...the main state machine instances
-SystemState* SysState = nullptr;
-
-
-SystemState::SystemState() {}
-
-SystemState::~SystemState() {}
