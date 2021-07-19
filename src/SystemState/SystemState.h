@@ -10,14 +10,8 @@ typedef enum system_state {
     RUNNING,
 	ERROR,
 	CONFIG,
+    USB_MODE
 } system_state_t;
-
-typedef enum rx_type {
-	NO_RX,
-	PPM,
-	IBUS,
-	SBUS,
-} rx_type_t;
 
 typedef enum rx_mode {
 	MODE_1 = 1,
@@ -26,15 +20,10 @@ typedef enum rx_mode {
 	MODE_4,
 } rx_mode_t;
 		
-typedef enum motor_type {
-	OFF,
-	PWM,
-	ONESHOT,
-	DSHOT,
- } motor_type_t;
-
 typedef enum flight_mode {
 	LEVEL,
 	STUNT,
 	ACRO,
 } flight_mode_t;
+
+volatile system_state_t SystemState = ERROR;

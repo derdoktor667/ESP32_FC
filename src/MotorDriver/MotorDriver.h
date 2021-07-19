@@ -1,0 +1,41 @@
+//
+// Name:		MotorDriver.h
+// Created: 	19.07.2021 20:13:31
+// Author:  	derdoktor667
+//
+
+#pragma once
+
+#include <Arduino.h>
+#include "MotorDriver.h"
+#include "../SystemState/SystemState.h"
+
+typedef enum rx_type {
+	NO_RX,
+	PPM,
+	IBUS,
+	SBUS,
+    TESTMODE_USB
+} rx_type_t;
+
+typedef enum motor_type {
+	OFF,
+	PWM,
+	ONESHOT,
+	DSHOT
+ } motor_type_t;
+
+// ...just to keep things going set MotoCount *fixed*
+constexpr auto MOTOR_COUNT = 4;
+
+volatile uint16_t motor_throttle[MOTOR_COUNT] = { 0, 0, 0, 0 };
+volatile motor_type_t motor_type[MOTOR_COUNT] = { OFF, OFF, OFF, OFF };
+volatile rx_type_t rx_type = NO_RX;
+
+void init_motor(uint8_t motor_number, motor_type_t type);
+motor_type_t get_motor_type(uint8_t motor_number);
+
+void set_Signal_Rx_Type(rx_type_t rx_type);
+rx_type_t get_Signal_Rx_Type();
+
+void set_MotorSignal(uint8_t motor_Nr, uint16_t signal = 0);

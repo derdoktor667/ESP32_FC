@@ -12,6 +12,7 @@
 #include "src/FlySkyIBUS/FlySkyIBUS.h"
 #include "src/DShotRMT/DShotRMT.h"
 #include "src/SystemState/SystemState.h"
+#include "src/MotorDriver/MotorDriver.h"
 
 // ...better usb port naming
 HardwareSerial &USB_Serial = Serial;
@@ -58,9 +59,9 @@ void setup() {
 	dshot_3.begin(DSHOT600);
 	dshot_4.begin(DSHOT600);
 
-    USB_Serial.println(firmware_info.device_name);
-    USB_Serial.println(F_CPU);
-    USB_Serial.println(APB_CLK_FREQ);
+	USB_Serial.println(firmware_info.device_name);
+	USB_Serial.println(F_CPU);
+	USB_Serial.println(APB_CLK_FREQ);
 }
 
 void loop() {
