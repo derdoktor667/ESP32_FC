@@ -15,7 +15,7 @@ typedef enum rx_type {
 	PPM,
 	IBUS,
 	SBUS,
-    TESTMODE_USB
+	TESTMODE_USB
 } rx_type_t;
 
 typedef enum motor_type {
@@ -32,7 +32,7 @@ volatile uint16_t motor_throttle[MOTOR_COUNT] = { 0, 0, 0, 0 };
 volatile motor_type_t motor_type[MOTOR_COUNT] = { OFF, OFF, OFF, OFF };
 volatile rx_type_t rx_type = NO_RX;
 
-void init_motor(uint8_t motor_number, motor_type_t type);
+void set_motor_type(uint8_t motor_number, motor_type_t type);
 motor_type_t get_motor_type(uint8_t motor_number);
 
 void set_Signal_Rx_Type(rx_type_t rx_type);

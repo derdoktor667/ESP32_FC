@@ -6,12 +6,12 @@
 
 #include "MotorDriver.h"
 
-void init_motor(uint8_t motor_number, motor_type_t type) {
-    motor_type[motor_number] = type;
+void set_motor_type(uint8_t motor_number, motor_type_t _type) {
+    motor_type[motor_number] = _type;
 };
 
-motor_type_t get_motor_type(uint8_t motor_number) {
-    return motor_type[motor_number];
+motor_type_t get_motor_type(uint8_t _motor_number) {
+    return motor_type[_motor_number];
 };
 
 void set_Signal_Rx_Type(rx_type_t _rx_type) {
@@ -22,7 +22,7 @@ rx_type_t get_Signal_Rx_Type() {
     return rx_type;
 };
 
-void set_MotorSignal(uint8_t motor_Nr, uint16_t signal) {
+void set_MotorSignal(uint8_t _motor_Nr, uint16_t signal) {
     auto throttle_input = 0;
 
     if (Serial.available() > 0) {
@@ -40,15 +40,15 @@ void set_MotorSignal(uint8_t motor_Nr, uint16_t signal) {
             break;
 
         case USB_MODE:
-            if ((Serial.available() > 0) | (signal = 0)) {
+            if ((Serial.available() > 0) || (signal == 0)) {
                 throttle_input = (Serial.readStringUntil('\n')).toInt();
-                motor_throttle[motor_Nr] = throttle_input;
+                motor_throttle[_motor_Nr] = throttle_input;
                 }
 
             break;
     }
 
-    switch (motor_type[motor_Nr]) {
+    switch (motor_type[_motor_Nr]) {
         case OFF:
             break;
 
