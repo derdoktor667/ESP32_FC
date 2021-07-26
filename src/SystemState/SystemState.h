@@ -26,4 +26,4 @@ typedef enum flight_mode_e {
 	ACRO,
 } flight_mode_t;
 
-extern volatile system_state_t SystemState = ERROR;
+volatile system_state_t SystemState = ERROR;

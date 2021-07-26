@@ -27,9 +27,9 @@ typedef enum motor_type_e {
 // ...just to keep things going set MotoCount *fixed*
 constexpr auto MOTOR_COUNT = 4;
 
-extern volatile uint16_t motor_throttle[MOTOR_COUNT];
-extern volatile motor_type_t motor_type[MOTOR_COUNT];
-extern volatile rx_type_t rx_type = NO_RX;
+volatile uint16_t motor_throttle[MOTOR_COUNT];
+volatile motor_type_t motor_type[MOTOR_COUNT];
+volatile rx_type_t rx_type = NO_RX;
 
 void set_motor_type(uint8_t _motor_number, motor_type_t _type);
 motor_type_t get_motor_type(uint8_t _motor_number);

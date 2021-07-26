@@ -6,9 +6,6 @@
 
 #include "DShotRMT.h"
 
-DShotRMT* DShotFirst = nullptr;
-DShotRMT* DShotNext = nullptr;
-
 DShotRMT::DShotRMT(gpio_num_t gpio, rmt_channel_t rmtChannel) {
 	dshot_config.gpio_num = gpio;
 	dshot_config.pin_num = uint8_t(gpio);
