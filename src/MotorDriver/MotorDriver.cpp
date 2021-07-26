@@ -6,8 +6,8 @@
 
 #include "MotorDriver.h"
 
-void set_motor_type(uint8_t motor_number, motor_type_t _type) {
-    motor_type[motor_number] = _type;
+void set_motor_type(uint8_t _motor_number, motor_type_t _type) {
+    motor_type[_motor_number] = _type;
 };
 
 motor_type_t get_motor_type(uint8_t _motor_number) {
@@ -22,7 +22,7 @@ rx_type_t get_Signal_Rx_Type() {
     return rx_type;
 };
 
-void set_MotorSignal(uint8_t _motor_Nr, uint16_t signal) {
+void set_motor_signal(uint8_t _motor_Nr, uint16_t signal) {
     auto throttle_input = 0;
 
     if (Serial.available() > 0) {

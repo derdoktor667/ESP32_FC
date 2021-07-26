@@ -7,10 +7,9 @@
 #pragma once
 
 #include <Arduino.h>
-#include "MotorDriver.h"
 #include "../SystemState/SystemState.h"
 
-typedef enum rx_type {
+typedef enum rx_type_e {
 	NO_RX,
 	PPM,
 	IBUS,
@@ -18,7 +17,7 @@ typedef enum rx_type {
 	TESTMODE_USB
 } rx_type_t;
 
-typedef enum motor_type {
+typedef enum motor_type_e {
 	OFF,
 	PWM,
 	ONESHOT,
@@ -28,14 +27,14 @@ typedef enum motor_type {
 // ...just to keep things going set MotoCount *fixed*
 constexpr auto MOTOR_COUNT = 4;
 
-volatile uint16_t motor_throttle[MOTOR_COUNT] = { 0, 0, 0, 0 };
-volatile motor_type_t motor_type[MOTOR_COUNT] = { OFF, OFF, OFF, OFF };
-volatile rx_type_t rx_type = NO_RX;
+extern volatile uint16_t motor_throttle[MOTOR_COUNT];
+extern volatile motor_type_t motor_type[MOTOR_COUNT];
+extern volatile rx_type_t rx_type = NO_RX;
 
-void set_motor_type(uint8_t motor_number, motor_type_t type);
-motor_type_t get_motor_type(uint8_t motor_number);
+void set_motor_type(uint8_t _motor_number, motor_type_t _type);
+motor_type_t get_motor_type(uint8_t _motor_number);
 
-void set_Signal_Rx_Type(rx_type_t rx_type);
+void set_Signal_Rx_Type(rx_type_t _rx_type);
 rx_type_t get_Signal_Rx_Type();
 
-void set_MotorSignal(uint8_t motor_Nr, uint16_t signal = 0);
+void set_motor_signal(uint8_t _motor_Nr, uint16_t _signal = 0);

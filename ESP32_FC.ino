@@ -11,8 +11,6 @@
 #include "src/I2Cdev/I2Cdev.h"
 #include "src/FlySkyIBUS/FlySkyIBUS.h"
 #include "src/DShotRMT/DShotRMT.h"
-#include "src/SystemState/SystemState.h"
-#include "src/MotorDriver/MotorDriver.h"
 
 // ...better usb port naming
 HardwareSerial &USB_Serial = Serial;
@@ -77,8 +75,8 @@ void loop() {
 
 void read_SerialThrottle() {
 	if (USB_Serial.available() > 0) {
-		auto throttle_input = (USB_Serial.readStringUntil('\n')).toInt();
-		throttle_value = throttle_input;
+		auto _throttle_input = (USB_Serial.readStringUntil('\n')).toInt();
+		throttle_value = _throttle_input;
 	}
 }
 
