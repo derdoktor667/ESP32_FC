@@ -90,7 +90,7 @@ class DShotRMT {
 	private:
 	rmt_item32_t dshot_tx_rmt_item[DSHOT_PACKET_LENGTH] = { };
 	dshot_config_t dshot_config = { };
-	rmt_config_t rmt_dshot_config = { };
+	rmt_config_t rmt_dshot_tx_config = { };
 
 	rmt_item32_t* encode_dshot_to_rmt(uint16_t parsed_packet);
 	uint16_t calc_dshot_chksum(const dshot_packet_t& dshot_packet);

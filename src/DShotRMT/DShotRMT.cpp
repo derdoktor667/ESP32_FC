@@ -77,22 +77,22 @@ bool DShotRMT::begin(dshot_mode_t dshot_mode, bool is_bidirectional) {
 	dshot_config.ticks_zero_low = (dshot_config.ticks_per_bit - dshot_config.ticks_zero_high);
 	dshot_config.ticks_one_low = (dshot_config.ticks_per_bit - dshot_config.ticks_one_high);
 
-	rmt_dshot_config.rmt_mode = RMT_MODE_TX;
-	rmt_dshot_config.channel = dshot_config.rmt_channel;
-	rmt_dshot_config.gpio_num = dshot_config.gpio_num;
-	rmt_dshot_config.mem_block_num = dshot_config.mem_block_num;
-	rmt_dshot_config.clk_div = dshot_config.clk_div;
+	rmt_dshot_tx_config.rmt_mode = RMT_MODE_TX;
+	rmt_dshot_tx_config.channel = dshot_config.rmt_channel;
+	rmt_dshot_tx_config.gpio_num = dshot_config.gpio_num;
+	rmt_dshot_tx_config.mem_block_num = dshot_config.mem_block_num;
+	rmt_dshot_tx_config.clk_div = dshot_config.clk_div;
 
-	rmt_dshot_config.tx_config.loop_en = false;
-	rmt_dshot_config.tx_config.carrier_en = false;
-	rmt_dshot_config.tx_config.idle_level = RMT_IDLE_LEVEL_LOW;
-	rmt_dshot_config.tx_config.idle_output_en = true;
+	rmt_dshot_tx_config.tx_config.loop_en = false;
+	rmt_dshot_tx_config.tx_config.carrier_en = false;
+	rmt_dshot_tx_config.tx_config.idle_level = RMT_IDLE_LEVEL_LOW;
+	rmt_dshot_tx_config.tx_config.idle_output_en = true;
 	
 	// ...setup selected dshot mode
-	rmt_config(&rmt_dshot_config);
+	rmt_config(&rmt_dshot_tx_config);
 
 	// ...essential step, return the result
-	return rmt_driver_install(rmt_dshot_config.channel, 0, 0);
+	return rmt_driver_install(rmt_dshot_tx_config.channel, 0, 0);
 }
 
 //´...the config part is done, now the calculating and sending part
@@ -186,5 +186,5 @@ void DShotRMT::output_rmt_data(const dshot_packet_t& dshot_packet) {
 	encode_dshot_to_rmt(prepare_rmt_data(dshot_packet));
 
 	//
-	rmt_write_items(rmt_dshot_config.channel, dshot_tx_rmt_item, DSHOT_PACKET_LENGTH, false);
+	rmt_write_items(rmt_dshot_tx_config.channel, dshot_tx_rmt_item, DSHOT_PACKET_LENGTH, false);
 }
