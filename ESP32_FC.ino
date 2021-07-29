@@ -52,14 +52,25 @@ void setup() {
 	ibus.begin();
 
 	// ...select the DSHOT Mode
-	dshot_1.begin(DSHOT600);
-	dshot_2.begin(DSHOT600);
-	dshot_3.begin(DSHOT600);
-	dshot_4.begin(DSHOT600);
+	dshot_1.begin(DSHOT600, true);
+	dshot_2.begin(DSHOT600, true);
+	dshot_3.begin(DSHOT600, true);
+	dshot_4.begin(DSHOT600, true);
 
-	USB_Serial.println(firmware_info.device_name);
-	USB_Serial.println(F_CPU);
-	USB_Serial.println(APB_CLK_FREQ);
+    // ...print out some dev info
+    USB_Serial.println(" ");
+	// USB_Serial.println(firmware_info.version_major);
+    // USB_Serial.println(firmware_info.version_minor);
+    // USB_Serial.println(firmware_info.version_rev);
+    USB_Serial.print("CPU Name: ");
+    USB_Serial.println(firmware_info.device_name);
+	USB_Serial.print("CPU Clock: ");
+    USB_Serial.print(F_CPU/1000000, DEC);
+    USB_Serial.println(" MHz");
+    USB_Serial.print("RMT Clock: ");
+	USB_Serial.print(APB_CLK_FREQ/1000000, DEC);
+    USB_Serial.println(" MHz");
+    USB_Serial.println(" ");
 }
 
 void loop() {
