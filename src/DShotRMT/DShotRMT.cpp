@@ -170,9 +170,6 @@ rmt_item32_t* DShotRMT::encode_dshot_to_rmt(uint16_t parsed_packet) {
         }
     }
 
-	// ...end marker added to each frame
-	dshot_tx_rmt_item[DSHOT_PAUSE_BIT].duration0 = (DSHOT_PAUSE / 2);
-
     if (dshot_config.bidirectional) {
         dshot_tx_rmt_item[DSHOT_PAUSE_BIT].level0 = 1;
         dshot_tx_rmt_item[DSHOT_PAUSE_BIT].level1 = 0;
@@ -181,6 +178,7 @@ rmt_item32_t* DShotRMT::encode_dshot_to_rmt(uint16_t parsed_packet) {
         dshot_tx_rmt_item[DSHOT_PAUSE_BIT].level1 = 1;
     }
 
+	// ...end marker added to each frame
 	dshot_tx_rmt_item[DSHOT_PAUSE_BIT].duration1 = (DSHOT_PAUSE / 2);
 
 	return dshot_tx_rmt_item;

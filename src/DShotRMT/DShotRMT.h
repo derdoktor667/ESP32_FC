@@ -8,6 +8,7 @@
 
 #include <Arduino.h>
 #include "BlheliCmdMap.h"
+#include "../fc_config.h"
 
 // ...utilizing the IR Module library for generating the DShot signal
 #include <driver/rmt.h>
@@ -50,13 +51,20 @@ typedef enum telemetric_request_e {
 	ENABLE_TELEMETRIC,
 } telemetric_request_t;
 
-// ...set bitcount for DShot packet structure
+// ...set bitcount for DShot packet
 typedef struct dshot_packet_s {
 	uint16_t throttle_value	: 11;
 	telemetric_request_t telemetric_request : 1;
 	uint16_t checksum : 4;
 } dshot_packet_t;
 
+// ...set bitcount for eRPM packet
+typedef struct eRPM_packet_s {
+    uint16_t eRPM_data : 12;
+    uint8_t checksum : 4;
+} eRPM_packet_t;
+
+// ...all settings for the dshot mode
 typedef struct dshot_config_s {
 	dshot_mode_t mode;
 	dshot_name_t name_str;

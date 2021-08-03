@@ -4,6 +4,8 @@
 // Author:  	derdoktor667
 //
 
+#pragma once
+
 #include <Arduino.h>
 
 // ...Version Info
@@ -22,8 +24,8 @@ constexpr auto I2C1_CLK_SPEED = I2C_FAST_SPEED;
 
 // ...ESP32 UART Hardware pins
 constexpr auto UART_1_BAUD = 115200;
-constexpr auto UART_1_TX_PIN = 16;
-constexpr auto UART_1_RX_PIN = 17;
+constexpr auto UART_1_TX_PIN = GPIO_NUM_16;
+constexpr auto UART_1_RX_PIN = GPIO_NUM_17;
 
 typedef enum uart_num_e {
 	NONE,
