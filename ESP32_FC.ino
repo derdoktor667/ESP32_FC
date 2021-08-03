@@ -10,7 +10,7 @@
 #include "src/fc_config.h"
 #include "src/I2Cdev/I2Cdev.h"
 #include "src/FlySkyIBUS/FlySkyIBUS.h"
-#include "src/DShotRMT/DShotRMT.h"
+#include "src/DShotRMT/src/DShotRMT.h"
 
 // ...better usb port naming
 HardwareSerial &USB_Serial = Serial;
