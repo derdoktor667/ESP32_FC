@@ -1,97 +1,79 @@
-/*
- Name:		ESP32_ESC.ino
- Created:	20.03.2021 00:49:15
- Author:	derdoktor667
-*/
 
 #include <Arduino.h>
+#include <ESP32_MPU6050.h>
+#include <FlyskyIBUS.h>
+#include <DShotRMT.h>
 
-// ...the good parts
-#include "src/fc_config.h"
-#include "src/I2Cdev/I2Cdev.h"
-#include "src/FlySkyIBUS/FlySkyIBUS.h"
-#include "src/DShotRMT/src/DShotRMT.h"
+// Define IBUS RX Pin for Serial2 - YOU NEED TO ADJUST THIS TO YOUR SETUP
+// Default RX pin for Serial2 on ESP32 is GPIO_NUM_16
+const gpio_num_t IBUS_RX_PIN = GPIO_NUM_16;
 
-// ...better usb port naming
-HardwareSerial &USB_Serial = Serial;
-constexpr auto USB_SERIAL_BAUD = 115200;
+ESP32_MPU6050 mpu;
+FlyskyIBUS ibus(Serial2, IBUS_RX_PIN);
 
-// Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
-// is used in I2Cdev.h
-#if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-	#include "Wire.h"
-#endif
+// Define ESC pins - YOU NEED TO ADJUST THESE TO YOUR SETUP
+const gpio_num_t ESC_PIN_1 = GPIO_NUM_27;
+const gpio_num_t ESC_PIN_2 = GPIO_NUM_25;
+const gpio_num_t ESC_PIN_3 = GPIO_NUM_26;
+const gpio_num_t ESC_PIN_4 = GPIO_NUM_33;
 
-// ...is Bluetooth enabled, we will need it later???
-#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-	#error ...Bluetooth is not enabled!!!
-#endif
-
-constexpr auto MOTOR_1 = GPIO_NUM_4;
-constexpr auto MOTOR_2 = GPIO_NUM_0;
-constexpr auto MOTOR_3 = GPIO_NUM_27;
-constexpr auto MOTOR_4 = GPIO_NUM_26;
-
-// ...hardware init
-FlySkyIBUS ibus;
-
-DShotRMT dshot_1(MOTOR_1, RMT_CHANNEL_0);
-DShotRMT dshot_2(MOTOR_2, RMT_CHANNEL_1);
-DShotRMT dshot_3(MOTOR_3, RMT_CHANNEL_2);
-DShotRMT dshot_4(MOTOR_4, RMT_CHANNEL_3);
-
-volatile auto throttle_value = 0;
-
-firmware_info_s firmware_info;
+DShotRMT motor1(ESC_PIN_1, DSHOT300, false);
+DShotRMT motor2(ESC_PIN_2, DSHOT300, false);
+DShotRMT motor3(ESC_PIN_3, DSHOT300, false);
+DShotRMT motor4(ESC_PIN_4, DSHOT300, false);
 
 void setup() {
-	// ...always start the onboard usb support
-	USB_Serial.begin(USB_SERIAL_BAUD);
+  Serial.begin(115200);
+  while (!Serial); // Wait for serial port to connect. Needed for native USB
 
-	// IBUS will be read on Serial2 on ESP32 by default
-	ibus.begin();
+  Serial.println("Initializing MPU6050...");
+  if (!mpu.begin()) {
+    Serial.println("Failed to find MPU6050 chip");
+    while (1) {
+      delay(10);
+    }
+  }
+  Serial.println("MPU6050 initialized successfully!");
 
-	// ...select the DSHOT Mode
-	dshot_1.begin(DSHOT600, true);
-	dshot_2.begin(DSHOT600, true);
-	dshot_3.begin(DSHOT600, true);
-	dshot_4.begin(DSHOT600, true);
+  Serial.println("Initializing FlyskyIBUS...");
+  ibus.begin(); // No arguments needed for begin()
+  Serial.println("FlyskyIBUS initialized successfully!");
 
-    // ...print out some dev info
-    USB_Serial.println(" ");
-	// USB_Serial.println(firmware_info.version_major);
-    // USB_Serial.println(firmware_info.version_minor);
-    // USB_Serial.println(firmware_info.version_rev);
-    USB_Serial.print("CPU Name: ");
-    USB_Serial.println(firmware_info.device_name);
-	USB_Serial.print("CPU Clock: ");
-    USB_Serial.print(F_CPU/1000000, DEC);
-    USB_Serial.println(" MHz");
-    USB_Serial.print("RMT Clock: ");
-	USB_Serial.print(APB_CLK_FREQ/1000000, DEC);
-    USB_Serial.println(" MHz");
-    USB_Serial.println(" ");
+  Serial.println("Initializing DShotRMT...");
+  motor1.begin();
+  motor2.begin();
+  motor3.begin();
+  motor4.begin();
+  Serial.println("DShotRMT initialized successfully!");
+
+  // Send zero throttle to all motors to arm them (DShot requires this)
+  motor1.sendThrottle(0);
+  motor2.sendThrottle(0);
+  motor3.sendThrottle(0);
+  motor4.sendThrottle(0);
+  delay(100);
+
 }
 
+//
 void loop() {
-	read_SerialThrottle();
+  // Read MPU6050 data
+  mpu.update();
+  // Access data like: mpu.readings.accelerometer.x, mpu.readings.gyroscope.y
 
-	dshot_1.send_dshot_value(throttle_value);
-	dshot_2.send_dshot_value(throttle_value);
-	dshot_3.send_dshot_value(throttle_value);
-	dshot_4.send_dshot_value(throttle_value);
+  // Read IBUS data
+  // The IBUS library handles reading in the background. Just get the channel values.
+  // Example: Print channel 0 value
+  // Serial.print("Channel 0: ");
+  // Serial.println(ibus.getChannel(0));
 
-	// USB_Serial.println(throttle_value);
+  // Example: Map IBUS channel 0 (throttle) to DShot throttle
+  // int throttle = map(ibus.getChannel(0), 1000, 2000, 0, 1000); // Map 1000-2000 to 0-1000 (DShot throttle range)
+  // motor1.sendThrottle(throttle);
+  // motor2.sendThrottle(throttle);
+  // motor3.sendThrottle(throttle);
+  // motor4.sendThrottle(throttle);
+
+  // put your main code here, to run repeatedly:
+
 }
-
-void read_SerialThrottle() {
-	if (USB_Serial.available() > 0) {
-		auto _throttle_input = (USB_Serial.readStringUntil('\n')).toInt();
-		throttle_value = _throttle_input;
-	}
-}
-
-// void update_throttle_reading() {
-//	auto rc_readings_All = ibus.get_IBUS_Channels();
-//	throttle_value = rc_readings_All[THROTTLE];
-// }

@@ -46,3 +46,8 @@
 *.vcxproj
 ESP32_FC.ino.esp32.bin
 CppProperties.json
+
+#
+.build/
+build/
+GEMINI.md
