@@ -1,0 +1,124 @@
+# This GitHub Actions workflow is designed to ensure code quality and
+# successful compilation for an ESP32 Arduino library.
+# It runs on every push to any branch.
+
+name: ESP32 Build & Quality Check
+
+# Set permissions for the GitHub token.
+# 'contents: read' is required to checkout the repository.
+permissions:
+  contents: read
+
+# Define the trigger for the workflow.
+# It runs on any push to any branch.
+on:
+  push:
+    branches: [ '*' ]
+
+# Concurrency control ensures that only the latest commit for a branch
+# runs, canceling any workflows already in progress for the same branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # Prepare Environment & Cache
+  # This job installs the Arduino core and libraries and saves them to a cache
+  # for later jobs to use.
+  # ============================================================================
+  prepare-cache:
+    name: Prepare Cache (Linux)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+
+      - name: Restore Arduino Core & Libraries Cache
+        uses: actions/cache@v4
+        id: cache-arduino
+        with:
+          path: ~/.arduino15/packages\n~/.arduino15/cache\n~/Arduino/libraries\n~/.arduino-cli
+          key: linux-arduino-esp32-v2-${{ hashFiles('**/library.properties') }}
+
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Update Arduino Core Index
+        shell: bash
+        run: arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+
+      - name: Install Dependencies
+        if: steps.cache-arduino.outputs.cache-hit != 'true'
+        shell: bash
+        run: arduino-cli core install esp32:esp32
+
+  # ============================================================================
+  # Compilation Test
+  # This job compiles all example sketches.
+  # ============================================================================
+  compile-sketches:
+    name: Compile ${{ matrix.sketch }} (Linux)
+    needs: prepare-cache
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        sketch:
+          - ESP32_FC.ino
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+
+      - name: Restore Arduino Core & Libraries Cache
+        uses: actions/cache@v4
+        id: cache-arduino-compile
+        with:
+          path: ~/.arduino15/packages\n~/.arduino15/cache\n~/Arduino/libraries\n~/.arduino-cli
+          key: linux-arduino-esp32-v2-${{ hashFiles('**/library.properties') }}
+
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Update Arduino Core Index
+        shell: bash
+        run: arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+
+      - name: Install Dependencies
+        if: steps.cache-arduino-compile.outputs.cache-hit != 'true'
+        shell: bash
+        run: arduino-cli core install esp32:esp32
+
+      - name: Compile sketch
+        run: arduino-cli compile --fqbn esp32:esp32:esp32 --library ${{ github.workspace }}/libraries/DShotRMT --library ${{ github.workspace }}/libraries/ESP32_MPU6050 --library ${{ github.workspace }}/libraries/FlyskyIBUS ${{ github.workspace }}/${{ matrix.sketch }}
+
+  # ============================================================================
+  # Build Status Report
+  # This job runs last and provides a summary of the build status.
+  # ============================================================================
+  build-summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    if: always() # This ensures the job runs even if previous jobs fail
+    needs:
+      - compile-sketches
+      
+    steps:
+      - name: Create Build Summary
+        run: |
+          echo "# 🔧 DShotRMT Build Report" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status | Details |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.compile-sketches.result }}" == "success" ]]; then
+            echo "| 🔨 Compilation | ✅ Passed | All examples compiled successfully |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🔨 Compilation | ❌ Failed | One or more examples failed to compile |" >> $GITHUB_STEP_SUMMARY
+          fi
+          

@@ -1,97 +1,117 @@
-/*
- Name:		ESP32_ESC.ino
- Created:	20.03.2021 00:49:15
- Author:	derdoktor667
-*/
+#include <Arduino.h>
+#include <ESP32_MPU6050.h>
+#include <FlyskyIBUS.h>
+#include <DShotRMT.h>
+
+#include "src/config.h"
+#include "src/pid_controller.h"
+#include "src/attitude_estimator.h"
+#include "src/arming_disarming.h"
+#include "src/flight_modes.h"
+#include "src/mpu_calibration.h"
+#include "src/serial_logger.h"
+#include "src/motor_control.h"
 
 #include <Arduino.h>
+#include <ESP32_MPU6050.h>
+#include <FlyskyIBUS.h>
+#include <DShotRMT.h>
 
-// ...the good parts
-#include "src/fc_config.h"
-#include "src/I2Cdev/I2Cdev.h"
-#include "src/FlySkyIBUS/FlySkyIBUS.h"
-#include "src/DShotRMT/src/DShotRMT.h"
+#include "src/config.h"
+#include "src/pid_controller.h"
+#include "src/attitude_estimator.h"
+#include "src/arming_disarming.h"
+#include "src/flight_modes.h"
+#include "src/mpu_calibration.h"
+#include "src/serial_logger.h"
+#include "src/motor_control.h"
 
-// ...better usb port naming
-HardwareSerial &USB_Serial = Serial;
-constexpr auto USB_SERIAL_BAUD = 115200;
+// Global objects
+ESP32_MPU6050 mpu;
+FlyskyIBUS ibus(Serial2, IBUS_RX_PIN);
 
-// Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
-// is used in I2Cdev.h
-#if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-	#include "Wire.h"
-#endif
+// Global variables (defined here, declared extern in their respective headers)
+PIDController pid_roll(0.8, 0.001, 0.05);  // Kp, Ki, Kd - these values will need careful tuning!
+PIDController pid_pitch(0.8, 0.001, 0.05); // Kp, Ki, Kd - these values will need careful tuning!
+PIDController pid_yaw(1.5, 0.005, 0.1);    // Kp, Ki, Kd - these values will need careful tuning!
 
-// ...is Bluetooth enabled, we will need it later???
-#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-	#error ...Bluetooth is not enabled!!!
-#endif
+float target_roll = 0.0;
+float target_pitch = 0.0;
+float target_yaw = 0.0;
 
-constexpr auto MOTOR_1 = GPIO_NUM_4;
-constexpr auto MOTOR_2 = GPIO_NUM_0;
-constexpr auto MOTOR_3 = GPIO_NUM_27;
-constexpr auto MOTOR_4 = GPIO_NUM_26;
+// Global variables (declared extern in their respective headers and defined in their .cpp files)
+extern float roll, pitch, yaw;
+extern unsigned long last_attitude_update_time;
+extern float gyro_offset_x, gyro_offset_y, gyro_offset_z;
+extern float acc_offset_x, acc_offset_y, acc_offset_z;
+extern bool armed;
+extern int arming_channel_value;
+extern FlightMode current_flight_mode;
+extern unsigned long last_print_time;
 
-// ...hardware init
-FlySkyIBUS ibus;
+void setup()
+{
+  Serial.begin(115200);
+  while (!Serial)
+    ;
 
-DShotRMT dshot_1(MOTOR_1, RMT_CHANNEL_0);
-DShotRMT dshot_2(MOTOR_2, RMT_CHANNEL_1);
-DShotRMT dshot_3(MOTOR_3, RMT_CHANNEL_2);
-DShotRMT dshot_4(MOTOR_4, RMT_CHANNEL_3);
+  Serial.println("Initializing MPU6050...");
+  if (!mpu.begin())
+  {
+    Serial.println("Failed to find MPU6050 chip");
+    while (1)
+    {
+      delay(10);
+    }
+  }
+  Serial.println("MPU6050 initialized successfully!");
 
-volatile auto throttle_value = 0;
+  calibrateMPU6050();
 
-firmware_info_s firmware_info;
+  Serial.println("Initializing FlyskyIBUS...");
+  ibus.begin();
+  Serial.println("FlyskyIBUS initialized successfully!");
 
-void setup() {
-	// ...always start the onboard usb support
-	USB_Serial.begin(USB_SERIAL_BAUD);
+  setupMotors();
 
-	// IBUS will be read on Serial2 on ESP32 by default
-	ibus.begin();
-
-	// ...select the DSHOT Mode
-	dshot_1.begin(DSHOT600, true);
-	dshot_2.begin(DSHOT600, true);
-	dshot_3.begin(DSHOT600, true);
-	dshot_4.begin(DSHOT600, true);
-
-    // ...print out some dev info
-    USB_Serial.println(" ");
-	// USB_Serial.println(firmware_info.version_major);
-    // USB_Serial.println(firmware_info.version_minor);
-    // USB_Serial.println(firmware_info.version_rev);
-    USB_Serial.print("CPU Name: ");
-    USB_Serial.println(firmware_info.device_name);
-	USB_Serial.print("CPU Clock: ");
-    USB_Serial.print(F_CPU/1000000, DEC);
-    USB_Serial.println(" MHz");
-    USB_Serial.print("RMT Clock: ");
-	USB_Serial.print(APB_CLK_FREQ/1000000, DEC);
-    USB_Serial.println(" MHz");
-    USB_Serial.println(" ");
+  last_attitude_update_time = micros();
 }
 
-void loop() {
-	read_SerialThrottle();
+void loop()
+{
+  mpu.update();
+  calculateAttitude();
+  handleArming();
+  handleFlightModeSelection();
 
-	dshot_1.send_dshot_value(throttle_value);
-	dshot_2.send_dshot_value(throttle_value);
-	dshot_3.send_dshot_value(throttle_value);
-	dshot_4.send_dshot_value(throttle_value);
+  if (current_flight_mode == ANGLE_MODE)
+  {
+    target_roll = map(ibus.getChannel(IBUS_CHANNEL_ROLL), IBUS_MIN_VALUE, IBUS_MAX_VALUE, -TARGET_ANGLE_ROLL_PITCH, TARGET_ANGLE_ROLL_PITCH);
+    target_pitch = map(ibus.getChannel(IBUS_CHANNEL_PITCH), IBUS_MIN_VALUE, IBUS_MAX_VALUE, -TARGET_ANGLE_ROLL_PITCH, TARGET_ANGLE_ROLL_PITCH);
+    target_yaw = map(ibus.getChannel(IBUS_CHANNEL_YAW), IBUS_MIN_VALUE, IBUS_MAX_VALUE, -TARGET_ANGLE_YAW_RATE, TARGET_ANGLE_YAW_RATE);
+  }
+  else
+  { // ACRO_MODE
+    target_roll = map(ibus.getChannel(IBUS_CHANNEL_ROLL), IBUS_MIN_VALUE, IBUS_MAX_VALUE, -TARGET_ANGLE_YAW_RATE, TARGET_ANGLE_YAW_RATE);
+    target_pitch = map(ibus.getChannel(IBUS_CHANNEL_PITCH), IBUS_MIN_VALUE, IBUS_MAX_VALUE, -TARGET_ANGLE_YAW_RATE, TARGET_ANGLE_YAW_RATE);
+    target_yaw = map(ibus.getChannel(IBUS_CHANNEL_YAW), IBUS_MIN_VALUE, IBUS_MAX_VALUE, -TARGET_ANGLE_YAW_RATE, TARGET_ANGLE_YAW_RATE);
+  }
 
-	// USB_Serial.println(throttle_value);
+  float pid_output_roll = pid_roll.calculate(target_roll, roll);
+  float pid_output_pitch = pid_pitch.calculate(target_pitch, pitch);
+  float pid_output_yaw = pid_yaw.calculate(target_yaw, yaw);
+
+  static int ibus_throttle = 0;
+  static int throttle = 0;
+
+  ibus_throttle = ibus.getChannel(IBUS_CHANNEL_THROTTLE);
+  throttle = map(ibus_throttle, IBUS_MIN_VALUE, IBUS_MAX_VALUE, DSHOT_MIN_THROTTLE, DSHOT_MAX_THROTTLE);
+
+  sendMotorCommands(throttle, pid_output_roll, pid_output_pitch, pid_output_yaw, armed);
+
+  if (millis() - last_print_time >= PRINT_INTERVAL_MS)
+  {
+    printFlightStatus();
+    last_print_time = millis();
+  }
 }
-
-void read_SerialThrottle() {
-	if (USB_Serial.available() > 0) {
-		auto _throttle_input = (USB_Serial.readStringUntil('\n')).toInt();
-		throttle_value = _throttle_input;
-	}
-}
-
-// void update_throttle_reading() {
-//	auto rc_readings_All = ibus.get_IBUS_Channels();
-//	throttle_value = rc_readings_All[THROTTLE];
-// }

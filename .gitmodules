@@ -1,3 +1,9 @@
-[submodule "src/DShotRMT"]
-	path = src/DShotRMT
-	url = https://github.com/derdoktor667/DShotRMT
+[submodule "libraries/DShotRMT"]
+	path = libraries/DShotRMT
+	url = https://github.com/derdoktor667/DshotRMT
+[submodule "libraries/FlyskyIBUS"]
+	path = libraries/FlyskyIBUS
+	url = https://github.com/derdoktor667/FlyskyIBUS
+[submodule "libraries/ESP32_MPU6050"]
+	path = libraries/ESP32_MPU6050
+	url = https://github.com/derdoktor667/ESP32_MPU6050
