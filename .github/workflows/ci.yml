@@ -34,9 +34,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
-      - name: Setup Arduino CLI
-        uses: arduino/setup-arduino-cli@v2
+        with:
+          submodules: 'true'
 
       - name: Restore Arduino Core & Libraries Cache
         uses: actions/cache@v4
@@ -46,7 +45,11 @@ jobs:
             ~/.arduino15/packages
             ~/.arduino15/cache
             ~/Arduino/libraries
+            ~/.arduino-cli
           key: linux-arduino-esp32-v2-${{ hashFiles('**/library.properties') }}
+
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
 
       - name: Install Dependencies
         if: steps.cache-arduino.outputs.cache-hit != 'true'
@@ -54,7 +57,6 @@ jobs:
         run: |
           arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
           arduino-cli core install esp32:esp32
-          mkdir -p "$HOME/Arduino/libraries"
 
   # ============================================================================
   # Compilation Test
@@ -74,6 +76,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          submodules: 'true'
 
       - name: Restore Arduino Core & Libraries Cache
         uses: actions/cache@v4
@@ -84,11 +88,8 @@ jobs:
             ~/Arduino/libraries
           key: linux-arduino-esp32-v2-${{ hashFiles('**/library.properties') }}
 
-      - name: Setup Arduino CLI
-        uses: arduino/setup-arduino-cli@v2          
-
-      - name: Compile Sketch
-        run: arduino-cli compile --fqbn esp32:esp32:esp32 --library ${{ github.workspace }} "${{ matrix.sketch }}"
+      - name: Compile sketch
+        run: arduino-cli compile --fqbn esp32:esp32:esp32 --library ${{ github.workspace }}/libraries/DShotRMT --library ${{ github.workspace }}/libraries/ESP32_MPU6050 --library ${{ github.workspace }}/libraries/FlyskyIBUS ${{ github.workspace }}/${{ matrix.sketch }}
 
   # ============================================================================
   # Build Status Report
