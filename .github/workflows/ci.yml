@@ -88,6 +88,9 @@ jobs:
             ~/Arduino/libraries
           key: linux-arduino-esp32-v2-${{ hashFiles('**/library.properties') }}
 
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
       - name: Compile sketch
         run: arduino-cli compile --fqbn esp32:esp32:esp32 --library ${{ github.workspace }}/libraries/DShotRMT --library ${{ github.workspace }}/libraries/ESP32_MPU6050 --library ${{ github.workspace }}/libraries/FlyskyIBUS ${{ github.workspace }}/${{ matrix.sketch }}
 
