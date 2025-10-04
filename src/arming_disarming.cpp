@@ -1,9 +1,5 @@
 #include "arming_disarming.h"
-
-// External IBUS object
-extern FlyskyIBUS ibusReceiver;
-// External motor objects
-extern DShotRMT motorFrontRight, motorFrontLeft, motorRearRight, motorRearLeft;
+#include "flight_controller.h"
 
 // Safety states
 bool armed = false;

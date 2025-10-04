@@ -1,7 +1,5 @@
 #include "attitude_estimator.h"
-
-// Define external MPU object
-extern ESP32_MPU6050 imuSensor;
+#include "flight_controller.h"
 
 // Define external attitude variables
 float roll = 0.0, pitch = 0.0, yaw = 0.0;

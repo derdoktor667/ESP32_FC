@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "config.h" // For PID_INTEGRAL_LIMIT
+#include "settings.h"
 
 struct PIDController
 {

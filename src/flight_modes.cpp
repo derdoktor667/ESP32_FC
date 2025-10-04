@@ -1,7 +1,5 @@
 #include "flight_modes.h"
-
-// External IBUS object
-extern FlyskyIBUS ibusReceiver;
+#include "flight_controller.h"
 
 // Flight Modes
 FlightMode current_flight_mode = ACRO_MODE;

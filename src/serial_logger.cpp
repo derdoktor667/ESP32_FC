@@ -1,9 +1,6 @@
 #include "serial_logger.h"
-
-// External MPU object
-extern ESP32_MPU6050 imuSensor;
-// External IBUS object
-extern FlyskyIBUS ibusReceiver;
+#include "flight_controller.h"
+#include "flight_modes.h"
 
 // External attitude variables
 extern float roll, pitch, yaw;

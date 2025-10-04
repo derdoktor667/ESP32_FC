@@ -4,10 +4,6 @@
 
 An advanced flight controller firmware for quadcopters and other RC vehicles, built on the powerful ESP32 platform and the Arduino framework.
 
-<p align="center">
-  <img src="libraries/DShotRMT/img/dshot300.png" alt="DShot Signal Diagram" width="600"/>
-</p>
-
 ---
 
 ## ✨ Key Features
@@ -58,19 +54,21 @@ Follow these steps to get the flight controller up and running on your ESP32.
 
 ## 🛠️ Code Structure
 
-The firmware is organized into a clean, modular structure within the `src/` directory. The main `ESP32_FC.ino` file acts as the orchestrator.
+The firmware is organized into a clean, modular structure within the `src/` directory. The main `ESP32_FC.ino` file now only serves as a minimal entry point to the firmware.
 
-| Module                  | Responsibility                                                                  |
-| ----------------------- | ------------------------------------------------------------------------------- |
-| `config.h`              | Central hub for hardware pins and the `FlightControllerSettings` struct.        |
-| `pid_controller.h/.cpp`   | Implements the PID control loop for stabilization.                              |
+| Module                    | Responsibility                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------- |
+| `flight_controller.h/.cpp`  | **Central Orchestrator**: Contains the main setup and loop logic, and manages global objects. |
+| `config.h`                | Central hub for hardware pins and the `FlightControllerSettings` struct.        |
+| `settings.h/.cpp`         | Manages loading and saving of the `FlightControllerSettings` to flash memory.   |
+| `pid_controller.h/.cpp`     | Implements the PID control loop for stabilization.                              |
 | `attitude_estimator.h/.cpp` | Calculates the drone's orientation using sensor fusion.                         |
-| `arming_disarming.h/.cpp` | Manages all safety logic: Arm, Disarm, and the high-priority Failsafe.          |
-| `flight_modes.h/.cpp`     | Handles switching between different flight modes (Angle, Acro, etc.).           |
-| `mpu_calibration.h/.cpp`  | Contains routines to calibrate the MPU6050 sensor on startup.                   |
-| `serial_logger.h/.cpp`    | Manages the formatted serial output for debugging and status monitoring.        |
-| `motor_control.h/.cpp`    | Handles motor layout, mixing, and sending commands via DShot.                 |
-
+| `arming_disarming.h/.cpp`   | Manages all safety logic: Arm, Disarm, and the high-priority Failsafe.          |
+| `flight_modes.h/.cpp`       | Handles switching between different flight modes (Angle, Acro, etc.).           |
+| `mpu_calibration.h/.cpp`    | Contains routines to calibrate the MPU6050 sensor on startup.                   |
+| `serial_logger.h/.cpp`      | Manages the formatted serial output for debugging and status monitoring.        |
+| `motor_control.h/.cpp`      | Handles motor layout, mixing, and sending commands via DShot.                 |
+| `cli.h/.cpp`              | Implements the serial command-line interface for runtime configuration.         |
 ---
 
 ## 📚 Libraries & Submodules

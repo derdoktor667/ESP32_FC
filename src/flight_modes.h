@@ -2,10 +2,6 @@
 #define FLIGHT_MODES_H
 
 #include <Arduino.h>
-#include <FlyskyIBUS.h>
-#include "config.h"
-
-extern FlyskyIBUS ibusReceiver; // External IBUS object
 
 // Flight Modes
 enum FlightMode

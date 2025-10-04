@@ -1,11 +1,8 @@
 #include "motor_control.h"
+#include "flight_controller.h"
+#include <DShotRMT.h>
 
 // External motor objects
-DShotRMT motorFrontRight(ESC_PIN_1, DSHOT300, false);
-DShotRMT motorFrontLeft(ESC_PIN_2, DSHOT300, false);
-DShotRMT motorRearRight(ESC_PIN_3, DSHOT300, false);
-DShotRMT motorRearLeft(ESC_PIN_4, DSHOT300, false);
-
 void setupMotors()
 {
   motorFrontRight.begin();
@@ -29,9 +26,9 @@ void sendMotorCommands(int throttle, float pid_output_roll, float pid_output_pit
     // Motor Mixing (adjust these values based on your quadcopter's configuration)
     // Assuming X-quad configuration
     int throttleFrontRight = throttle - pid_output_roll + pid_output_pitch + pid_output_yaw; // Front Right
-    int throttleFrontLeft = throttle + pid_output_roll + pid_output_pitch - pid_output_yaw; // Front Left
-    int throttleRearRight = throttle - pid_output_roll - pid_output_pitch - pid_output_yaw; // Rear Right
-    int throttleRearLeft = throttle + pid_output_roll - pid_output_pitch + pid_output_yaw; // Rear Left
+    int throttleFrontLeft = throttle + pid_output_roll + pid_output_pitch - pid_output_yaw;  // Front Left
+    int throttleRearRight = throttle - pid_output_roll - pid_output_pitch - pid_output_yaw;  // Rear Right
+    int throttleRearLeft = throttle + pid_output_roll - pid_output_pitch + pid_output_yaw;   // Rear Left
 
     // Constrain motor values to DShot range
     throttleFrontRight = constrain(throttleFrontRight, settings.dshotThrottle.min, settings.dshotThrottle.max);

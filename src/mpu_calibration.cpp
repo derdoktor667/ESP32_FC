@@ -1,7 +1,5 @@
 #include "mpu_calibration.h"
-
-// External MPU object
-extern ESP32_MPU6050 imuSensor;
+#include "flight_controller.h"
 
 // Gyroscope offsets
 float gyro_offset_x = 0.0;

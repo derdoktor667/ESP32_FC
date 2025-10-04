@@ -85,6 +85,6 @@ struct FlightControllerSettings
 };
 
 // Create a single, global instance of the settings
-inline FlightControllerSettings settings;
+// extern FlightControllerSettings settings; // Now declared in settings.h
 
 #endif
