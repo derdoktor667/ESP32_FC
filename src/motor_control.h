@@ -5,7 +5,7 @@
 #include <DShotRMT.h>
 #include "config.h"
 
-extern DShotRMT motor1, motor2, motor3, motor4; // External motor objects
+extern DShotRMT motorFrontRight, motorFrontLeft, motorRearRight, motorRearLeft; // External motor objects
 
 void setupMotors();
 void sendMotorCommands(int throttle, float pid_output_roll, float pid_output_pitch, float pid_output_yaw, bool armed);

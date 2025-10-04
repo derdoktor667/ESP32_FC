@@ -12,39 +12,26 @@
 #include "src/serial_logger.h"
 #include "src/motor_control.h"
 
-#include <Arduino.h>
-#include <ESP32_MPU6050.h>
-#include <FlyskyIBUS.h>
-#include <DShotRMT.h>
-
-#include "src/config.h"
-#include "src/pid_controller.h"
-#include "src/attitude_estimator.h"
-#include "src/arming_disarming.h"
-#include "src/flight_modes.h"
-#include "src/mpu_calibration.h"
-#include "src/serial_logger.h"
-#include "src/motor_control.h"
-
 // Global objects
-ESP32_MPU6050 mpu;
-FlyskyIBUS ibus(Serial2, IBUS_RX_PIN);
+ESP32_MPU6050 imuSensor;
+FlyskyIBUS ibusReceiver(Serial2, IBUS_RX_PIN);
 
-// Global variables (defined here, declared extern in their respective headers)
-PIDController pid_roll(0.8, 0.001, 0.05);  // Kp, Ki, Kd - these values will need careful tuning!
-PIDController pid_pitch(0.8, 0.001, 0.05); // Kp, Ki, Kd - these values will need careful tuning!
-PIDController pid_yaw(1.5, 0.005, 0.1);    // Kp, Ki, Kd - these values will need careful tuning!
+// Global variables
+PIDController pid_roll(settings.pidRoll.kp, settings.pidRoll.ki, settings.pidRoll.kd);
+PIDController pid_pitch(settings.pidPitch.kp, settings.pidPitch.ki, settings.pidPitch.kd);
+PIDController pid_yaw(settings.pidYaw.kp, settings.pidYaw.ki, settings.pidYaw.kd);
 
 float target_roll = 0.0;
 float target_pitch = 0.0;
 float target_yaw = 0.0;
 
-// Global variables (declared extern in their respective headers and defined in their .cpp files)
+// Global variables
 extern float roll, pitch, yaw;
 extern unsigned long last_attitude_update_time;
 extern float gyro_offset_x, gyro_offset_y, gyro_offset_z;
 extern float acc_offset_x, acc_offset_y, acc_offset_z;
 extern bool armed;
+extern bool failsafeActive;
 extern int arming_channel_value;
 extern FlightMode current_flight_mode;
 extern unsigned long last_print_time;
@@ -56,7 +43,7 @@ void setup()
     ;
 
   Serial.println("Initializing MPU6050...");
-  if (!mpu.begin())
+  if (!imuSensor.begin())
   {
     Serial.println("Failed to find MPU6050 chip");
     while (1)
@@ -66,10 +53,10 @@ void setup()
   }
   Serial.println("MPU6050 initialized successfully!");
 
-  calibrateMPU6050();
+  calibrateImuSensor();
 
   Serial.println("Initializing FlyskyIBUS...");
-  ibus.begin();
+  ibusReceiver.begin();
   Serial.println("FlyskyIBUS initialized successfully!");
 
   setupMotors();
@@ -79,22 +66,22 @@ void setup()
 
 void loop()
 {
-  mpu.update();
+  imuSensor.update();
   calculateAttitude();
-  handleArming();
+  handleSafetySwitches();
   handleFlightModeSelection();
 
   if (current_flight_mode == ANGLE_MODE)
   {
-    target_roll = map(ibus.getChannel(IBUS_CHANNEL_ROLL), IBUS_MIN_VALUE, IBUS_MAX_VALUE, -TARGET_ANGLE_ROLL_PITCH, TARGET_ANGLE_ROLL_PITCH);
-    target_pitch = map(ibus.getChannel(IBUS_CHANNEL_PITCH), IBUS_MIN_VALUE, IBUS_MAX_VALUE, -TARGET_ANGLE_ROLL_PITCH, TARGET_ANGLE_ROLL_PITCH);
-    target_yaw = map(ibus.getChannel(IBUS_CHANNEL_YAW), IBUS_MIN_VALUE, IBUS_MAX_VALUE, -TARGET_ANGLE_YAW_RATE, TARGET_ANGLE_YAW_RATE);
+    target_roll = map(ibusReceiver.getChannel(IBUS_CHANNEL_ROLL), settings.receiver.ibusMinValue, settings.receiver.ibusMaxValue, -settings.rates.targetAngleRollPitch, settings.rates.targetAngleRollPitch);
+    target_pitch = map(ibusReceiver.getChannel(IBUS_CHANNEL_PITCH), settings.receiver.ibusMinValue, settings.receiver.ibusMaxValue, -settings.rates.targetAngleRollPitch, settings.rates.targetAngleRollPitch);
+    target_yaw = map(ibusReceiver.getChannel(IBUS_CHANNEL_YAW), settings.receiver.ibusMinValue, settings.receiver.ibusMaxValue, -settings.rates.targetRateYaw, settings.rates.targetRateYaw);
   }
   else
   { // ACRO_MODE
-    target_roll = map(ibus.getChannel(IBUS_CHANNEL_ROLL), IBUS_MIN_VALUE, IBUS_MAX_VALUE, -TARGET_ANGLE_YAW_RATE, TARGET_ANGLE_YAW_RATE);
-    target_pitch = map(ibus.getChannel(IBUS_CHANNEL_PITCH), IBUS_MIN_VALUE, IBUS_MAX_VALUE, -TARGET_ANGLE_YAW_RATE, TARGET_ANGLE_YAW_RATE);
-    target_yaw = map(ibus.getChannel(IBUS_CHANNEL_YAW), IBUS_MIN_VALUE, IBUS_MAX_VALUE, -TARGET_ANGLE_YAW_RATE, TARGET_ANGLE_YAW_RATE);
+    target_roll = map(ibusReceiver.getChannel(IBUS_CHANNEL_ROLL), settings.receiver.ibusMinValue, settings.receiver.ibusMaxValue, -settings.rates.targetRateRollPitch, settings.rates.targetRateRollPitch);
+    target_pitch = map(ibusReceiver.getChannel(IBUS_CHANNEL_PITCH), settings.receiver.ibusMinValue, settings.receiver.ibusMaxValue, -settings.rates.targetRateRollPitch, settings.rates.targetRateRollPitch);
+    target_yaw = map(ibusReceiver.getChannel(IBUS_CHANNEL_YAW), settings.receiver.ibusMinValue, settings.receiver.ibusMaxValue, -settings.rates.targetRateYaw, settings.rates.targetRateYaw);
   }
 
   float pid_output_roll = pid_roll.calculate(target_roll, roll);
@@ -104,12 +91,12 @@ void loop()
   static int ibus_throttle = 0;
   static int throttle = 0;
 
-  ibus_throttle = ibus.getChannel(IBUS_CHANNEL_THROTTLE);
-  throttle = map(ibus_throttle, IBUS_MIN_VALUE, IBUS_MAX_VALUE, DSHOT_MIN_THROTTLE, DSHOT_MAX_THROTTLE);
+  ibus_throttle = ibusReceiver.getChannel(IBUS_CHANNEL_THROTTLE);
+  throttle = map(ibus_throttle, settings.receiver.ibusMinValue, settings.receiver.ibusMaxValue, settings.dshotThrottle.min, settings.dshotThrottle.max);
 
   sendMotorCommands(throttle, pid_output_roll, pid_output_pitch, pid_output_yaw, armed);
 
-  if (millis() - last_print_time >= PRINT_INTERVAL_MS)
+  if (millis() - last_print_time >= settings.printIntervalMs)
   {
     printFlightStatus();
     last_print_time = millis();

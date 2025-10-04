@@ -6,11 +6,12 @@
 #include "config.h"
 #include <DShotRMT.h> // For motor control
 
-extern FlyskyIBUS ibus;                         // External IBUS object
-extern DShotRMT motor1, motor2, motor3, motor4; // External motor objects
+extern FlyskyIBUS ibusReceiver;                                                 // External IBUS object
+extern DShotRMT motorFrontRight, motorFrontLeft, motorRearRight, motorRearLeft; // External motor objects
 
-extern bool armed; // External arming status
+extern bool armed;           // External arming status
+extern bool failsafeActive;  // External failsafe status
 
-void handleArming();
+void handleSafetySwitches();
 
 #endif

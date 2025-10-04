@@ -1,7 +1,7 @@
 #include "attitude_estimator.h"
 
 // Define external MPU object
-extern ESP32_MPU6050 mpu;
+extern ESP32_MPU6050 imuSensor;
 
 // Define external attitude variables
 float roll = 0.0, pitch = 0.0, yaw = 0.0;
@@ -14,12 +14,12 @@ void calculateAttitude()
   last_attitude_update_time = current_time;
 
   // Read raw gyroscope and accelerometer data
-  float gyroX = mpu.readings.gyroscope.x - gyro_offset_x;
-  float gyroY = mpu.readings.gyroscope.y - gyro_offset_y;
-  float gyroZ = mpu.readings.gyroscope.z - gyro_offset_z;
-  float accX = mpu.readings.accelerometer.x - acc_offset_x;
-  float accY = mpu.readings.accelerometer.y - acc_offset_y;
-  float accZ = mpu.readings.accelerometer.z - acc_offset_z;
+  float gyroX = imuSensor.readings.gyroscope.x - gyro_offset_x;
+  float gyroY = imuSensor.readings.gyroscope.y - gyro_offset_y;
+  float gyroZ = imuSensor.readings.gyroscope.z - gyro_offset_z;
+  float accX = imuSensor.readings.accelerometer.x - acc_offset_x;
+  float accY = imuSensor.readings.accelerometer.y - acc_offset_y;
+  float accZ = imuSensor.readings.accelerometer.z - acc_offset_z;
 
   // Convert accelerometer readings to roll and pitch angles
   // Assuming the MPU6050 is mounted flat
@@ -28,7 +28,7 @@ void calculateAttitude()
 
   // Apply complementary filter
   // Gyroscope provides short-term accuracy, accelerometer provides long-term stability
-  roll = COMPLEMENTARY_FILTER_GAIN * (roll + gyroX * dt) + (1.0 - COMPLEMENTARY_FILTER_GAIN) * acc_roll;
-  pitch = COMPLEMENTARY_FILTER_GAIN * (pitch + gyroY * dt) + (1.0 - COMPLEMENTARY_FILTER_GAIN) * acc_pitch;
+  roll = settings.filter.complementaryFilterGain * (roll + gyroX * dt) + (1.0 - settings.filter.complementaryFilterGain) * acc_roll;
+  pitch = settings.filter.complementaryFilterGain * (pitch + gyroY * dt) + (1.0 - settings.filter.complementaryFilterGain) * acc_pitch;
   yaw = yaw + gyroZ * dt; // Yaw is integrated directly from gyroscope, as accelerometer cannot provide yaw reference
 }

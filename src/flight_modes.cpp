@@ -1,14 +1,14 @@
 #include "flight_modes.h"
 
 // External IBUS object
-extern FlyskyIBUS ibus;
+extern FlyskyIBUS ibusReceiver;
 
 // Flight Modes
 FlightMode current_flight_mode = ACRO_MODE;
 
 void handleFlightModeSelection()
 {
-  int flight_mode_channel_value = ibus.getChannel(IBUS_CHANNEL_FLIGHT_MODE);
+  int flight_mode_channel_value = ibusReceiver.getChannel(IBUS_CHANNEL_FLIGHT_MODE);
 
   if (flight_mode_channel_value < 1200)
   { // Example: Switch low for Acro Mode

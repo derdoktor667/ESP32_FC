@@ -1,64 +1,88 @@
-# ESP32 Flight Controller
+# 🚁 ESP32 Flight Controller
 
-## Project Overview
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/derdoktor667/ESP32_FC/ci.yml?branch=main&style=for-the-badge) ![GitHub](https://img.shields.io/github/license/derdoktor667/ESP32_FC?style=for-the-badge)
 
-This project is a flight controller for a drone or other remote-controlled vehicle, built to run on an ESP32 microcontroller. The main logic is written in C++ using the Arduino framework, now organized into a modular structure within the `src` directory. The primary source file is `ESP32_FC.ino`.
+An advanced flight controller firmware for quadcopters and other RC vehicles, built on the powerful ESP32 platform and the Arduino framework.
 
-This project uses git submodules to manage external libraries.
+<p align="center">
+  <img src="libraries/DShotRMT/img/dshot300.png" alt="DShot Signal Diagram" width="600"/>
+</p>
 
-## Features
+---
 
-*   **MPU6050 IMU Integration**: Reads accelerometer and gyroscope data for flight stabilization.
-*   **Flysky i-BUS Receiver Support**: Decodes signals from Flysky transmitters for control input.
-*   **DShot ESC Control**: Controls Electronic Speed Controllers using the DShot300 protocol for precise motor control.
-*   **Attitude Estimation**: Implemented a complementary filter to combine accelerometer and gyroscope data for stable roll, pitch, and yaw estimation.
-*   **PID Controller**: Basic PID controller structure for roll, pitch, and yaw control.
-*   **Motor Mixing**: Logic to mix throttle and PID outputs for individual motor control in an X-quad configuration.
-*   **MPU6050 Calibration**: Gyroscope and accelerometer calibration routines to improve sensor accuracy.
-*   **Arming/Disarming**: Safety mechanism to arm and disarm motors based on a transmitter switch.
-*   **Enhanced Serial Output**: Consolidated and interval-controlled serial output for flight status information.
-*   **Code Readability**: Improved code readability and maintainability by replacing magic numbers with named constants.
+## ✨ Key Features
 
-## Getting Started
+*   **Robust Flight Stabilization**: Utilizes an MPU6050 IMU combined with a complementary filter for precise attitude estimation (Roll, Pitch, Yaw).
+*   **High-Performance Motor Control**: Employs hardware-accelerated DShot300 for low-latency, high-resolution communication with ESCs.
+*   **Flexible Control System**: 
+    *   Supports Flysky i-BUS protocol for remote control.
+    *   Features multiple flight modes (e.g., Angle, Acro).
+    *   Includes a critical **Failsafe Switch** to immediately cut motor power.
+*   **Centralized Configuration**: All tunable parameters (PIDs, rates, filters) are neatly organized in a single `FlightControllerSettings` struct for easy adjustments.
+*   **Modular & Maintainable Code**: The source code is logically split into modules, following the Single Responsibility Principle for better readability and maintenance.
+*   **Safety First**: A dedicated arming/disarming mechanism prevents accidental motor startup.
 
-To build and upload the code to an ESP32, you will need the [Arduino IDE](https://www.arduino.cc/en/software) or the [Arduino CLI](https://arduino.github.io/arduino-cli/latest/).
+---
 
-### Initial Setup
+## 🚀 Getting Started
 
-After cloning the repository, you must initialize and update the git submodules:
+Follow these steps to get the flight controller up and running on your ESP32.
 
-```bash
-git submodule update --init --recursive
-```
-## Libraries and Submodules
+### Prerequisites
 
-This project uses the following libraries, managed as git submodules in the `libraries` directory:
+*   An ESP32 development board.
+*   [Arduino IDE](https://www.arduino.cc/en/software) or [Arduino CLI](https://arduino.github.io/arduino-cli/latest/) installed.
+*   All necessary hardware (MPU6050, ESCs, motors, Flysky receiver) connected according to the pin definitions in `src/config.h`.
 
-*   **`DShotRMT`**: A library to control Electronic Speed Controllers (ESCs) using the DShot protocol. It appears to be specifically adapted for the ESP32's RMT (Remote Control) peripheral.
-*   **`ESP32_MPU6050`**: A library for interfacing with the MPU6050 IMU (Inertial Measurement Unit) on the ESP32.
-*   **`FlyskyIBUS`**: A library for decoding the FlySky i-BUS protocol, used for communication between the radio receiver and the flight controller.
+### Installation
 
-## Development Conventions
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/derdoktor667/ESP32_FC.git
+    cd ESP32_FC
+    ```
 
-The code follows standard Arduino conventions:
+2.  **Initialize Git Submodules:** This project relies on external libraries managed as submodules. Pull them in with this command:
+    ```bash
+    git submodule update --init --recursive
+    ```
 
-*   The main entry points are the `setup()` and `loop()` functions.
-*   `setup()` is used for initialization.
-*   `loop()` contains the main, repeating logic of the flight controller.
+3.  **Compile and Upload:** Open the `ESP32_FC.ino` sketch in your Arduino IDE, select your ESP32 board, and upload. Alternatively, use the Arduino CLI:
+    ```bash
+    arduino-cli compile --fqbn esp32:esp32:esp32 ESP32_FC.ino
+    arduino-cli upload --port /dev/ttyUSB0 --fqbn esp32:esp32:esp32 ESP32_FC.ino
+    ```
+    *(Replace `/dev/ttyUSB0` with the actual port of your ESP32.)*
 
-## Code Structure
+---
 
-The firmware has been modularized into a `src` directory for better organization and maintainability. The main `ESP32_FC.ino` file now acts as an orchestrator, including various modules:
+## 🛠️ Code Structure
 
-*   `config.h`: Contains all global constants and pin definitions.
-*   `pid_controller.h/.cpp`: Implements the PIDController struct and its logic.
-*   `attitude_estimator.h/.cpp`: Handles attitude estimation using the complementary filter.
-*   `arming_disarming.h/.cpp`: Manages the arming and disarming logic.
-*   `flight_modes.h/.cpp`: Implements flight mode selection and related logic.
-*   `mpu_calibration.h/.cpp`: Contains MPU6050 gyroscope and accelerometer calibration routines.
-*   `serial_logger.h/.cpp`: Manages serial output for flight status information.
-*   `motor_control.h/.cpp`: Handles motor initialization, mixing, and DShot command sending.
+The firmware is organized into a clean, modular structure within the `src/` directory. The main `ESP32_FC.ino` file acts as the orchestrator.
 
-## License
+| Module                  | Responsibility                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| `config.h`              | Central hub for hardware pins and the `FlightControllerSettings` struct.        |
+| `pid_controller.h/.cpp`   | Implements the PID control loop for stabilization.                              |
+| `attitude_estimator.h/.cpp` | Calculates the drone's orientation using sensor fusion.                         |
+| `arming_disarming.h/.cpp` | Manages all safety logic: Arm, Disarm, and the high-priority Failsafe.          |
+| `flight_modes.h/.cpp`     | Handles switching between different flight modes (Angle, Acro, etc.).           |
+| `mpu_calibration.h/.cpp`  | Contains routines to calibrate the MPU6050 sensor on startup.                   |
+| `serial_logger.h/.cpp`    | Manages the formatted serial output for debugging and status monitoring.        |
+| `motor_control.h/.cpp`    | Handles motor layout, mixing, and sending commands via DShot.                 |
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+---
+
+## 📚 Libraries & Submodules
+
+This project stands on the shoulders of giants. The core hardware interaction is handled by these libraries, included as Git submodules:
+
+*   [**DShotRMT**](libraries/DShotRMT): A fantastic library for generating DShot signals using the ESP32's RMT peripheral.
+*   [**ESP32_MPU6050**](libraries/ESP32_MPU6050): A driver for the MPU6050 IMU.
+*   [**FlyskyIBUS**](libraries/FlyskyIBUS): A lightweight library for decoding the Flysky i-BUS protocol.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for full details.

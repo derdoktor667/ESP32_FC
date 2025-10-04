@@ -17,10 +17,10 @@ float PIDController::calculate(float setpoint, float current_value)
   // Integral term
   integral_sum += error * dt;
   // Limit integral sum to prevent wind-up
-  if (integral_sum > PID_INTEGRAL_LIMIT)
-    integral_sum = PID_INTEGRAL_LIMIT;
-  else if (integral_sum < -PID_INTEGRAL_LIMIT)
-    integral_sum = -PID_INTEGRAL_LIMIT;
+  if (integral_sum > settings.pidIntegralLimit)
+    integral_sum = settings.pidIntegralLimit;
+  else if (integral_sum < -settings.pidIntegralLimit)
+    integral_sum = -settings.pidIntegralLimit;
   float i_term = Ki * integral_sum;
 
   // Derivative term

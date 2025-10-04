@@ -1,7 +1,7 @@
 #include "mpu_calibration.h"
 
 // External MPU object
-extern ESP32_MPU6050 mpu;
+extern ESP32_MPU6050 imuSensor;
 
 // Gyroscope offsets
 float gyro_offset_x = 0.0;
@@ -13,32 +13,32 @@ float acc_offset_x = 0.0;
 float acc_offset_y = 0.0;
 float acc_offset_z = 0.0;
 
-void calibrateMPU6050()
+void calibrateImuSensor()
 {
   Serial.println("Calibrating MPU6050 Gyroscope and Accelerometer...");
-  int num_readings = MPU_CALIBRATION_READINGS;
-  float temp_gyro_x = 0, temp_gyro_y = 0, temp_gyro_z = 0;
-  float temp_acc_x = 0, temp_acc_y = 0, temp_acc_z = 0;
+  int num_readings = settings.calibration.mpuCalibrationReadings;
+  float gyroSumX = 0, gyroSumY = 0, gyroSumZ = 0;
+  float accelSumX = 0, accelSumY = 0, accelSumZ = 0;
 
   for (int i = 0; i < num_readings; i++)
   {
-    mpu.update();
-    temp_gyro_x += mpu.readings.gyroscope.x;
-    temp_gyro_y += mpu.readings.gyroscope.y;
-    temp_gyro_z += mpu.readings.gyroscope.z;
-    temp_acc_x += mpu.readings.accelerometer.x;
-    temp_acc_y += mpu.readings.accelerometer.y;
-    temp_acc_z += mpu.readings.accelerometer.z;
+    imuSensor.update();
+    gyroSumX += imuSensor.readings.gyroscope.x;
+    gyroSumY += imuSensor.readings.gyroscope.y;
+    gyroSumZ += imuSensor.readings.gyroscope.z;
+    accelSumX += imuSensor.readings.accelerometer.x;
+    accelSumY += imuSensor.readings.accelerometer.y;
+    accelSumZ += imuSensor.readings.accelerometer.z;
     delay(1); // Small delay to allow new readings
   }
 
-  gyro_offset_x = temp_gyro_x / num_readings;
-  gyro_offset_y = temp_gyro_y / num_readings;
-  gyro_offset_z = temp_gyro_z / num_readings;
+  gyro_offset_x = gyroSumX / num_readings;
+  gyro_offset_y = gyroSumY / num_readings;
+  gyro_offset_z = gyroSumZ / num_readings;
 
-  acc_offset_x = temp_acc_x / num_readings;
-  acc_offset_y = temp_acc_y / num_readings;
-  acc_offset_z = (temp_acc_z / num_readings) - ACCEL_Z_GRAVITY; // Assuming Z-axis is up and should read 1g
+  acc_offset_x = accelSumX / num_readings;
+  acc_offset_y = accelSumY / num_readings;
+  acc_offset_z = (accelSumZ / num_readings) - settings.calibration.accelZGravity; // Assuming Z-axis is up and should read 1g
 
   Serial.print("GyroX Offset: ");
   Serial.println(gyro_offset_x);

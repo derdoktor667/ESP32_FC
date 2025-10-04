@@ -1,9 +1,9 @@
 #include "serial_logger.h"
 
 // External MPU object
-extern ESP32_MPU6050 mpu;
+extern ESP32_MPU6050 imuSensor;
 // External IBUS object
-extern FlyskyIBUS ibus;
+extern FlyskyIBUS ibusReceiver;
 
 // External attitude variables
 extern float roll, pitch, yaw;
@@ -11,6 +11,8 @@ extern float roll, pitch, yaw;
 extern float target_roll, target_pitch, target_yaw;
 // External arming status
 extern bool armed;
+// External failsafe status
+extern bool failsafeActive;
 // External arming channel value
 extern int arming_channel_value;
 // External current flight mode
@@ -21,17 +23,17 @@ unsigned long last_print_time = 0;
 void printFlightStatus()
 {
   Serial.print("AccX: ");
-  Serial.print(mpu.readings.accelerometer.x);
+  Serial.print(imuSensor.readings.accelerometer.x);
   Serial.print("\tAccY: ");
-  Serial.print(mpu.readings.accelerometer.y);
+  Serial.print(imuSensor.readings.accelerometer.y);
   Serial.print("\tAccZ: ");
-  Serial.print(mpu.readings.accelerometer.z);
+  Serial.print(imuSensor.readings.accelerometer.z);
   Serial.print("\tGyroX: ");
-  Serial.print(mpu.readings.gyroscope.x);
+  Serial.print(imuSensor.readings.gyroscope.x);
   Serial.print("\tGyroY: ");
-  Serial.print(mpu.readings.gyroscope.y);
+  Serial.print(imuSensor.readings.gyroscope.y);
   Serial.print("\tGyroZ: ");
-  Serial.print(mpu.readings.gyroscope.z);
+  Serial.print(imuSensor.readings.gyroscope.z);
 
   Serial.print("\tRoll: ");
   Serial.print(roll);
@@ -41,7 +43,7 @@ void printFlightStatus()
   Serial.print(yaw);
 
   static int ibus_throttle = 0;
-  ibus_throttle = ibus.getChannel(IBUS_CHANNEL_THROTTLE);
+  ibus_throttle = ibusReceiver.getChannel(IBUS_CHANNEL_THROTTLE);
   Serial.print("\tIBUS Channel 0: ");
   Serial.print(ibus_throttle);
 
@@ -53,6 +55,8 @@ void printFlightStatus()
   Serial.print(target_yaw);
   Serial.print("\tArmed: ");
   Serial.print(armed ? "YES" : "NO");
+  Serial.print("\tFailsafe: ");
+  Serial.print(failsafeActive ? "ACTIVE" : "inactive");
   Serial.print("\tArming Channel: ");
   Serial.print(arming_channel_value);
   Serial.print("\tFlight Mode: ");

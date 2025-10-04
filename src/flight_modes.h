@@ -5,7 +5,7 @@
 #include <FlyskyIBUS.h>
 #include "config.h"
 
-extern FlyskyIBUS ibus; // External IBUS object
+extern FlyskyIBUS ibusReceiver; // External IBUS object
 
 // Flight Modes
 enum FlightMode
