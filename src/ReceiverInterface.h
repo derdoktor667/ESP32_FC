@@ -1,0 +1,42 @@
+#ifndef RECEIVER_INTERFACE_H
+#define RECEIVER_INTERFACE_H
+
+#include <Arduino.h>
+
+// Channel mapping constants, can be used by all implementations
+const int CHANNEL_THROTTLE = 0;
+const int CHANNEL_ROLL = 1;
+const int CHANNEL_PITCH = 2;
+const int CHANNEL_YAW = 3;
+const int CHANNEL_ARMING = 4;
+const int CHANNEL_FLIGHT_MODE = 5;
+const int CHANNEL_FAILSAFE = 6;
+
+// An abstract interface for different RC receiver protocols.
+// This class defines a common set of functions that any receiver implementation
+// (like iBUS, SBUS, PPM) must provide. The flight controller will interact
+// with this interface, making the underlying protocol interchangeable.
+class ReceiverInterface
+{
+public:
+    // Virtual destructor.
+    virtual ~ReceiverInterface() {}
+
+    // Initializes the receiver hardware and protocol.
+    virtual void begin() = 0;
+
+    // Reads the latest data from the receiver.
+    // This should be called once per flight loop.
+    virtual void update() = 0;
+
+    // Gets the normalized value of a specific channel.
+    // The channel index is passed as an argument (e.g., CHANNEL_ROLL).
+    // Returns the value of the channel, typically in the range 1000-2000.
+    virtual uint16_t getChannel(int channel) const = 0;
+
+    // Checks if the receiver is currently in a failsafe state.
+    // Returns true if failsafe is active, false otherwise.
+    virtual bool hasFailsafe() const = 0;
+};
+
+#endif // RECEIVER_INTERFACE_H

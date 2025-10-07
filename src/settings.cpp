@@ -29,9 +29,9 @@ void saveSettings()
     preferences.putFloat("pid.y.kd", settings.pidYaw.kd);
     preferences.putFloat("pid.lim", settings.pidIntegralLimit);
 
-    preferences.putFloat("rate.r_p", settings.rates.targetAngleRollPitch);
-    preferences.putFloat("rate.y", settings.rates.targetRateYaw);
-    preferences.putFloat("rate.acro", settings.rates.targetRateRollPitch);
+    preferences.putFloat("rate.angle", settings.rates.maxAngleRollPitch);
+    preferences.putFloat("rate.y", settings.rates.maxRateYaw);
+    preferences.putFloat("rate.acro_rp", settings.rates.maxRateRollPitch);
 
     preferences.putFloat("filter.gain", settings.filter.complementaryFilterGain);
 
@@ -64,9 +64,9 @@ void loadSettings()
         settings.pidYaw.kd = preferences.getFloat("pid.y.kd", settings.pidYaw.kd);
         settings.pidIntegralLimit = preferences.getFloat("pid.lim", settings.pidIntegralLimit);
 
-        settings.rates.targetAngleRollPitch = preferences.getFloat("rate.r_p", settings.rates.targetAngleRollPitch);
-        settings.rates.targetRateYaw = preferences.getFloat("rate.y", settings.rates.targetRateYaw);
-        settings.rates.targetRateRollPitch = preferences.getFloat("rate.acro", settings.rates.targetRateRollPitch);
+        settings.rates.maxAngleRollPitch = preferences.getFloat("rate.angle", settings.rates.maxAngleRollPitch);
+        settings.rates.maxRateYaw = preferences.getFloat("rate.y", settings.rates.maxRateYaw);
+        settings.rates.maxRateRollPitch = preferences.getFloat("rate.acro_rp", settings.rates.maxRateRollPitch);
 
         settings.filter.complementaryFilterGain = preferences.getFloat("filter.gain", settings.filter.complementaryFilterGain);
     }

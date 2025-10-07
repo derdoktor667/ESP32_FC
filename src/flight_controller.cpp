@@ -1,107 +1,96 @@
 #include "flight_controller.h"
-#include <Arduino.h>
-
-// Include all necessary modules
 #include "config.h"
 #include "settings.h"
-#include "pid_controller.h"
-#include "attitude_estimator.h"
-#include "arming_disarming.h"
-#include "flight_modes.h"
-#include "mpu_calibration.h"
 #include "serial_logger.h"
-#include "motor_control.h"
 #include "cli.h"
+#include "IbusReceiver.h"
+#include "PpmReceiver.h"
+#include <Arduino.h>
 
-// --- Global Objects and Variables ---
-// These were moved from ESP32_FC.ino
-
-// Hardware and PID controllers
-ESP32_MPU6050 imuSensor;
-FlyskyIBUS ibusReceiver(Serial2, IBUS_RX_PIN);
-PIDController pid_roll(settings.pidRoll.kp, settings.pidRoll.ki, settings.pidRoll.kd);
-PIDController pid_pitch(settings.pidPitch.kp, settings.pidPitch.ki, settings.pidPitch.kd);
-PIDController pid_yaw(settings.pidYaw.kp, settings.pidYaw.ki, settings.pidYaw.kd);
-
-// Motor objects
-DShotRMT motorFrontRight(ESC_PIN_1, DSHOT300, false);
-DShotRMT motorFrontLeft(ESC_PIN_2, DSHOT300, false);
-DShotRMT motorRearRight(ESC_PIN_3, DSHOT300, false);
-DShotRMT motorRearLeft(ESC_PIN_4, DSHOT300, false);
-
-// Target setpoints
-float target_roll = 0.0;
-float target_pitch = 0.0;
-float target_yaw = 0.0;
-
-// --- Function Implementations ---
-
-void initializeFlightController()
+// Constructor: Initializes all hardware objects and processing modules.
+FlightController::FlightController()
+    // Initialize hardware objects
+    : _imu(),
+      _receiver(nullptr), // Initialize receiver pointer to nullptr
+      _motor1(ESC_PIN_1, DSHOT300, false),
+      _motor2(ESC_PIN_2, DSHOT300, false),
+      _motor3(ESC_PIN_3, DSHOT300, false),
+      _motor4(ESC_PIN_4, DSHOT300, false),
+      // Initialize modules that don't depend on _receiver yet
+      _attitudeEstimator(_imu, settings),
+      _safetyManager(nullptr), // Initialize safetyManager pointer to nullptr
+      _setpointManager(nullptr), // Initialize setpointManager pointer to nullptr
+      _pidProcessor(settings),
+      _motorMixer(_motor1, _motor2, _motor3, _motor4, settings)
 {
-    loadSettings(); // Load settings from flash memory
-
-    Serial.println("Initializing MPU6050...");
-    if (!imuSensor.begin())
-    {
-        Serial.println("Failed to find MPU6050 chip");
-        while (1)
-        {
-            delay(10);
-        }
-    }
-    Serial.println("MPU6050 initialized successfully!");
-
-    calibrateImuSensor();
-
-    Serial.println("Initializing FlyskyIBUS...");
-    ibusReceiver.begin();
-    Serial.println("FlyskyIBUS initialized successfully!");
-
-    setupMotors();
-
-    last_attitude_update_time = micros();
 }
 
-void runFlightLoop()
+// Destructor: Cleans up dynamically allocated objects.
+FlightController::~FlightController()
 {
-    // --- Core Flight Logic ---
-    imuSensor.update();
-    calculateAttitude();
-    handleSafetySwitches();
-    handleFlightModeSelection();
+    delete _receiver;
+    delete _safetyManager;
+    delete _setpointManager;
+}
 
-    // --- Setpoint Calculation ---
-    if (current_flight_mode == ANGLE_MODE)
+// Initializes the flight controller.
+void FlightController::initialize()
+{
+    loadSettings(); // Load settings from flash
+
+    // --- Receiver Initialization (Factory) ---
+    Serial.print("Initializing Receiver Protocol: ");
+    switch (settings.receiverProtocol)
     {
-        target_roll = map(ibusReceiver.getChannel(IBUS_CHANNEL_ROLL), settings.receiver.ibusMinValue, settings.receiver.ibusMaxValue, -settings.rates.targetAngleRollPitch, settings.rates.targetAngleRollPitch);
-        target_pitch = map(ibusReceiver.getChannel(IBUS_CHANNEL_PITCH), settings.receiver.ibusMinValue, settings.receiver.ibusMaxValue, -settings.rates.targetAngleRollPitch, settings.rates.targetAngleRollPitch);
-        target_yaw = map(ibusReceiver.getChannel(IBUS_CHANNEL_YAW), settings.receiver.ibusMinValue, settings.receiver.ibusMaxValue, -settings.rates.targetRateYaw, settings.rates.targetRateYaw);
+    case PROTOCOL_IBUS:
+        Serial.println("iBUS");
+        _receiver = new IbusReceiver(Serial2, IBUS_RX_PIN);
+        break;
+    case PROTOCOL_PPM:
+        Serial.println("PPM");
+        _receiver = new PpmReceiver(IBUS_RX_PIN);
+        break;
+    default:
+        Serial.println("Unknown! Halting.");
+        while (1);
     }
-    else
-    { // ACRO_MODE
-        target_roll = map(ibusReceiver.getChannel(IBUS_CHANNEL_ROLL), settings.receiver.ibusMinValue, settings.receiver.ibusMaxValue, -settings.rates.targetRateRollPitch, settings.rates.targetRateRollPitch);
-        target_pitch = map(ibusReceiver.getChannel(IBUS_CHANNEL_PITCH), settings.receiver.ibusMinValue, settings.receiver.ibusMaxValue, -settings.rates.targetRateRollPitch, settings.rates.targetRateRollPitch);
-        target_yaw = map(ibusReceiver.getChannel(IBUS_CHANNEL_YAW), settings.receiver.ibusMinValue, settings.receiver.ibusMaxValue, -settings.rates.targetRateYaw, settings.rates.targetRateYaw);
+    _receiver->begin();
+    Serial.println("Receiver initialized.");
+
+    // Now that _receiver is valid, create modules that depend on it.
+    _safetyManager = new SafetyManager(*_receiver, settings);
+    _setpointManager = new SetpointManager(*_receiver, settings);
+
+    // --- Other Module Initializations ---
+    _attitudeEstimator.begin();
+    _motorMixer.begin();
+}
+
+// Main flight loop.
+void FlightController::runLoop()
+{
+    // --- Read Inputs ---
+    // Read all receiver channels into the state at once.
+    for (int i = 0; i < 16; i++) {
+        _state.receiverChannels[i] = _receiver->getChannel(i);
     }
 
-    // --- PID Calculation ---
-    float pid_output_roll = pid_roll.calculate(target_roll, roll);
-    float pid_output_pitch = pid_pitch.calculate(target_pitch, pitch);
-    float pid_output_yaw = pid_yaw.calculate(target_yaw, yaw);
-
-    // --- Motor Command ---
-    static int ibus_throttle = 0;
-    ibus_throttle = ibusReceiver.getChannel(IBUS_CHANNEL_THROTTLE);
-    int throttle = map(ibus_throttle, settings.receiver.ibusMinValue, settings.receiver.ibusMaxValue, settings.dshotThrottle.min, settings.dshotThrottle.max);
-
-    sendMotorCommands(throttle, pid_output_roll, pid_output_pitch, pid_output_yaw, armed);
+    // --- Process Modules in Sequence ---
+    _attitudeEstimator.update(_state);
+    _safetyManager->update(_state);
+    _setpointManager->update(_state);
+    _pidProcessor.update(_state);
+    _motorMixer.apply(_state);
 
     // --- Logging and CLI ---
-    if (millis() - last_print_time >= settings.printIntervalMs)
+    if (millis() - _lastLogTime >= settings.printIntervalMs)
     {
-        printFlightStatus();
-        last_print_time = millis();
+        printFlightStatus(_state);
+        _lastLogTime = millis();
     }
-
-    handleSerialCli();
+    CliCommand cliCmd = handleSerialCli(_state);
+    if (cliCmd == CliCommand::CALIBRATE_IMU)
+    {
+        _attitudeEstimator.calibrate();
+    }
 }

@@ -2,7 +2,8 @@
 #define SERIAL_LOGGER_H
 
 #include <Arduino.h>
+#include "FlightState.h"
 
-void printFlightStatus();
+void printFlightStatus(const FlightState &state);
 
 #endif

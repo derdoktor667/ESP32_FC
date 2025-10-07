@@ -1,32 +1,52 @@
 #ifndef FLIGHT_CONTROLLER_H
 #define FLIGHT_CONTROLLER_H
 
+#include "FlightState.h"
+#include "ReceiverInterface.h"
+#include "modules/AttitudeEstimator.h"
+#include "modules/SafetyManager.h"
+#include "modules/SetpointManager.h"
+#include "modules/PidProcessor.h"
+#include "modules/MotorMixer.h"
 #include <ESP32_MPU6050.h>
-#include <FlyskyIBUS.h>
 #include <DShotRMT.h>
-#include "pid_controller.h"
-#include "flight_modes.h"
 
-// Declare global objects to be accessible by other modules
-extern ESP32_MPU6050 imuSensor;
-extern FlyskyIBUS ibusReceiver;
-extern PIDController pid_roll, pid_pitch, pid_yaw;
+// The main orchestrator for the flight controller.
+//
+// This class owns all the hardware objects and processing modules.
+// It manages the main flight loop and the overall state.
+class FlightController
+{
+public:
+    FlightController();
 
-// Declare global motor objects
-extern DShotRMT motorFrontRight, motorFrontLeft, motorRearRight, motorRearLeft;
+    // Initializes all hardware and modules.
+    void initialize();
 
-// Declare global state variables
-extern float target_roll, target_pitch, target_yaw;
-extern float roll, pitch, yaw;
-extern bool armed;
-extern bool failsafeActive;
-extern int arming_channel_value;
-extern unsigned long last_print_time;
-extern unsigned long last_attitude_update_time;
-extern float gyro_offset_x, gyro_offset_y, gyro_offset_z;
-extern float acc_offset_x, acc_offset_y, acc_offset_z;
+    // Runs one iteration of the main flight loop.
+    void runLoop();
 
-void initializeFlightController();
-void runFlightLoop();
+private:
+    // --- Core State ---
+    FlightState _state;
 
-#endif
+    // --- Hardware Objects ---
+    ESP32_MPU6050 _imu;
+    ReceiverInterface *_receiver;
+    DShotRMT _motor1, _motor2, _motor3, _motor4;
+
+    // --- Processing Modules ---
+    AttitudeEstimator _attitudeEstimator;
+    SafetyManager *_safetyManager;
+    SetpointManager *_setpointManager;
+    PidProcessor _pidProcessor;
+    MotorMixer _motorMixer;
+
+    // --- Timing ---
+    unsigned long _lastLogTime = 0;
+
+    // Destructor to clean up dynamically allocated objects
+    public: ~FlightController();
+};
+
+#endif // FLIGHT_CONTROLLER_H

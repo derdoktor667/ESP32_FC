@@ -3,7 +3,7 @@
 PIDController::PIDController(float p, float i, float d)
     : Kp(p), Ki(i), Kd(d), integral_sum(0), previous_error(0), last_pid_time(0) {}
 
-float PIDController::calculate(float setpoint, float current_value)
+float PIDController::calculate(float setpoint, float current_value, float integral_limit)
 {
   unsigned long current_time = micros();
   float dt = (current_time - last_pid_time) / 1000000.0; // Convert to seconds
@@ -17,10 +17,10 @@ float PIDController::calculate(float setpoint, float current_value)
   // Integral term
   integral_sum += error * dt;
   // Limit integral sum to prevent wind-up
-  if (integral_sum > settings.pidIntegralLimit)
-    integral_sum = settings.pidIntegralLimit;
-  else if (integral_sum < -settings.pidIntegralLimit)
-    integral_sum = -settings.pidIntegralLimit;
+  if (integral_sum > integral_limit)
+    integral_sum = integral_limit;
+  else if (integral_sum < -integral_limit)
+    integral_sum = -integral_limit;
   float i_term = Ki * integral_sum;
 
   // Derivative term

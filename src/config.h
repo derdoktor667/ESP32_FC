@@ -17,21 +17,31 @@ const gpio_num_t ESC_PIN_2 = GPIO_NUM_25; // Front-Left
 const gpio_num_t ESC_PIN_3 = GPIO_NUM_26; // Rear-Right
 const gpio_num_t ESC_PIN_4 = GPIO_NUM_33; // Rear-Left
 
-// Constants for IBUS channels (0-indexed)
-const int IBUS_CHANNEL_THROTTLE = 0;
-const int IBUS_CHANNEL_ROLL = 1;
-const int IBUS_CHANNEL_PITCH = 2;
-const int IBUS_CHANNEL_YAW = 3;
-const int IBUS_CHANNEL_ARMING = 4;
-const int IBUS_CHANNEL_FLIGHT_MODE = 5;
-const int IBUS_CHANNEL_FAILSAFE = 6;
 
 // =================================================================================
 // Flight Controller Settings (user-adjustable parameters)
 // =================================================================================
 
+// Supported Receiver Protocols
+enum ReceiverProtocol
+{
+    PROTOCOL_IBUS,
+    PROTOCOL_PPM,  // Pulse-Position Modulation
+    // PROTOCOL_SBUS, // Future implementation
+};
+
+// Flight Modes
+enum FlightMode
+{
+  ACRO_MODE,
+  ANGLE_MODE,
+};
+
 struct FlightControllerSettings
 {
+    // Receiver Protocol Selection
+    ReceiverProtocol receiverProtocol = PROTOCOL_IBUS;
+
     // PID Controller Gains
     struct
     {
@@ -46,9 +56,9 @@ struct FlightControllerSettings
     // Target angle and rate limits
     struct
     {
-        float targetAngleRollPitch = 30.0; // Degrees for ANGLE_MODE
-        float targetRateYaw = 90.0;        // Degrees/second for yaw axis
-        float targetRateRollPitch = 90.0;  // Degrees/second for ACRO_MODE
+        float maxAngleRollPitch = 30.0; // Degrees for ANGLE_MODE
+        float maxRateYaw = 90.0;        // Degrees/second for yaw axis
+        float maxRateRollPitch = 90.0;  // Degrees/second for ACRO_MODE
     } rates;
 
     // MPU6050 Calibration
@@ -72,13 +82,6 @@ struct FlightControllerSettings
         int armingThreshold = 1500;
         int failsafeThreshold = 1500;
     } receiver;
-
-    // DShot Throttle Range
-    struct
-    {
-        int min = 48;
-        int max = 2047;
-    } dshotThrottle;
 
     // Serial Logging
     unsigned long printIntervalMs = 100; // Print every 100 milliseconds

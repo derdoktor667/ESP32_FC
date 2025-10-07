@@ -13,7 +13,7 @@ struct PIDController
   unsigned long last_pid_time;
 
   PIDController(float p, float i, float d);
-  float calculate(float setpoint, float current_value);
+  float calculate(float setpoint, float current_value, float integral_limit);
 };
 
 #endif
