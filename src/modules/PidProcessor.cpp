@@ -4,9 +4,9 @@
 // Constructor: Initializes the PID controllers with gains from the settings.
 PidProcessor::PidProcessor(const FlightControllerSettings &settings)
     : _settings(settings),
-      _pidRoll(settings.pidRoll.kp, settings.pidRoll.ki, settings.pidRoll.kd),
-      _pidPitch(settings.pidPitch.kp, settings.pidPitch.ki, settings.pidPitch.kd),
-      _pidYaw(settings.pidYaw.kp, settings.pidYaw.ki, settings.pidYaw.kd)
+      _pidRoll(settings.pidRoll.kp / (float)PID_SCALE_FACTOR, settings.pidRoll.ki / (float)PID_SCALE_FACTOR, settings.pidRoll.kd / (float)PID_SCALE_FACTOR),
+      _pidPitch(settings.pidPitch.kp / (float)PID_SCALE_FACTOR, settings.pidPitch.ki / (float)PID_SCALE_FACTOR, settings.pidPitch.kd / (float)PID_SCALE_FACTOR),
+      _pidYaw(settings.pidYaw.kp / (float)PID_SCALE_FACTOR, settings.pidYaw.ki / (float)PID_SCALE_FACTOR, settings.pidYaw.kd / (float)PID_SCALE_FACTOR)
 {
 }
 

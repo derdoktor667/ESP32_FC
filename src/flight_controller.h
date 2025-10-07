@@ -3,12 +3,13 @@
 
 #include "FlightState.h"
 #include "ReceiverInterface.h"
+#include "ImuInterface.h"
+#include "Mpu6050Imu.h"
 #include "modules/AttitudeEstimator.h"
 #include "modules/SafetyManager.h"
 #include "modules/SetpointManager.h"
 #include "modules/PidProcessor.h"
 #include "modules/MotorMixer.h"
-#include <ESP32_MPU6050.h>
 #include <DShotRMT.h>
 
 // The main orchestrator for the flight controller.
@@ -31,7 +32,7 @@ private:
     FlightState _state;
 
     // --- Hardware Objects ---
-    ESP32_MPU6050 _imu;
+    ImuInterface *_imuInterface = nullptr; // Pointer to the active IMU interface
     ReceiverInterface *_receiver;
     DShotRMT _motor1, _motor2, _motor3, _motor4;
 

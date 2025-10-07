@@ -3,7 +3,7 @@
 
 // Constructor for the IbusReceiver.
 IbusReceiver::IbusReceiver(HardwareSerial &serialPort, gpio_num_t rxPin)
-    : _ibus(serialPort, rxPin)
+    : _ibus(serialPort, rxPin), _lastReceiveTime(0) // Initialize _lastReceiveTime
 {
 }
 
@@ -11,6 +11,7 @@ IbusReceiver::IbusReceiver(HardwareSerial &serialPort, gpio_num_t rxPin)
 void IbusReceiver::begin()
 {
     _ibus.begin();
+    _lastReceiveTime = millis(); // Assume signal is present at startup
 }
 
 // Reads the latest data from the iBUS receiver.
@@ -22,7 +23,7 @@ void IbusReceiver::begin()
 void IbusReceiver::update()
 {
     // The FlyskyIBUS library reads data on demand when getChannel() is called.
-    // No explicit update call is needed in the main loop for this specific library.
+    // We will update _lastReceiveTime when getChannel() is called to indicate activity.
 }
 
 // Gets the value of a specific iBUS channel.
@@ -31,12 +32,17 @@ uint16_t IbusReceiver::getChannel(int channel) const
     // The const_cast is necessary because the underlying library's getChannel
     // is not marked as const, but our interface requires it to be.
     // This is safe as getChannel in the library only reads data.
-    return const_cast<FlyskyIBUS &>(_ibus).getChannel(channel);
+    uint16_t value = const_cast<FlyskyIBUS &>(_ibus).getChannel(channel);
+    // Update last receive time if a valid channel value is received
+    if (value > 0) { // Assuming 0 is an invalid/unreceived value
+        const_cast<IbusReceiver*>(this)->_lastReceiveTime = millis();
+    }
+    return value;
 }
 
 // Checks the failsafe status from the iBUS receiver.
 bool IbusReceiver::hasFailsafe() const
 {
-    uint16_t failsafe_channel_value = getChannel(CHANNEL_FAILSAFE);
-    return failsafe_channel_value > settings.receiver.failsafeThreshold;
+    // Failsafe is active if no signal has been received for a certain period.
+    return (millis() - _lastReceiveTime > IBUS_SIGNAL_TIMEOUT_MS);
 }

@@ -30,6 +30,27 @@ enum ReceiverProtocol
     // PROTOCOL_SBUS, // Future implementation
 };
 
+// Supported IMU Protocols
+enum ImuProtocol
+{
+    IMU_MPU6050, // MPU6050 sensor
+    // Add other IMU protocols here as needed
+};
+
+// Flight Control Inputs
+enum FlightControlInput
+{
+    THROTTLE,
+    ROLL,
+    PITCH,
+    YAW,
+    ARM_SWITCH,
+    FAILSAFE_SWITCH,
+    FLIGHT_MODE_SWITCH,
+    // Add other control inputs as needed
+    NUM_FLIGHT_CONTROL_INPUTS // Keep this last to count the number of inputs
+};
+
 // Flight Modes
 enum FlightMode
 {
@@ -42,13 +63,32 @@ struct FlightControllerSettings
     // Receiver Protocol Selection
     ReceiverProtocol receiverProtocol = PROTOCOL_IBUS;
 
+    // IMU Protocol Selection
+    ImuProtocol imuProtocol = IMU_MPU6050;
+
+    // Receiver Channel Mapping
+    struct
+    {
+        int channel[NUM_FLIGHT_CONTROL_INPUTS];
+    } channelMapping = {
+        .channel = {
+            [THROTTLE] = 1, // iBUS Channel 2 (0-indexed)
+            [ROLL] = 0,     // iBUS Channel 1
+            [PITCH] = 2,    // iBUS Channel 3
+            [YAW] = 3,      // iBUS Channel 4
+            [ARM_SWITCH] = 4, // iBUS Channel 5
+            [FAILSAFE_SWITCH] = 5, // iBUS Channel 6
+            [FLIGHT_MODE_SWITCH] = 6 // iBUS Channel 7
+        }
+    };
+
     // PID Controller Gains
     struct
     {
-        float kp, ki, kd;
-    } pidRoll{0.8, 0.001, 0.05},
-        pidPitch{0.8, 0.001, 0.05},
-        pidYaw{1.5, 0.005, 0.1};
+        int kp, ki, kd;
+    } pidRoll{800, 1, 50},
+        pidPitch{800, 1, 50},
+        pidYaw{1500, 5, 100};
 
     // PID Integral Wind-up Limit
     float pidIntegralLimit = 400.0;
@@ -71,7 +111,8 @@ struct FlightControllerSettings
     // Attitude Estimation
     struct
     {
-        float complementaryFilterGain = 0.98; // 98% gyro, 2% accelerometer
+        float madgwickSampleFreq = 250.0f; // Hz
+        float madgwickBeta = 0.1f;         // Madgwick filter gain
     } filter;
 
     // Receiver Settings
@@ -85,7 +126,20 @@ struct FlightControllerSettings
 
     // Serial Logging
     unsigned long printIntervalMs = 100; // Print every 100 milliseconds
+
+    // Motor Settings
+    float motorIdleSpeedPercent = 4.0f; // Minimum throttle percentage for motors when armed
 };
+
+static constexpr int PID_SCALE_FACTOR = 1000;
+
+// General Constants
+static constexpr int RECEIVER_PROTOCOL_COUNT = 2;
+static constexpr int IMU_PROTOCOL_COUNT = 1;
+static constexpr int RECEIVER_CHANNEL_COUNT = 16;
+static constexpr unsigned long CLI_REBOOT_DELAY_MS = 100;
+static constexpr unsigned long IMU_INIT_FAIL_DELAY_MS = 10;
+static constexpr unsigned long SERIAL_BAUD_RATE = 115200;
 
 // Create a single, global instance of the settings
 // extern FlightControllerSettings settings; // Now declared in settings.h

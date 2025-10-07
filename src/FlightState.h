@@ -24,7 +24,7 @@ struct FlightState
     Vector3f accelReadings; // Calibrated accelerometer readings (X, Y, Z) in g
 
     // --- Receiver & Setpoints ---
-    uint16_t receiverChannels[16]; // Raw values from the receiver (e.g., 1000-2000)
+    uint16_t receiverChannels[RECEIVER_CHANNEL_COUNT]; // Raw values from the receiver (e.g., 1000-2000)
     Vector3f setpoints;            // Target values for roll, pitch, yaw (can be angle or rate)
 
     // --- Safety & Status ---

@@ -33,7 +33,15 @@ void saveSettings()
     preferences.putFloat("rate.y", settings.rates.maxRateYaw);
     preferences.putFloat("rate.acro_rp", settings.rates.maxRateRollPitch);
 
-    preferences.putFloat("filter.gain", settings.filter.complementaryFilterGain);
+    preferences.putFloat("filter.madgwick.sample_freq", settings.filter.madgwickSampleFreq);
+    preferences.putFloat("filter.madgwick.beta", settings.filter.madgwickBeta);
+
+    // Save channel mapping
+    for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)
+    {
+        String key = "rx.map." + String(i);
+        preferences.putInt(key.c_str(), settings.channelMapping.channel[i]);
+    }
 
     // Mark that settings have been initialized
     preferences.putBool(INIT_KEY, true);
@@ -68,7 +76,15 @@ void loadSettings()
         settings.rates.maxRateYaw = preferences.getFloat("rate.y", settings.rates.maxRateYaw);
         settings.rates.maxRateRollPitch = preferences.getFloat("rate.acro_rp", settings.rates.maxRateRollPitch);
 
-        settings.filter.complementaryFilterGain = preferences.getFloat("filter.gain", settings.filter.complementaryFilterGain);
+        settings.filter.madgwickSampleFreq = preferences.getFloat("filter.madgwick.sample_freq", settings.filter.madgwickSampleFreq);
+        settings.filter.madgwickBeta = preferences.getFloat("filter.madgwick.beta", settings.filter.madgwickBeta);
+
+        // Load channel mapping
+        for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)
+        {
+            String key = "rx.map." + String(i);
+            settings.channelMapping.channel[i] = preferences.getInt(key.c_str(), settings.channelMapping.channel[i]);
+        }
     }
     else
     {

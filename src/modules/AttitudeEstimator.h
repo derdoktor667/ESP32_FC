@@ -2,19 +2,21 @@
 #define ATTITUDE_ESTIMATOR_MODULE_H
 
 #include "../FlightState.h"
-#include <ESP32_MPU6050.h>
+#include "../ImuInterface.h"
+#include "MadgwickFilter.h"
 
-// Estimates the drone's attitude using a complementary filter.
+// Estimates the drone's attitude using a Madgwick filter.
 //
 // This class encapsulates the logic for sensor fusion, taking raw sensor
 // data and calculating the roll, pitch, and yaw angles.
 class AttitudeEstimator
 {
 public:
-    // Constructor.
-    // - imu: A reference to the MPU6050 sensor.
-    // - settings: A reference to the flight controller settings.
-    AttitudeEstimator(ESP32_MPU6050 &imu, const FlightControllerSettings &settings);
+    // Default constructor for deferred initialization.
+    AttitudeEstimator();
+
+    // Initializes the estimator with references to the IMU and settings.
+    void init(ImuInterface &imu, const FlightControllerSettings &settings);
 
     // Initializes the estimator.
     void begin();
@@ -29,16 +31,10 @@ public:
     void calibrate();
 
 private:
-    ESP32_MPU6050 &_imu; // Reference to the IMU sensor
-    const FlightControllerSettings &_settings; // Reference to global settings
+    ImuInterface *_imu = nullptr; // Pointer to the IMU sensor interface
+    const FlightControllerSettings *_settings = nullptr; // Pointer to global settings
 
-    // Sensor offsets
-    float _gyroOffsetX = 0.0f;
-    float _gyroOffsetY = 0.0f;
-    float _gyroOffsetZ = 0.0f;
-    float _accelOffsetX = 0.0f;
-    float _accelOffsetY = 0.0f;
-    float _accelOffsetZ = 0.0f;
+    MadgwickFilter _madgwickFilter; // Madgwick filter instance
 
     unsigned long _lastUpdateTime = 0;
 };

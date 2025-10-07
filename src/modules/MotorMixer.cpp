@@ -37,11 +37,15 @@ void MotorMixer::apply(FlightState &state)
     float m3 = state.throttle - state.pidOutput.roll - state.pidOutput.pitch - state.pidOutput.yaw;  // Rear Right
     float m4 = state.throttle + state.pidOutput.roll - state.pidOutput.pitch + state.pidOutput.yaw;   // Rear Left
 
+    // Calculate the minimum throttle value based on user setting, ensuring it's at least DSHOT_MIN_THROTTLE
+    float minActiveThrottle = DSHOT_MAX_THROTTLE * (_settings.motorIdleSpeedPercent / 100.0f);
+    int effectiveMinThrottle = max((int)DSHOT_MIN_THROTTLE, (int)minActiveThrottle);
+
     // Constrain motor values to the allowed DShot range and store them in the state
-    state.motorOutputs[0] = constrain(m1, DSHOT_MIN_THROTTLE, DSHOT_MAX_THROTTLE);
-    state.motorOutputs[1] = constrain(m2, DSHOT_MIN_THROTTLE, DSHOT_MAX_THROTTLE);
-    state.motorOutputs[2] = constrain(m3, DSHOT_MIN_THROTTLE, DSHOT_MAX_THROTTLE);
-    state.motorOutputs[3] = constrain(m4, DSHOT_MIN_THROTTLE, DSHOT_MAX_THROTTLE);
+    state.motorOutputs[0] = constrain(m1, effectiveMinThrottle, DSHOT_MAX_THROTTLE);
+    state.motorOutputs[1] = constrain(m2, effectiveMinThrottle, DSHOT_MAX_THROTTLE);
+    state.motorOutputs[2] = constrain(m3, effectiveMinThrottle, DSHOT_MAX_THROTTLE);
+    state.motorOutputs[3] = constrain(m4, effectiveMinThrottle, DSHOT_MAX_THROTTLE);
 
     // Send the final commands to the motors
     _motor1.sendThrottle(state.motorOutputs[0]);

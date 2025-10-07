@@ -14,4 +14,9 @@ enum class CliCommand
 // Updated to return a CliCommand, indicating if a special action is requested.
 CliCommand handleSerialCli(const FlightState &state);
 
+// Helper functions for protocol string conversion
+String getReceiverProtocolString(ReceiverProtocol protocol);
+String getImuProtocolString(ImuProtocol protocol);
+String getFlightControlInputString(FlightControlInput input);
+
 #endif

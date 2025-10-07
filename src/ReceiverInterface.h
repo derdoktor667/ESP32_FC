@@ -3,15 +3,6 @@
 
 #include <Arduino.h>
 
-// Channel mapping constants, can be used by all implementations
-const int CHANNEL_THROTTLE = 0;
-const int CHANNEL_ROLL = 1;
-const int CHANNEL_PITCH = 2;
-const int CHANNEL_YAW = 3;
-const int CHANNEL_ARMING = 4;
-const int CHANNEL_FLIGHT_MODE = 5;
-const int CHANNEL_FAILSAFE = 6;
-
 // An abstract interface for different RC receiver protocols.
 // This class defines a common set of functions that any receiver implementation
 // (like iBUS, SBUS, PPM) must provide. The flight controller will interact

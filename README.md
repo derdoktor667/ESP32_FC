@@ -10,12 +10,12 @@ An advanced flight controller firmware for quadcopters and other RC vehicles, bu
 
 *   **Modular Object-Oriented Architecture**: The entire flight control logic is now encapsulated in dedicated C++ classes, promoting clear responsibilities, explicit data flow, and easy extensibility.
 *   **Centralized Flight State**: A single `FlightState` struct holds all dynamic data (attitude, setpoints, armed status, etc.), making the drone's current state transparent and easy to manage.
-*   **Robust Flight Stabilization**: Utilizes an MPU6050 IMU combined with a complementary filter for precise attitude estimation (Roll, Pitch, Yaw), now managed by the `AttitudeEstimator` module.
+*   **Robust Flight Stabilization**: Utilizes an `ImuInterface` abstraction for flexible IMU sensor support (initially MPU6050, defaulting to highest range settings) combined with a **Madgwick filter** for precise attitude estimation (Roll, Pitch, Yaw), now managed by the `AttitudeEstimator` module.
 *   **High-Performance Motor Control**: Employs hardware-accelerated DShot300 for low-latency, high-resolution communication with ESCs, orchestrated by the `MotorMixer` module.
-*   **Flexible Control System**: Supports interchangeable receiver protocols (initially i-BUS and custom PPM) thanks to a clean abstraction layer and `SetpointManager` for control input processing.
-*   **Critical Safety Management**: Dedicated `SafetyManager` module handles arming/disarming and high-priority Failsafe logic.
-*   **Centralized Configuration**: All tunable parameters (PIDs, rates, filters) are neatly organized in a single `FlightControllerSettings` struct for easy adjustments.
-*   **Interactive CLI Tuning**: A user-friendly serial CLI allows for on-the-fly adjustments of all settings, including PIDs, rates, and sensor calibration, without needing to recompile.
+*   **Flexible Control System**: Supports interchangeable receiver protocols (initially i-BUS and custom PPM) and features **configurable channel mapping** for assigning receiver channels to flight control inputs (Throttle, Roll, Pitch, Yaw, Arm, Failsafe, Flight Mode) thanks to a clean abstraction layer and `SetpointManager` for control input processing.
+*   **Critical Safety Management**: Dedicated `SafetyManager` module handles arming/disarming and high-priority Failsafe logic, now including both receiver signal loss detection and a configurable failsafe switch.
+*   **Centralized Configuration**: All tunable parameters (PIDs, rates, filters, motor idle speed) are neatly organized in a single `FlightControllerSettings` struct for easy adjustments. PID gains are stored as scaled integers, allowing for fine adjustment via the CLI.
+*   **Interactive CLI Tuning**: A user-friendly serial CLI allows for on-the-fly adjustments of all settings, including PIDs (with fine-grained control), rates, sensor calibration, motor idle speed, and IMU/receiver protocol selection. Settings are saved to flash and the ESP32 automatically reboots to apply changes.
 
 ---
 
@@ -77,6 +77,12 @@ Once activated, you can use the following commands:
 *   `reset`: Resets all settings to their default values and saves them to flash.
 *   `reboot`: Reboots the ESP32 flight controller.
 *   `calibrate_imu`: Triggers a manual calibration of the MPU6050 IMU sensor. Ensure the drone is level and still during calibration.
+*   `motor.idle_speed`: Get/Set the minimum throttle percentage for motors when armed (e.g., `set motor.idle_speed 4.0`).
+*   `rx.protocol`: Get/Set receiver protocol (0:IBUS, 1:PPM).
+*   `imu.protocol`: Get/Set IMU protocol (0:MPU6050).
+*   `madgwick.sample_freq`: Get/Set Madgwick filter sample frequency (Hz).
+*   `madgwick.beta`: Get/Set Madgwick filter beta parameter.
+*   `rx.map.<input>`: Get/Set receiver channel for a flight control input (e.g., `set rx.map.roll 0`). Inputs: THROTTLE, ROLL, PITCH, YAW, ARM_SWITCH, FAILSAFE_SWITCH, FLIGHT_MODE_SWITCH.
 *   `help`: Displays a list of all available commands and their descriptions.
 *   `exit`: Deactivates the CLI and returns to normal serial logging (if enabled).
 
@@ -106,25 +112,33 @@ Available commands:
   exit                  - Deactivate the CLI.
 
 ESP32_FC > get pid.roll.kp
-0.8000
-ESP32_FC > set pid.roll.kp 0.9
-Set pid.roll.kp to 0.9
+0.800
+ESP32_FC > set pid.roll.kp 0.950
+Set pid.roll.kp to 0.950
+ESP32_FC > get motor.idle_speed
+4.0
+ESP32_FC > set motor.idle_speed 5.5
+Set motor.idle_speed to 5.5
+ESP32_FC > set rx.map.roll 0
+Set rx.map.roll to 0
+ESP32_FC > set rx.map.throttle 1
+Set rx.map.throttle to 1
 ESP32_FC > dump
 
 --- [ Flight Controller Settings ] ---
 
 --- PID Settings ---
-  pid.roll.kp              : 0.9000
-  pid.roll.ki              : 0.0010
-  pid.roll.kd              : 0.0500
+  pid.roll.kp              : 0.950
+  pid.roll.ki              : 0.001
+  pid.roll.kd              : 0.050
 
-  pid.pitch.kp             : 0.8000
-  pid.pitch.ki             : 0.0010
-  pid.pitch.kd             : 0.0500
+  pid.pitch.kp             : 0.800
+  pid.pitch.ki             : 0.001
+  pid.pitch.kd             : 0.050
 
-  pid.yaw.kp               : 1.5000
-  pid.yaw.ki               : 0.0050
-  pid.yaw.kd               : 0.1000
+  pid.yaw.kp               : 1.500
+  pid.yaw.ki               : 0.005
+  pid.yaw.kd               : 0.100
 
   pid.integral_limit       : 400.00
 
@@ -134,7 +148,8 @@ ESP32_FC > dump
   rates.acro               : 90.00 (deg/s)
 
 --- Filter Settings ---
-  filter.gain              : 0.98
+  madgwick.sample_freq     : 250.0 (Hz)
+  madgwick.beta            : 0.1000
 
 --- Receiver Settings ---
   rx.min                   : 1000
@@ -142,12 +157,29 @@ ESP32_FC > dump
   rx.arming_threshold      : 1500
   rx.failsafe_threshold    : 1500
 
+--- IMU Settings ---
+  imu.protocol             : MPU6050
+
+--- Receiver Channel Mapping ---
+  THROTTLE                 : 1
+  ROLL                     : 0
+  PITCH                    : 2
+  YAW                      : 3
+  ARM_SWITCH               : 4
+  FAILSAFE_SWITCH          : 5
+  FLIGHT_MODE_SWITCH       : 6
+
 --- Logging Settings ---
   log.interval             : 100 (ms)
 
+--- Motor Settings ---
+  motor.idle_speed         : 5.5 (%)
+
 --------------------------------------
 ESP32_FC > save
-Settings saved to flash memory.
+INFO: Settings saved. Rebooting...
+(ESP32 reboots and reconnects)
+--- ESP32 Flight Controller Ready ---
 ESP32_FC > exit
 ```
 
@@ -166,13 +198,16 @@ The firmware is organized into a clean, modular, object-oriented structure withi
 | `ReceiverInterface.h`     | Defines the abstract base class for all RC receiver protocols.                  |
 | `IbusReceiver.h/.cpp`     | Concrete implementation for the Flysky i-BUS protocol.                        |
 | `PpmReceiver.h/.cpp`      | Custom implementation for the PPM protocol.                                   |
+| `ImuInterface.h`          | Defines the abstract base class for all IMU sensor protocols.                   |
+| `Mpu6050Imu.h/.cpp`       | Concrete implementation for the MPU6050 IMU sensor.                           |
+| `MadgwickFilter.h/.cpp`   | Implements the Madgwick filter for robust attitude estimation.                  |
 | `pid_controller.h/.cpp`     | PID controller logic (used by `PidProcessor`).                                  |
 | `serial_logger.h/.cpp`      | Manages formatted serial output for debugging and status monitoring.            |
 | `cli.h/.cpp`              | User-friendly serial command-line interface for runtime configuration.          |
 | `modules/`                | Directory containing the core processing modules:                               |
-| &nbsp;&nbsp;`AttitudeEstimator.h/.cpp` | Encapsulates IMU reading, calibration, and complementary filter for attitude estimation. |
+| &nbsp;&nbsp;`AttitudeEstimator.h/.cpp` | Encapsulates IMU reading, calibration, and Madgwick filter for attitude estimation. |
 | &nbsp;&nbsp;`SafetyManager.h/.cpp`     | Manages arming, disarming, and failsafe logic based on receiver input.          |
-| &nbsp;&nbsp;`SetpointManager.h/.cpp`   | Calculates target setpoints for roll, pitch, and yaw based on receiver input and flight mode. |
+| &nbsp;&nbsp;`SetpointManager.h/.cpp`   | Calculates target setpoints for roll, pitch, and yaw based on receiver input and configurable channel mapping. |
 | &nbsp;&nbsp;`PidProcessor.h/.cpp`      | Manages and executes the PID control loops for all axes.                        |
 | &nbsp;&nbsp;`MotorMixer.h/.cpp`        | Mixes PID outputs with throttle and sends commands to the motors.               |
 ---

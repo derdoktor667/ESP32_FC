@@ -6,7 +6,7 @@
 // Volatile is crucial here, as these variables are modified by an ISR and read in the main loop.
 static volatile uint16_t _ppm_channel_values[PPM_CHANNEL_COUNT] = {0};
 static volatile int _ppm_current_channel = 0;
-static volatile unsigned long _ppm_last_interrupt_time = 0;
+static volatile unsigned long _ppm_last_valid_pulse_time = 0; // Renamed for clarity
 
 // The minimum time (in microseconds) for a pulse to be considered a sync pulse.
 // A standard PPM frame is ~22.5ms, so a gap > 4ms is a reliable indicator of sync.
@@ -17,8 +17,8 @@ constexpr unsigned long PPM_SYNC_GAP_US = 4000;
 void IRAM_ATTR _handle_ppm_interrupt()
 {
     unsigned long now = micros();
-    unsigned long pulse_width = now - _ppm_last_interrupt_time;
-    _ppm_last_interrupt_time = now;
+    unsigned long pulse_width = now - _ppm_last_valid_pulse_time; // Use _ppm_last_valid_pulse_time
+    _ppm_last_valid_pulse_time = now; // Update on every rising edge
 
     if (pulse_width > PPM_SYNC_GAP_US)
     {
@@ -40,7 +40,7 @@ void IRAM_ATTR _handle_ppm_interrupt()
 // --- PpmReceiver Class Implementation ---
 
 PpmReceiver::PpmReceiver(gpio_num_t ppmPin)
-    : _ppmPin(ppmPin)
+    : _ppmPin(ppmPin), _lastReceiveTime(0) // Initialize _lastReceiveTime
 {
 }
 
@@ -49,12 +49,18 @@ void PpmReceiver::begin()
 {
     pinMode(_ppmPin, INPUT_PULLUP); // Use a pull-up to ensure a stable line if the receiver is disconnected
     attachInterrupt(digitalPinToInterrupt(_ppmPin), _handle_ppm_interrupt, RISING);
+    _ppm_last_valid_pulse_time = micros(); // Assume signal is present at startup
+    _lastReceiveTime = millis(); // Initialize for hasFailsafe
 }
 
 // The PPM signal is read by interrupts, so this function does nothing.
 void PpmReceiver::update()
 {
     // All work is done in the ISR. No-op.
+    // Update _lastReceiveTime here based on _ppm_last_valid_pulse_time to avoid direct ISR access to member.
+    // Or, make _lastReceiveTime static and update in ISR.
+    // Let's make _lastReceiveTime static and update in ISR for simplicity.
+    // This comment block will be removed in the next step.
 }
 
 // Gets the value of a specific PPM channel.
@@ -71,13 +77,8 @@ uint16_t PpmReceiver::getChannel(int channel) const
 }
 
 // Checks for failsafe condition.
-// For PPM, a simple failsafe can be assuming that if the throttle (channel 0)
-// is below a certain threshold (e.g., 900), it's a failsafe.
-// A more robust implementation might check for the absence of interrupts for a period.
-// Returns true if failsafe is detected, false otherwise.
 bool PpmReceiver::hasFailsafe() const
 {
-    // A simple but effective failsafe: if throttle is unrealistically low, signal failsafe.
-    // Most PPM receivers output a value around 900 or less in failsafe.
-    return getChannel(CHANNEL_THROTTLE) < 950;
+    // Failsafe is active if no signal has been received for a certain period.
+    return (millis() - _ppm_last_valid_pulse_time > PPM_SIGNAL_TIMEOUT_MS);
 }

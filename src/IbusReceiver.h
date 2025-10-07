@@ -22,6 +22,8 @@ public:
 
 private:
     FlyskyIBUS _ibus; // The underlying iBUS library object
+    unsigned long _lastReceiveTime; // Timestamp of the last successfully received iBUS frame
+    static constexpr unsigned long IBUS_SIGNAL_TIMEOUT_MS = 500; // Milliseconds before signal is considered lost
 };
 
 #endif // IBUS_RECEIVER_H

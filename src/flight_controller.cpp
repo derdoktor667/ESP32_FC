@@ -10,14 +10,14 @@
 // Constructor: Initializes all hardware objects and processing modules.
 FlightController::FlightController()
     // Initialize hardware objects
-    : _imu(),
+    : _imuInterface(nullptr), // Initialize IMU interface pointer to nullptr
       _receiver(nullptr), // Initialize receiver pointer to nullptr
       _motor1(ESC_PIN_1, DSHOT300, false),
       _motor2(ESC_PIN_2, DSHOT300, false),
       _motor3(ESC_PIN_3, DSHOT300, false),
       _motor4(ESC_PIN_4, DSHOT300, false),
       // Initialize modules that don't depend on _receiver yet
-      _attitudeEstimator(_imu, settings),
+      // _attitudeEstimator is now default constructed and initialized in initialize()
       _safetyManager(nullptr), // Initialize safetyManager pointer to nullptr
       _setpointManager(nullptr), // Initialize setpointManager pointer to nullptr
       _pidProcessor(settings),
@@ -31,6 +31,7 @@ FlightController::~FlightController()
     delete _receiver;
     delete _safetyManager;
     delete _setpointManager;
+    delete _imuInterface;
 }
 
 // Initializes the flight controller.
@@ -61,7 +62,23 @@ void FlightController::initialize()
     _safetyManager = new SafetyManager(*_receiver, settings);
     _setpointManager = new SetpointManager(*_receiver, settings);
 
-    // --- Other Module Initializations ---
+    // --- IMU Initialization (Factory) ---
+    Serial.print("Initializing IMU Protocol: ");
+    switch (settings.imuProtocol)
+    {
+    case IMU_MPU6050:
+        Serial.println("MPU6050");
+        _imuInterface = new Mpu6050Imu();
+        break;
+    default:
+        Serial.println("Unknown! Halting.");
+        while (1);
+    }
+    _imuInterface->begin();
+    Serial.println("IMU initialized.");
+
+    // Now that _imuInterface is valid, initialize the attitude estimator
+    _attitudeEstimator.init(*_imuInterface, settings); // Initialize AttitudeEstimator here
     _attitudeEstimator.begin();
     _motorMixer.begin();
 }
@@ -71,7 +88,7 @@ void FlightController::runLoop()
 {
     // --- Read Inputs ---
     // Read all receiver channels into the state at once.
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < RECEIVER_CHANNEL_COUNT; i++) {
         _state.receiverChannels[i] = _receiver->getChannel(i);
     }
 

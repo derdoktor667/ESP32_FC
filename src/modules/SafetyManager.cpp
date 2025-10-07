@@ -11,8 +11,13 @@ SafetyManager::SafetyManager(ReceiverInterface &receiver, const FlightController
 // Performs the safety checks for failsafe and arming.
 void SafetyManager::update(FlightState &state)
 {
+    // Read channel values for arming and failsafe switches
+    uint16_t armingChannelValue = state.receiverChannels[_settings.channelMapping.channel[ARM_SWITCH]];
+    uint16_t failsafeSwitchChannelValue = state.receiverChannels[_settings.channelMapping.channel[FAILSAFE_SWITCH]];
+
     // Failsafe has the highest priority.
-    if (_receiver.hasFailsafe())
+    // Trigger failsafe if receiver signal is lost OR if the failsafe switch is active.
+    if (_receiver.hasFailsafe() || (failsafeSwitchChannelValue > _settings.receiver.failsafeThreshold))
     {
         if (!state.isFailsafeActive)
         {
@@ -33,8 +38,6 @@ void SafetyManager::update(FlightState &state)
     }
 
     // Arming logic is only processed if failsafe is not active.
-    uint16_t armingChannelValue = state.receiverChannels[CHANNEL_ARMING];
-
     if (armingChannelValue > _settings.receiver.armingThreshold && !state.isArmed)
     {
         state.isArmed = true;

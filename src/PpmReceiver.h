@@ -25,6 +25,8 @@ public:
 
 private:
     gpio_num_t _ppmPin; // The GPIO pin used for PPM input
+    unsigned long _lastReceiveTime; // Timestamp of the last successfully received PPM frame
+    static constexpr unsigned long PPM_SIGNAL_TIMEOUT_MS = 500; // Milliseconds before signal is considered lost
 };
 
 #endif // PPM_RECEIVER_H
