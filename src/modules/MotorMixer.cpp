@@ -33,9 +33,9 @@ void MotorMixer::apply(FlightState &state)
 
     // --- Motor Mixing (X-quad configuration) ---
     float m1 = state.throttle - state.pidOutput.roll + state.pidOutput.pitch + state.pidOutput.yaw; // Front Right
-    float m2 = state.throttle + state.pidOutput.roll + state.pidOutput.pitch - state.pidOutput.yaw;  // Front Left
-    float m3 = state.throttle - state.pidOutput.roll - state.pidOutput.pitch - state.pidOutput.yaw;  // Rear Right
-    float m4 = state.throttle + state.pidOutput.roll - state.pidOutput.pitch + state.pidOutput.yaw;   // Rear Left
+    float m2 = state.throttle + state.pidOutput.roll + state.pidOutput.pitch - state.pidOutput.yaw; // Front Left
+    float m3 = state.throttle - state.pidOutput.roll - state.pidOutput.pitch - state.pidOutput.yaw; // Rear Right
+    float m4 = state.throttle + state.pidOutput.roll - state.pidOutput.pitch + state.pidOutput.yaw; // Rear Left
 
     // Calculate the minimum throttle value based on user setting, ensuring it's at least DSHOT_MIN_THROTTLE
     float minActiveThrottle = DSHOT_MAX_THROTTLE * (_settings.motorIdleSpeedPercent / 100.0f);

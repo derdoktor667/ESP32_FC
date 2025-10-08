@@ -31,7 +31,7 @@ public:
     void calibrate();
 
 private:
-    ImuInterface *_imu = nullptr; // Pointer to the IMU sensor interface
+    ImuInterface *_imu = nullptr;                        // Pointer to the IMU sensor interface
     const FlightControllerSettings *_settings = nullptr; // Pointer to global settings
 
     MadgwickFilter _madgwickFilter; // Madgwick filter instance

@@ -2,29 +2,30 @@
 #include <math.h> // Required for sqrt, atan2, asin
 
 // Constructor initializes the filter with sample frequency and beta.
-MadgwickFilter::MadgwickFilter(float sampleFreq, float beta) :
-    _sampleFreq(sampleFreq),
-    _beta(beta),
-    _q0(1.0f),
-    _q1(0.0f),
-    _q2(0.0f),
-    _q3(0.0f) {}
+MadgwickFilter::MadgwickFilter(float sampleFreq, float beta) : _sampleFreq(sampleFreq),
+                                                               _beta(beta),
+                                                               _q0(1.0f),
+                                                               _q1(0.0f),
+                                                               _q2(0.0f),
+                                                               _q3(0.0f) {}
 
 // Fast inverse square root implementation.
 // Used to normalize vectors and quaternions.
-float MadgwickFilter::_invSqrt(float x) {
+float MadgwickFilter::_invSqrt(float x)
+{
     // This is a common fast inverse square root approximation.
     // It's often used in graphics and embedded systems for performance.
     // Note: For critical applications, consider `1.0f / sqrtf(x)` for better precision.
-    unsigned int i = 0x5F1F1412 - (*(unsigned int*)&x >> 1);
-    float y = *(float*)&i;
+    unsigned int i = 0x5F1F1412 - (*(unsigned int *)&x >> 1);
+    float y = *(float *)&i;
     return y * (1.69000231f - 0.714158168f * x * y * y);
 }
 
 // Madgwick filter update function.
 // This function performs one step of the Madgwick filter algorithm.
 // It takes gyroscope and accelerometer data to estimate orientation.
-void MadgwickFilter::update(float gx, float gy, float gz, float ax, float ay, float az) {
+void MadgwickFilter::update(float gx, float gy, float gz, float ax, float ay, float az)
+{
     float recipNorm;
     float s0, s1, s2, s3;
     float qDot1, qDot2, qDot3, qDot4;
@@ -37,7 +38,8 @@ void MadgwickFilter::update(float gx, float gy, float gz, float ax, float ay, fl
     qDot4 = 0.5f * (_q0 * gz + _q1 * gy - _q2 * gx);
 
     // Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
-    if (!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
+    if (!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f)))
+    {
         // Normalize accelerometer measurement
         recipNorm = _invSqrt(ax * ax + ay * ay + az * az);
         ax *= recipNorm;
@@ -93,7 +95,8 @@ void MadgwickFilter::update(float gx, float gy, float gz, float ax, float ay, fl
 
 // Returns the estimated roll angle in degrees.
 // Roll is rotation around the X-axis.
-float MadgwickFilter::getRoll() const {
+float MadgwickFilter::getRoll() const
+{
     // Convert quaternion to Euler angles (roll, pitch, yaw)
     // Roll (x-axis rotation)
     return atan2f(_q0 * _q1 + _q2 * _q3, 0.5f - _q1 * _q1 - _q2 * _q2) * (180.0f / PI);
@@ -101,25 +104,31 @@ float MadgwickFilter::getRoll() const {
 
 // Returns the estimated pitch angle in degrees.
 // Pitch is rotation around the Y-axis.
-float MadgwickFilter::getPitch() const {
+float MadgwickFilter::getPitch() const
+{
     // Pitch (y-axis rotation)
     float sinp = 2.0f * (_q0 * _q2 - _q1 * _q3);
-    if (fabs(sinp) >= 1) {
+    if (fabs(sinp) >= 1)
+    {
         return copysignf(PI / 2.0f, sinp) * (180.0f / PI); // Use 90 degrees if out of range
-    } else {
+    }
+    else
+    {
         return asinf(sinp) * (180.0f / PI);
     }
 }
 
 // Returns the estimated yaw angle in degrees.
 // Yaw is rotation around the Z-axis.
-float MadgwickFilter::getYaw() const {
+float MadgwickFilter::getYaw() const
+{
     // Yaw (z-axis rotation)
     return atan2f(_q1 * _q2 + _q0 * _q3, 0.5f - _q2 * _q2 - _q3 * _q3) * (180.0f / PI);
 }
 
 // Returns the current quaternion components.
-void MadgwickFilter::getQuaternion(float& q0, float& q1, float& q2, float& q3) const {
+void MadgwickFilter::getQuaternion(float &q0, float &q1, float &q2, float &q3) const
+{
     q0 = _q0;
     q1 = _q1;
     q2 = _q2;

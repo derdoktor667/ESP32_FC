@@ -43,8 +43,9 @@ void saveSettings()
         preferences.putInt(key.c_str(), settings.channelMapping.channel[i]);
     }
 
-    // Mark that settings have been initialized
-    preferences.putBool(INIT_KEY, true);
+    // Logging
+    preferences.putULong("log.interval", settings.printIntervalMs);
+    preferences.putBool("log.enabled", settings.enableLogging);
 
     preferences.end();
     Serial.println("Settings saved to flash memory.");
@@ -78,6 +79,10 @@ void loadSettings()
 
         settings.filter.madgwickSampleFreq = preferences.getFloat("filter.madgwick.sample_freq", settings.filter.madgwickSampleFreq);
         settings.filter.madgwickBeta = preferences.getFloat("filter.madgwick.beta", settings.filter.madgwickBeta);
+
+        // Logging
+        settings.printIntervalMs = preferences.getULong("log.interval", settings.printIntervalMs);
+        settings.enableLogging = preferences.getBool("log.enabled", settings.enableLogging);
 
         // Load channel mapping
         for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)

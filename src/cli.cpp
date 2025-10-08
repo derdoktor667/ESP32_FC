@@ -74,6 +74,7 @@ void printCliHelp()
     Serial.printf("  %-22s - %s\n", "madgwick.sample_freq", "Get/Set Madgwick filter sample frequency (Hz).");
     Serial.printf("  %-22s - %s\n", "madgwick.beta", "Get/Set Madgwick filter beta parameter.");
     Serial.printf("  %-22s - %s\n", "rx.map.<input>", "Get/Set receiver channel for a flight control input (e.g., rx.map.roll 0).");
+    Serial.printf("  %-22s - %s\n", "log on/off", "Enable or disable all logging output.");
     Serial.printf("  %-22s - %s\n", "help", "Show this help message.");
     Serial.printf("  %-22s - %s\n", "exit", "Deactivate the CLI.");
     Serial.print("\nESP32_FC > ");
@@ -111,7 +112,31 @@ CliCommand executeCliCommand(String command, const FlightState &state)
     }
     else if (commandName.equals("debug"))
     {
-        printFlightStatus(state); // Pass the state to the logger
+        if (settings.enableLogging)
+        {
+            printFlightStatus(state); // Pass the state to the logger
+        }
+        else
+        {
+            Serial.println("INFO: Logging is currently off. Use 'log on' to enable.");
+        }
+    }
+    else if (commandName.equals("log"))
+    {
+        if (commandArgs.equals("on"))
+        {
+            settings.enableLogging = true;
+            Serial.println("INFO: Logging enabled.");
+        }
+        else if (commandArgs.equals("off"))
+        {
+            settings.enableLogging = false;
+            Serial.println("INFO: Logging disabled.");
+        }
+        else
+        {
+            Serial.println("ERROR: Invalid 'log' command. Use 'log on' or 'log off'.");
+        }
     }
     else if (commandName.equals("save"))
     {
@@ -385,7 +410,6 @@ String getFlightControlInputString(FlightControlInput input)
         return "UNKNOWN";
     }
 }
-
 
 void handleDumpCommand()
 {

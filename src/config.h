@@ -12,10 +12,10 @@
 const gpio_num_t IBUS_RX_PIN = GPIO_NUM_16;
 
 // Define ESC pins
-const gpio_num_t ESC_PIN_1 = GPIO_NUM_27; // Front-Right
-const gpio_num_t ESC_PIN_2 = GPIO_NUM_25; // Front-Left
-const gpio_num_t ESC_PIN_3 = GPIO_NUM_26; // Rear-Right
-const gpio_num_t ESC_PIN_4 = GPIO_NUM_33; // Rear-Left
+const gpio_num_t ESC_PIN_FRONT_RIGHT = GPIO_NUM_27; // Front-Right
+const gpio_num_t ESC_PIN_FRONT_LEFT = GPIO_NUM_25; // Front-Left
+const gpio_num_t ESC_PIN_REAR_RIGHT = GPIO_NUM_26; // Rear-Right
+const gpio_num_t ESC_PIN_REAR_LEFT = GPIO_NUM_33; // Rear-Left
 
 
 // =================================================================================
@@ -125,7 +125,8 @@ struct FlightControllerSettings
     } receiver;
 
     // Serial Logging
-    unsigned long printIntervalMs = 100; // Print every 100 milliseconds
+    unsigned long printIntervalMs = 0; // Print every 0 milliseconds (disabled by default)
+    bool enableLogging = false; // Global flag to enable/disable all logging output
 
     // Motor Settings
     float motorIdleSpeedPercent = 4.0f; // Minimum throttle percentage for motors when armed

@@ -12,10 +12,10 @@ FlightController::FlightController()
     // Initialize hardware objects
     : _imuInterface(nullptr), // Initialize IMU interface pointer to nullptr
       _receiver(nullptr), // Initialize receiver pointer to nullptr
-      _motor1(ESC_PIN_1, DSHOT300, false),
-      _motor2(ESC_PIN_2, DSHOT300, false),
-      _motor3(ESC_PIN_3, DSHOT300, false),
-      _motor4(ESC_PIN_4, DSHOT300, false),
+      _motor1(ESC_PIN_FRONT_RIGHT, DSHOT300, false),
+      _motor2(ESC_PIN_FRONT_LEFT, DSHOT300, false),
+      _motor3(ESC_PIN_REAR_RIGHT, DSHOT300, false),
+      _motor4(ESC_PIN_REAR_LEFT, DSHOT300, false),
       // Initialize modules that don't depend on _receiver yet
       // _attitudeEstimator is now default constructed and initialized in initialize()
       _safetyManager(nullptr), // Initialize safetyManager pointer to nullptr
@@ -100,10 +100,10 @@ void FlightController::runLoop()
     _motorMixer.apply(_state);
 
     // --- Logging and CLI ---
-    if (millis() - _lastLogTime >= settings.printIntervalMs)
+    if (millis() - _lastSerialLogTime >= settings.printIntervalMs)
     {
         printFlightStatus(_state);
-        _lastLogTime = millis();
+        _lastSerialLogTime = millis();
     }
     CliCommand cliCmd = handleSerialCli(_state);
     if (cliCmd == CliCommand::CALIBRATE_IMU)

@@ -4,6 +4,9 @@
 // This function is now responsible for printing the flight status based on the provided state.
 void printFlightStatus(const FlightState &state)
 {
+    if (!settings.enableLogging) {
+        return; // Do not print if logging is disabled globally
+    }
     // Example of how to print the new state-based data.
     // This is not exhaustive and can be expanded.
     Serial.print("Roll: ");

@@ -5,7 +5,7 @@
 // Default constructor: Initializes pointers to nullptr.
 AttitudeEstimator::AttitudeEstimator()
     : _imu(nullptr), _settings(nullptr), // Initialize pointers to nullptr
-      _madgwickFilter(0.0f, 0.0f) // Initialize Madgwick filter with dummy values
+      _madgwickFilter(0.0f, 0.0f)        // Initialize Madgwick filter with dummy values
 {
 }
 
@@ -25,7 +25,10 @@ void AttitudeEstimator::begin()
     if (!_imu->begin())
     {
         Serial.println("Failed to initialize IMU. Halting.");
-        while (1) { delay(IMU_INIT_FAIL_DELAY_MS); }
+        while (1)
+        {
+            delay(IMU_INIT_FAIL_DELAY_MS);
+        }
     }
     Serial.println("IMU initialized.");
 

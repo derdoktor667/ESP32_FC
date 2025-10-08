@@ -44,7 +44,7 @@ private:
     MotorMixer _motorMixer;
 
     // --- Timing ---
-    unsigned long _lastLogTime = 0;
+    unsigned long _lastSerialLogTime = 0;
 
     // Destructor to clean up dynamically allocated objects
     public: ~FlightController();
