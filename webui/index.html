@@ -32,10 +32,30 @@
                 <div class="card-body">
                     <button id="disconnectButton" class="btn btn-danger">Disconnect</button>
                     <p class="mt-3">Status: <span id="configPageConnectionStatus">Disconnected</span></p>
-                    <div class="form-check form-switch mt-3">
-                        <input class="form-check-input" type="checkbox" id="liveDataToggle" disabled>
-                        <label class="form-check-label" for="liveDataToggle">Enable Live Data</label>
-                    </div>
+
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">Live Data</div>
+                <div class="card-body">
+                    <p>Attitude: 
+                        Roll: <span id="live-roll" class="fw-bold">0.00</span>, 
+                        Pitch: <span id="live-pitch" class="fw-bold">0.00</span>, 
+                        Yaw: <span id="live-yaw" class="fw-bold">0.00</span>
+                    </p>
+                    <p>Status: 
+                        Armed: <span id="live-armed" class="fw-bold">No</span>, 
+                        Failsafe: <span id="live-failsafe" class="fw-bold">No</span>, 
+                        Mode: <span id="live-mode" class="fw-bold">Unknown</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">Receiver Channels</div>
+                <div class="card-body" id="receiver-channels">
+                    <!-- Channels will be dynamically added here -->
                 </div>
             </div>
 

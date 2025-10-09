@@ -4,29 +4,43 @@
 // This function is now responsible for printing the flight status based on the provided state.
 void printFlightStatus(const FlightState &state)
 {
-    if (!settings.enableLogging) {
+    if (!settings.enableLogging)
+    {
         return; // Do not print if logging is disabled globally
     }
-    // Example of how to print the new state-based data.
-    // This is not exhaustive and can be expanded.
-    Serial.print("Roll: ");
-    Serial.print(state.attitude.roll);
-    Serial.print("\tPitch: ");
-    Serial.print(state.attitude.pitch);
-    Serial.print("\tYaw: ");
-    Serial.print(state.attitude.yaw);
 
-    Serial.print("\tSetRoll: ");
-    Serial.print(state.setpoints.roll);
-    Serial.print("\tSetPitch: ");
-    Serial.print(state.setpoints.pitch);
+    // Manually construct the JSON string
+    Serial.print("{");
 
-    Serial.print("\tArmed: ");
-    Serial.print(state.isArmed ? "YES" : "NO");
-    Serial.print("\tFailsafe: ");
-    Serial.print(state.isFailsafeActive ? "ACTIVE" : "inactive");
+    // Attitude
+    Serial.print("\"attitude\":{");
+    Serial.print("\"roll\":");
+    Serial.print(state.attitude.roll, 2);
+    Serial.print(",\"pitch\":");
+    Serial.print(state.attitude.pitch, 2);
+    Serial.print(",\"yaw\":");
+    Serial.print(state.attitude.yaw, 2);
+    Serial.print("}");
 
-    Serial.print("\tMode: ");
+    Serial.print(",");
+
+    // Setpoints
+    Serial.print("\"setpoints\":{");
+    Serial.print("\"roll\":");
+    Serial.print(state.setpoints.roll, 2);
+    Serial.print(",\"pitch\":");
+    Serial.print(state.setpoints.pitch, 2);
+    Serial.print("}");
+
+    Serial.print(",");
+
+    // Status
+    Serial.print("\"status\":{");
+    Serial.print("\"armed\":");
+    Serial.print(state.isArmed ? "true" : "false");
+    Serial.print(",\"failsafe\":");
+    Serial.print(state.isFailsafeActive ? "true" : "false");
+    Serial.print(",\"mode\":\"");
     switch (state.currentFlightMode)
     {
     case ACRO_MODE:
@@ -39,5 +53,21 @@ void printFlightStatus(const FlightState &state)
         Serial.print("UNKNOWN");
         break;
     }
-    Serial.println();
+    Serial.print("\"}");
+
+    Serial.print(",");
+
+    // Receiver Channels
+    Serial.print("\"receiver\":[");
+    for (int i = 0; i < RECEIVER_CHANNEL_COUNT; i++)
+    {
+        Serial.print(state.receiverChannels[i]);
+        if (i < RECEIVER_CHANNEL_COUNT - 1)
+        {
+            Serial.print(",");
+        }
+    }
+    Serial.print("]");
+
+    Serial.println("}");
 }
