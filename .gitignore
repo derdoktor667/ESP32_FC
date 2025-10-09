@@ -51,3 +51,4 @@ CppProperties.json
 .build/
 build/
 GEMINI.md
+*.md_old

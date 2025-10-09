@@ -3,46 +3,146 @@
 
 #include <Arduino.h>
 
-// Define IBUS RX Pin for Serial2 - YOU NEED TO ADJUST THIS TO YOUR SETUP
+// =================================================================================
+// Hardware Configuration (do not change unless you modify the hardware)
+// =================================================================================
+
+// Define IBUS RX Pin for Serial2
 // Default RX pin for Serial2 on ESP32 is GPIO_NUM_16
 const gpio_num_t IBUS_RX_PIN = GPIO_NUM_16;
 
-// Define ESC pins - YOU NEED TO ADJUST THESE TO YOUR SETUP
-const gpio_num_t ESC_PIN_1 = GPIO_NUM_27;
-const gpio_num_t ESC_PIN_2 = GPIO_NUM_25;
-const gpio_num_t ESC_PIN_3 = GPIO_NUM_26;
-const gpio_num_t ESC_PIN_4 = GPIO_NUM_33;
+// Define ESC pins
+const gpio_num_t ESC_PIN_FRONT_RIGHT = GPIO_NUM_27; // Front-Right
+const gpio_num_t ESC_PIN_FRONT_LEFT = GPIO_NUM_25; // Front-Left
+const gpio_num_t ESC_PIN_REAR_RIGHT = GPIO_NUM_26; // Rear-Right
+const gpio_num_t ESC_PIN_REAR_LEFT = GPIO_NUM_33; // Rear-Left
 
-// Constants for IBUS channels
-const int IBUS_MIN_VALUE = 1000;
-const int IBUS_MAX_VALUE = 2000;
-const int IBUS_CHANNEL_THROTTLE = 0;
-const int IBUS_CHANNEL_ROLL = 1;
-const int IBUS_CHANNEL_PITCH = 2;
-const int IBUS_CHANNEL_YAW = 3;
-const int IBUS_CHANNEL_ARMING = 4;
-const int IBUS_CHANNEL_FLIGHT_MODE = 5; // Assuming Channel 5 is the flight mode switch
-const int IBUS_ARMING_THRESHOLD = 1500;
 
-// Constants for DShot throttle range
-const int DSHOT_MIN_THROTTLE = 48;
-const int DSHOT_MAX_THROTTLE = 2047;
+// =================================================================================
+// Flight Controller Settings (user-adjustable parameters)
+// =================================================================================
 
-// Constants for PID integral limits
-const float PID_INTEGRAL_LIMIT = 400.0;
+// Supported Receiver Protocols
+enum ReceiverProtocol
+{
+    PROTOCOL_IBUS,
+    PROTOCOL_PPM,  // Pulse-Position Modulation
+    // PROTOCOL_SBUS, // Future implementation
+};
 
-// Constants for target angle ranges
-const float TARGET_ANGLE_ROLL_PITCH = 30.0; // Degrees
-const float TARGET_ANGLE_YAW_RATE = 90.0;   // Degrees/second (rate control)
+// Supported IMU Protocols
+enum ImuProtocol
+{
+    IMU_MPU6050, // MPU6050 sensor
+    // Add other IMU protocols here as needed
+};
 
-// Constants for MPU6050 calibration
-const int MPU_CALIBRATION_READINGS = 1000;
-const float ACCEL_Z_GRAVITY = 1.0; // Assuming Z-axis is up and should read 1g
+// Flight Control Inputs
+enum FlightControlInput
+{
+    THROTTLE,
+    ROLL,
+    PITCH,
+    YAW,
+    ARM_SWITCH,
+    FAILSAFE_SWITCH,
+    FLIGHT_MODE_SWITCH,
+    // Add other control inputs as needed
+    NUM_FLIGHT_CONTROL_INPUTS // Keep this last to count the number of inputs
+};
 
-// Complementary filter gain
-const float COMPLEMENTARY_FILTER_GAIN = 0.98; // Adjust as needed
+// Flight Modes
+enum FlightMode
+{
+  ACRO_MODE,
+  ANGLE_MODE,
+};
 
-// Serial print interval
-const unsigned long PRINT_INTERVAL_MS = 100; // Print every 100 milliseconds
+struct FlightControllerSettings
+{
+    // Receiver Protocol Selection
+    ReceiverProtocol receiverProtocol = PROTOCOL_IBUS;
+
+    // IMU Protocol Selection
+    ImuProtocol imuProtocol = IMU_MPU6050;
+
+    // Receiver Channel Mapping
+    struct
+    {
+        int channel[NUM_FLIGHT_CONTROL_INPUTS];
+    } channelMapping = {
+        .channel = {
+            [THROTTLE] = 1, // iBUS Channel 2 (0-indexed)
+            [ROLL] = 0,     // iBUS Channel 1
+            [PITCH] = 2,    // iBUS Channel 3
+            [YAW] = 3,      // iBUS Channel 4
+            [ARM_SWITCH] = 4, // iBUS Channel 5
+            [FAILSAFE_SWITCH] = 5, // iBUS Channel 6
+            [FLIGHT_MODE_SWITCH] = 6 // iBUS Channel 7
+        }
+    };
+
+    // PID Controller Gains
+    struct
+    {
+        int kp, ki, kd;
+    } pidRoll{800, 1, 50},
+        pidPitch{800, 1, 50},
+        pidYaw{1500, 5, 100};
+
+    // PID Integral Wind-up Limit
+    float pidIntegralLimit = 400.0;
+
+    // Target angle and rate limits
+    struct
+    {
+        float maxAngleRollPitch = 30.0; // Degrees for ANGLE_MODE
+        float maxRateYaw = 90.0;        // Degrees/second for yaw axis
+        float maxRateRollPitch = 90.0;  // Degrees/second for ACRO_MODE
+    } rates;
+
+    // MPU6050 Calibration
+    struct
+    {
+        int mpuCalibrationReadings = 1000;
+        float accelZGravity = 1.0; // Assuming Z-axis is up and should read 1g
+    } calibration;
+
+    // Attitude Estimation
+    struct
+    {
+        float madgwickSampleFreq = 250.0f; // Hz
+        float madgwickBeta = 0.1f;         // Madgwick filter gain
+    } filter;
+
+    // Receiver Settings
+    struct
+    {
+        int ibusMinValue = 1000;
+        int ibusMaxValue = 2000;
+        int armingThreshold = 1500;
+        int failsafeThreshold = 1500;
+    } receiver;
+
+    // Serial Logging
+    unsigned long printIntervalMs = 0; // Print every 0 milliseconds (disabled by default)
+    bool enableLogging = false; // Global flag to enable/disable all logging output
+
+    // Motor Settings
+    float motorIdleSpeedPercent = 4.0f; // Minimum throttle percentage for motors when armed
+};
+
+static constexpr int PID_SCALE_FACTOR = 1000;
+
+// General Constants
+static constexpr int RECEIVER_PROTOCOL_COUNT = 2;
+static constexpr int IMU_PROTOCOL_COUNT = 1;
+static constexpr int RECEIVER_CHANNEL_COUNT = 16;
+static constexpr unsigned long CLI_REBOOT_DELAY_MS = 100;
+static constexpr unsigned long IMU_INIT_FAIL_DELAY_MS = 10;
+static constexpr unsigned long SERIAL_BAUD_RATE = 115200;
+
+// Create a single, global instance of the settings
+// extern FlightControllerSettings settings; // Now declared in settings.h
 
 #endif
