@@ -47,6 +47,8 @@ void saveSettings()
     preferences.putULong("log.interval", settings.printIntervalMs);
     preferences.putBool("log.enabled", settings.enableLogging);
 
+    preferences.putInt("motor.dshot_mode", (int)settings.dshotMode);
+
     preferences.end();
     Serial.println("Settings saved to flash memory.");
 }
@@ -83,6 +85,8 @@ void loadSettings()
         // Logging
         settings.printIntervalMs = preferences.getULong("log.interval", settings.printIntervalMs);
         settings.enableLogging = preferences.getBool("log.enabled", settings.enableLogging);
+
+        settings.dshotMode = (dshot_mode_t)preferences.getInt("motor.dshot_mode", (int)settings.dshotMode);
 
         // Load channel mapping
         for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)

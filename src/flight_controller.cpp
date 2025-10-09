@@ -9,14 +9,8 @@
 
 // Constructor: Initializes hardware drivers and processing modules in a safe order.
 FlightController::FlightController()
-    // Initialize DShot motor drivers with their respective pins and protocol.
-    : _motor1(ESC_PIN_FRONT_RIGHT, DSHOT300, false),
-      _motor2(ESC_PIN_FRONT_LEFT, DSHOT300, false),
-      _motor3(ESC_PIN_REAR_RIGHT, DSHOT300, false),
-      _motor4(ESC_PIN_REAR_LEFT, DSHOT300, false),
-      // Initialize modules that have no external dependencies.
-      _pidProcessor(settings),
-      _motorMixer(_motor1, _motor2, _motor3, _motor4, settings)
+    // Initialize modules that have no external dependencies.
+    : _pidProcessor(settings)
 {
     // Pointers to interfaces and dependent modules are initialized to nullptr.
     // They will be dynamically allocated in the initialize() method after
@@ -25,6 +19,11 @@ FlightController::FlightController()
     _receiver = nullptr;
     _safetyManager = nullptr;
     _setpointManager = nullptr;
+    _motor1 = nullptr;
+    _motor2 = nullptr;
+    _motor3 = nullptr;
+    _motor4 = nullptr;
+    _motorMixer = nullptr;
 }
 
 // Destructor: Ensures all dynamically allocated objects are properly deleted.
@@ -34,6 +33,11 @@ FlightController::~FlightController()
     delete _safetyManager;
     delete _setpointManager;
     delete _imuInterface;
+    delete _motor1;
+    delete _motor2;
+    delete _motor3;
+    delete _motor4;
+    delete _motorMixer;
 }
 
 // Initializes all components of the flight controller in the correct sequence.
@@ -42,6 +46,15 @@ void FlightController::initialize()
     // 1. Load persistent settings from flash memory first.
     // This is critical as all subsequent initializations depend on these settings.
     loadSettings();
+
+    // Dynamically allocate DShotRMT objects based on loaded settings
+    _motor1 = new DShotRMT(ESC_PIN_FRONT_RIGHT, settings.dshotMode, false);
+    _motor2 = new DShotRMT(ESC_PIN_FRONT_LEFT, settings.dshotMode, false);
+    _motor3 = new DShotRMT(ESC_PIN_REAR_RIGHT, settings.dshotMode, false);
+    _motor4 = new DShotRMT(ESC_PIN_REAR_LEFT, settings.dshotMode, false);
+
+    // Dynamically allocate MotorMixer after DShotRMT objects are created
+    _motorMixer = new MotorMixer(_motor1, _motor2, _motor3, _motor4, settings);
 
     // 2. Initialize the RC receiver based on the selected protocol.
     // This is a factory pattern: create the concrete receiver object.
@@ -84,10 +97,10 @@ void FlightController::initialize()
     _safetyManager = new SafetyManager(*_receiver, settings);
     _setpointManager = new SetpointManager(*_receiver, settings);
     _attitudeEstimator.init(*_imuInterface, settings);
+    _motorMixer->begin();
 
     // 5. Start the remaining components.
     _attitudeEstimator.begin();
-    _motorMixer.begin();
 }
 
 // This is the main flight control loop, executed repeatedly.
@@ -113,7 +126,7 @@ void FlightController::runLoop()
     _pidProcessor.update(_state);
 
     // 6. Mix and Apply Motor Commands: Combine PID outputs with throttle and send to motors.
-    _motorMixer.apply(_state);
+    _motorMixer->apply(_state);
 
     // 7. Handle Communication: Process incoming CLI commands and send log data.
     if (millis() - _lastSerialLogTime >= settings.printIntervalMs)

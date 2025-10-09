@@ -4,12 +4,6 @@
 #include "serial_logger.h"
 #include "settings.h"
 
-#include <Arduino.h>
-#include "cli.h"
-#include "config.h"
-#include "serial_logger.h"
-#include "settings.h"
-
 static bool cliActive = false;
 static bool apiActive = false;
 
@@ -27,16 +21,21 @@ CliCommand handleSerialCli(const FlightState &state)
     {
         String input = Serial.readStringUntil('\n');
         input.trim();
-        if (input.length() == 0) return CliCommand::NONE;
+        if (input.length() == 0)
+            return CliCommand::NONE;
 
         // Mode selection
-        if (!cliActive && !apiActive) {
-            if (input.equalsIgnoreCase("cli")) {
+        if (!cliActive && !apiActive)
+        {
+            if (input.equalsIgnoreCase("cli"))
+            {
                 cliActive = true;
                 apiActive = false;
                 Serial.println("--- CLI Activated ---");
                 Serial.print("ESP32_FC > ");
-            } else if (input.equalsIgnoreCase("api")) {
+            }
+            else if (input.equalsIgnoreCase("api"))
+            {
                 apiActive = true;
                 cliActive = false;
                 Serial.println("{\"status\":\"api_mode_activated\"}");
@@ -47,13 +46,19 @@ CliCommand handleSerialCli(const FlightState &state)
         // Command execution within a mode
         if (cliActive)
         {
-            String commandName = input;
+            String commandName = "";
             int firstSpace = input.indexOf(' ');
-            if (firstSpace != -1) {
+            if (firstSpace != -1)
+            {
                 commandName = input.substring(0, firstSpace);
             }
+            else
+            {
+                commandName = input;
+            }
 
-            if (commandName.equalsIgnoreCase("exit")) {
+            if (commandName.equalsIgnoreCase("exit"))
+            {
                 cliActive = false;
                 Serial.println("--- CLI Deactivated ---");
                 return CliCommand::NONE;
@@ -61,7 +66,8 @@ CliCommand handleSerialCli(const FlightState &state)
 
             CliCommand cmd = executeCliCommand(input, state, false);
 
-            if (!commandName.equalsIgnoreCase("save") && !commandName.equalsIgnoreCase("reboot") && !commandName.equalsIgnoreCase("reset")) {
+            if (!commandName.equalsIgnoreCase("save") && !commandName.equalsIgnoreCase("reboot") && !commandName.equalsIgnoreCase("reset"))
+            {
                 Serial.print("ESP32_FC > ");
             }
             return cmd;
@@ -99,174 +105,218 @@ CliCommand executeCliCommand(String command, const FlightState &state, bool isAp
     String commandArgs = "";
 
     int firstSpace = command.indexOf(' ');
-    if (firstSpace != -1) {
+    if (firstSpace != -1)
+    {
         commandName = command.substring(0, firstSpace);
         commandArgs = command.substring(firstSpace + 1);
-    } else {
+    }
+    else
+    {
         commandName = command;
     }
 
-    if (commandName.equals("get")) {
+    if (commandName.equals("get"))
+    {
         handleGetCommand(commandArgs, isApiMode);
-    } else if (commandName.equals("set")) {
+    }
+    else if (commandName.equals("set"))
+    {
         handleSetCommand(commandArgs, isApiMode);
-    } else if (commandName.equals("dump")) {
+    }
+    else if (commandName.equals("dump"))
+    {
         handleDumpCommand();
-    } else if (commandName.equals("dumpjson")) {
+    }
+    else if (commandName.equals("dumpjson"))
+    {
         handleDumpJsonCommand();
-    } else if (commandName.equals("debug")) {
-        if (commandArgs.equals("on")) {
+    }
+    else if (commandName.equals("debug"))
+    {
+        if (commandArgs.equals("on"))
+        {
             settings.enableLogging = true;
             settings.printIntervalMs = 500;
-            if (!isApiMode) Serial.println("INFO: Continuous debug output enabled (500ms interval).");
-        } else if (commandArgs.equals("off")) {
+            if (!isApiMode)
+                Serial.println("INFO: Continuous debug output enabled (500ms interval).");
+        }
+        else if (commandArgs.equals("off"))
+        {
             settings.enableLogging = false;
             settings.printIntervalMs = 0;
-            if (!isApiMode) Serial.println("INFO: Continuous debug output disabled.");
-        } else {
-            if (!isApiMode) Serial.println("ERROR: Invalid 'debug' command. Use 'debug on' or 'debug off'.");
+            if (!isApiMode)
+                Serial.println("INFO: Continuous debug output disabled.");
         }
-    } else if (commandName.equals("save")) {
-        if (!isApiMode) Serial.println("INFO: Settings saved. Rebooting...");
+        else
+        {
+            if (!isApiMode)
+                Serial.println("ERROR: Invalid 'debug' command. Use 'debug on' or 'debug off'.");
+        }
+    }
+    else if (commandName.equals("save"))
+    {
+        if (!isApiMode)
+            Serial.println("INFO: Settings saved. Rebooting...");
         saveSettings();
         delay(CLI_REBOOT_DELAY_MS);
         ESP.restart();
-    } else if (commandName.equals("reset")) {
-        if (!isApiMode) Serial.println("INFO: All settings have been reset to their default values and saved.");
+    }
+    else if (commandName.equals("reset"))
+    {
+        if (!isApiMode)
+            Serial.println("INFO: All settings have been reset to their default values and saved.");
         settings = FlightControllerSettings();
         saveSettings();
         delay(CLI_REBOOT_DELAY_MS);
         ESP.restart();
-    } else if (commandName.equals("reboot")) {
-        if (!isApiMode) Serial.println("Rebooting...");
+    }
+    else if (commandName.equals("reboot"))
+    {
+        if (!isApiMode)
+            Serial.println("Rebooting...");
         delay(CLI_REBOOT_DELAY_MS);
         ESP.restart();
-    } else if (commandName.equals("calibrate_imu")) {
-        if (!isApiMode) Serial.println("INFO: IMU calibration requested.");
+    }
+    else if (commandName.equals("calibrate_imu"))
+    {
+        if (!isApiMode)
+            Serial.println("INFO: IMU calibration requested.");
         return CliCommand::CALIBRATE_IMU;
-    } else if (commandName.equals("help")) {
-        if (!isApiMode) printCliHelp();
-    } else {
-        if (!isApiMode) {
+    }
+    else if (commandName.equals("help"))
+    {
+        if (!isApiMode)
+            printCliHelp();
+    }
+    else
+    {
+        if (!isApiMode)
+        {
             Serial.print("Unknown command: ");
             Serial.println(commandName);
-        } else {
+        }
+        else
+        {
             Serial.println("{\"error\":\"Unknown command\"}");
         }
     }
     return CliCommand::NONE;
 }
 
-void handleGetCommand(String args, bool isApiMode) {
+void handleGetCommand(String args, bool isApiMode)
+{
     // In API mode, get commands should return JSON
     // For now, we keep the simple text output as the webapp doesn't use 'get' yet.
-    if (args.equals("pid.roll.kp")) Serial.println(settings.pidRoll.kp / (float)PID_SCALE_FACTOR, 3);
-    else if (args.equals("pid.roll.ki")) Serial.println(settings.pidRoll.ki / (float)PID_SCALE_FACTOR, 3);
-    else if (args.equals("pid.roll.kd")) Serial.println(settings.pidRoll.kd / (float)PID_SCALE_FACTOR, 3);
-    else if (args.equals("pid.pitch.kp")) Serial.println(settings.pidPitch.kp / (float)PID_SCALE_FACTOR, 3);
-    else if (args.equals("pid.pitch.ki")) Serial.println(settings.pidPitch.ki / (float)PID_SCALE_FACTOR, 3);
-    else if (args.equals("pid.pitch.kd")) Serial.println(settings.pidPitch.kd / (float)PID_SCALE_FACTOR, 3);
-    else if (args.equals("pid.yaw.kp")) Serial.println(settings.pidYaw.kp / (float)PID_SCALE_FACTOR, 3);
-    else if (args.equals("pid.yaw.ki")) Serial.println(settings.pidYaw.ki / (float)PID_SCALE_FACTOR, 3);
-    else if (args.equals("pid.yaw.kd")) Serial.println(settings.pidYaw.kd / (float)PID_SCALE_FACTOR, 3);
-    else if (args.equals("pid.integral_limit")) Serial.println(settings.pidIntegralLimit, 4);
-    else if (args.equals("rates.angle")) Serial.println(settings.rates.maxAngleRollPitch, 4);
-    else if (args.equals("rates.yaw")) Serial.println(settings.rates.maxRateYaw, 4);
-    else if (args.equals("rates.acro")) Serial.println(settings.rates.maxRateRollPitch, 4);
-    else if (args.equals("madgwick.sample_freq")) Serial.println(settings.filter.madgwickSampleFreq, 1);
-    else if (args.equals("madgwick.beta")) Serial.println(settings.filter.madgwickBeta, 4);
-    else if (args.equals("rx.min")) Serial.println(settings.receiver.ibusMinValue);
-    else if (args.equals("rx.max")) Serial.println(settings.receiver.ibusMaxValue);
-    else if (args.equals("rx.arming_threshold")) Serial.println(settings.receiver.armingThreshold);
-    else if (args.equals("rx.failsafe_threshold")) Serial.println(settings.receiver.failsafeThreshold);
-    else if (args.equals("rx.protocol")) Serial.println((int)settings.receiverProtocol);
-    else if (args.equals("imu.protocol")) Serial.println((int)settings.imuProtocol);
-    else if (args.startsWith("rx.map.")) {
+    if (args.equals("pid.roll.kp"))
+    {
+        Serial.println(settings.pidRoll.kp / (float)PID_SCALE_FACTOR, 3);
+    }
+    else if (args.equals("pid.roll.ki"))
+    {
+        Serial.println(settings.pidRoll.ki / (float)PID_SCALE_FACTOR, 3);
+    }
+    else if (args.equals("pid.roll.kd"))
+    {
+        Serial.println(settings.pidRoll.kd / (float)PID_SCALE_FACTOR, 3);
+    }
+    else if (args.equals("pid.pitch.kp"))
+    {
+        Serial.println(settings.pidPitch.kp / (float)PID_SCALE_FACTOR, 3);
+    }
+    else if (args.equals("pid.pitch.ki"))
+    {
+        Serial.println(settings.pidPitch.ki / (float)PID_SCALE_FACTOR, 3);
+    }
+    else if (args.equals("pid.pitch.kd"))
+    {
+        Serial.println(settings.pidPitch.kd / (float)PID_SCALE_FACTOR, 3);
+    }
+    else if (args.equals("pid.yaw.kp"))
+    {
+        Serial.println(settings.pidYaw.kp / (float)PID_SCALE_FACTOR, 3);
+    }
+    else if (args.equals("pid.yaw.ki"))
+    {
+        Serial.println(settings.pidYaw.ki / (float)PID_SCALE_FACTOR, 3);
+    }
+    else if (args.equals("pid.yaw.kd"))
+    {
+        Serial.println(settings.pidYaw.kd / (float)PID_SCALE_FACTOR, 3);
+    }
+    else if (args.equals("pid.integral_limit"))
+    {
+        Serial.println(settings.pidIntegralLimit, 4);
+    }
+    else if (args.equals("rates.angle"))
+    {
+        Serial.println(settings.rates.maxAngleRollPitch, 4);
+    }
+    else if (args.equals("rates.yaw"))
+    {
+        Serial.println(settings.rates.maxRateYaw, 4);
+    }
+    else if (args.equals("rates.acro"))
+    {
+        Serial.println(settings.rates.maxRateRollPitch, 4);
+    }
+    else if (args.equals("madgwick.sample_freq"))
+    {
+        Serial.println(settings.filter.madgwickSampleFreq, 1);
+    }
+    else if (args.equals("madgwick.beta"))
+    {
+        Serial.println(settings.filter.madgwickBeta, 4);
+    }
+    else if (args.equals("rx.min"))
+    {
+        Serial.println(settings.receiver.ibusMinValue);
+    }
+    else if (args.equals("rx.max"))
+    {
+        Serial.println(settings.receiver.ibusMaxValue);
+    }
+    else if (args.equals("rx.arming_threshold"))
+    {
+        Serial.println(settings.receiver.armingThreshold);
+    }
+    else if (args.equals("rx.failsafe_threshold"))
+    {
+        Serial.println(settings.receiver.failsafeThreshold);
+    }
+    else if (args.equals("rx.protocol"))
+    {
+        Serial.println((int)settings.receiverProtocol);
+    }
+    else if (args.equals("imu.protocol"))
+    {
+        Serial.println((int)settings.imuProtocol);
+    }
+    else if (args.startsWith("rx.map."))
+    {
         String inputName = args.substring(7);
-        for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i) {
-            if (inputName.equalsIgnoreCase(getFlightControlInputString((FlightControlInput)i))) {
+        for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)
+        {
+            if (inputName.equalsIgnoreCase(getFlightControlInputString((FlightControlInput)i)))
+            {
                 Serial.println(settings.channelMapping.channel[i]);
                 return;
             }
         }
-        if (!isApiMode) Serial.println("Unknown flight control input for rx.map.");
-    } else if (args.equals("motor.idle_speed")) {
+        if (!isApiMode)
+            Serial.println("Unknown flight control input for rx.map.");
+    }
+    else if (args.equals("motor.idle_speed"))
+    {
         Serial.println(settings.motorIdleSpeedPercent, 1);
-    } else {
-        if (!isApiMode) Serial.println("Unknown or unsupported parameter for 'get'.");
     }
-}
-
-void handleSetCommand(String args, bool isApiMode) {
-    int lastSpace = args.lastIndexOf(' ');
-    if (lastSpace == -1) {
-        if (!isApiMode) Serial.println("Invalid 'set' format. Use: set <parameter> <value>");
-        return;
+    else if (args.equals("motor.dshot_mode"))
+    {
+        Serial.println(getDShotModeString(settings.dshotMode));
     }
-
-    String param = args.substring(0, lastSpace);
-    String valueStr = args.substring(lastSpace + 1);
-
-    // PID (int, scaled)
-    if (param.equals("pid.roll.kp")) settings.pidRoll.kp = round(valueStr.toFloat() * PID_SCALE_FACTOR);
-    else if (param.equals("pid.roll.ki")) settings.pidRoll.ki = round(valueStr.toFloat() * PID_SCALE_FACTOR);
-    else if (param.equals("pid.roll.kd")) settings.pidRoll.kd = round(valueStr.toFloat() * PID_SCALE_FACTOR);
-    else if (param.equals("pid.pitch.kp")) settings.pidPitch.kp = round(valueStr.toFloat() * PID_SCALE_FACTOR);
-    else if (param.equals("pid.pitch.ki")) settings.pidPitch.ki = round(valueStr.toFloat() * PID_SCALE_FACTOR);
-    else if (param.equals("pid.pitch.kd")) settings.pidPitch.kd = round(valueStr.toFloat() * PID_SCALE_FACTOR);
-    else if (param.equals("pid.yaw.kp")) settings.pidYaw.kp = round(valueStr.toFloat() * PID_SCALE_FACTOR);
-    else if (param.equals("pid.yaw.ki")) settings.pidYaw.ki = round(valueStr.toFloat() * PID_SCALE_FACTOR);
-    else if (param.equals("pid.yaw.kd")) settings.pidYaw.kd = round(valueStr.toFloat() * PID_SCALE_FACTOR);
-    else if (param.equals("pid.integral_limit")) settings.pidIntegralLimit = valueStr.toFloat();
-    // Rates (float)
-    else if (param.equals("rates.angle")) settings.rates.maxAngleRollPitch = valueStr.toFloat();
-    else if (param.equals("rates.yaw")) settings.rates.maxRateYaw = valueStr.toFloat();
-    else if (param.equals("rates.acro")) settings.rates.maxRateRollPitch = valueStr.toFloat();
-    // Filter (float)
-    else if (param.equals("madgwick.sample_freq")) settings.filter.madgwickSampleFreq = valueStr.toFloat();
-    else if (param.equals("madgwick.beta")) settings.filter.madgwickBeta = valueStr.toFloat();
-    // Receiver (int)
-    else if (param.equals("rx.min")) settings.receiver.ibusMinValue = valueStr.toInt();
-    else if (param.equals("rx.max")) settings.receiver.ibusMaxValue = valueStr.toInt();
-    else if (param.equals("rx.arming_threshold")) settings.receiver.armingThreshold = valueStr.toInt();
-    else if (param.equals("rx.failsafe_threshold")) settings.receiver.failsafeThreshold = valueStr.toInt();
-    else if (param.equals("rx.protocol")) {
-        int protocol = valueStr.toInt();
-        if (protocol >= 0 && protocol < RECEIVER_PROTOCOL_COUNT) settings.receiverProtocol = (ReceiverProtocol)protocol;
-        else if (!isApiMode) Serial.printf("Invalid receiver protocol. Use 0 for %s, 1 for %s.\n", getReceiverProtocolString(PROTOCOL_IBUS).c_str(), getReceiverProtocolString(PROTOCOL_PPM).c_str());
-    } else if (param.equals("imu.protocol")) {
-        int protocol = valueStr.toInt();
-        if (protocol >= 0 && protocol < IMU_PROTOCOL_COUNT) settings.imuProtocol = (ImuProtocol)protocol;
-        else if (!isApiMode) Serial.printf("Invalid IMU protocol. Use 0 for %s.\n", getImuProtocolString(IMU_MPU6050).c_str());
-    } else if (param.startsWith("rx.map.")) {
-        String inputName = param.substring(7);
-        int channelValue = valueStr.toInt();
-        bool mapping_found = false;
-        if (channelValue >= 0 && channelValue < RECEIVER_CHANNEL_COUNT) {
-            for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i) {
-                if (inputName.equalsIgnoreCase(getFlightControlInputString((FlightControlInput)i))) {
-                    settings.channelMapping.channel[i] = channelValue;
-                    if (!isApiMode) Serial.printf("Mapped %s to channel %d.\n", getFlightControlInputString((FlightControlInput)i).c_str(), channelValue);
-                    mapping_found = true;
-                    break;
-                }
-            }
-            if (!mapping_found && !isApiMode) Serial.println("Unknown flight control input for rx.map.");
-        } else {
-            if (!isApiMode) Serial.printf("Invalid channel number. Must be between 0 and %d.\n", RECEIVER_CHANNEL_COUNT - 1);
-        }
-    } else if (param.equals("motor.idle_speed")) {
-        settings.motorIdleSpeedPercent = round(valueStr.toFloat() * 10.0f) / 10.0f;
-    } else {
-        if (!isApiMode) Serial.println("Unknown or unsupported parameter for 'set'.");
-        return;
-    }
-
-    if (!isApiMode) {
-        Serial.print("Set ");
-        Serial.print(param);
-        Serial.print(" to ");
-        Serial.println(valueStr);
+    else
+    {
+        if (!isApiMode)
+            Serial.println("Unknown or unsupported parameter for 'get'.");
     }
 }
 
@@ -317,6 +367,159 @@ String getFlightControlInputString(FlightControlInput input)
         return "FLIGHT_MODE_SWITCH";
     default:
         return "UNKNOWN";
+    }
+}
+
+// Helper function to convert DShotMode enum to string
+String getDShotModeString(dshot_mode_t mode)
+{
+    switch (mode)
+    {
+    case DSHOT_OFF:
+        return "DSHOT_OFF";
+    case DSHOT150:
+        return "DSHOT150";
+    case DSHOT300:
+        return "DSHOT300";
+    case DSHOT600:
+        return "DSHOT600";
+    case DSHOT1200:
+        return "DSHOT1200";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+void handleSetCommand(String args, bool isApiMode)
+{
+    int lastSpace = args.lastIndexOf(' ');
+    if (lastSpace == -1)
+    {
+        if (!isApiMode)
+            Serial.println("Invalid 'set' format. Use: set <parameter> <value>");
+        return;
+    }
+
+    String param = args.substring(0, lastSpace);
+    String valueStr = args.substring(lastSpace + 1);
+
+    // PID (int, scaled)
+    if (param.equals("pid.roll.kp"))
+        settings.pidRoll.kp = round(valueStr.toFloat() * PID_SCALE_FACTOR);
+    else if (param.equals("pid.roll.ki"))
+        settings.pidRoll.ki = round(valueStr.toFloat() * PID_SCALE_FACTOR);
+    else if (param.equals("pid.roll.kd"))
+        settings.pidRoll.kd = round(valueStr.toFloat() * PID_SCALE_FACTOR);
+    else if (param.equals("pid.pitch.kp"))
+        settings.pidPitch.kp = round(valueStr.toFloat() * PID_SCALE_FACTOR);
+    else if (param.equals("pid.pitch.ki"))
+        settings.pidPitch.ki = round(valueStr.toFloat() * PID_SCALE_FACTOR);
+    else if (param.equals("pid.pitch.kd"))
+        settings.pidPitch.kd = round(valueStr.toFloat() * PID_SCALE_FACTOR);
+    else if (param.equals("pid.yaw.kp"))
+        settings.pidYaw.kp = round(valueStr.toFloat() * PID_SCALE_FACTOR);
+    else if (param.equals("pid.yaw.ki"))
+        settings.pidYaw.ki = round(valueStr.toFloat() * PID_SCALE_FACTOR);
+    else if (param.equals("pid.yaw.kd"))
+        settings.pidYaw.kd = round(valueStr.toFloat() * PID_SCALE_FACTOR);
+    else if (param.equals("pid.integral_limit"))
+        settings.pidIntegralLimit = valueStr.toFloat();
+    // Rates (float)
+    else if (param.equals("rates.angle"))
+        settings.rates.maxAngleRollPitch = valueStr.toFloat();
+    else if (param.equals("rates.yaw"))
+        settings.rates.maxRateYaw = valueStr.toFloat();
+    else if (param.equals("rates.acro"))
+        settings.rates.maxRateRollPitch = valueStr.toFloat();
+    // Filter (float)
+    else if (param.equals("madgwick.sample_freq"))
+        settings.filter.madgwickSampleFreq = valueStr.toFloat();
+    else if (param.equals("madgwick.beta"))
+        settings.filter.madgwickBeta = valueStr.toFloat();
+    // Receiver (int)
+    else if (param.equals("rx.min"))
+        settings.receiver.ibusMinValue = valueStr.toInt();
+    else if (param.equals("rx.max"))
+        settings.receiver.ibusMaxValue = valueStr.toInt();
+    else if (param.equals("rx.arming_threshold"))
+        settings.receiver.armingThreshold = valueStr.toInt();
+    else if (param.equals("rx.failsafe_threshold"))
+        settings.receiver.failsafeThreshold = valueStr.toInt();
+    else if (param.equals("rx.protocol"))
+    {
+        int protocol = valueStr.toInt();
+        if (protocol >= 0 && protocol < RECEIVER_PROTOCOL_COUNT)
+            settings.receiverProtocol = (ReceiverProtocol)protocol;
+        else if (!isApiMode)
+            Serial.printf("Invalid receiver protocol. Use 0 for %s, 1 for %s.\n", getReceiverProtocolString(PROTOCOL_IBUS).c_str(), getReceiverProtocolString(PROTOCOL_PPM).c_str());
+    }
+    else if (param.equals("imu.protocol"))
+    {
+        int protocol = valueStr.toInt();
+        if (protocol >= 0 && protocol < IMU_PROTOCOL_COUNT)
+            settings.imuProtocol = (ImuProtocol)protocol;
+        else if (!isApiMode)
+            Serial.printf("Invalid IMU protocol. Use 0 for %s.\n", getImuProtocolString(IMU_MPU6050).c_str());
+    }
+    else if (param.startsWith("rx.map."))
+    {
+        String inputName = param.substring(7);
+        int channelValue = valueStr.toInt();
+        bool mapping_found = false;
+        if (channelValue >= 0 && channelValue < RECEIVER_CHANNEL_COUNT)
+        {
+            for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)
+            {
+                if (inputName.equalsIgnoreCase(getFlightControlInputString((FlightControlInput)i)))
+                {
+                    settings.channelMapping.channel[i] = channelValue;
+                    if (!isApiMode)
+                        Serial.printf("Mapped %s to channel %d.\n", getFlightControlInputString((FlightControlInput)i).c_str(), channelValue);
+                    mapping_found = true;
+                    break;
+                }
+            }
+            if (!mapping_found && !isApiMode)
+                Serial.println("Unknown flight control input for rx.map.");
+        }
+        else
+        {
+            if (!isApiMode)
+                Serial.printf("Invalid channel number. Must be between 0 and %d.\n", RECEIVER_CHANNEL_COUNT - 1);
+        }
+    }
+    else if (param.equals("motor.idle_speed"))
+    {
+        settings.motorIdleSpeedPercent = round(valueStr.toFloat() * 10.0f) / 10.0f;
+    }
+    else if (param.equals("motor.dshot_mode"))
+    {
+        if (valueStr.equalsIgnoreCase("DSHOT_OFF"))
+            settings.dshotMode = DSHOT_OFF;
+        else if (valueStr.equalsIgnoreCase("DSHOT150"))
+            settings.dshotMode = DSHOT150;
+        else if (valueStr.equalsIgnoreCase("DSHOT300"))
+            settings.dshotMode = DSHOT300;
+        else if (valueStr.equalsIgnoreCase("DSHOT600"))
+            settings.dshotMode = DSHOT600;
+        else if (valueStr.equalsIgnoreCase("DSHOT1200"))
+            settings.dshotMode = DSHOT1200;
+        else if (!isApiMode)
+            Serial.println("Invalid DShot mode. Use DSHOT_OFF, DSHOT150, DSHOT300, DSHOT600, or DSHOT1200.");
+    }
+    else
+    {
+        if (!isApiMode)
+            Serial.println("Unknown or unsupported parameter for 'set'.");
+        return;
+    }
+
+    if (!isApiMode)
+    {
+        Serial.print("Set ");
+        Serial.print(param);
+        Serial.print(" to ");
+        Serial.println(valueStr);
     }
 }
 
@@ -373,10 +576,10 @@ void handleDumpCommand()
     // Motor Settings
     Serial.println("\n--- Motor Settings ---");
     Serial.printf("  %-25s: %.1f (%%)\n", "motor.idle_speed", settings.motorIdleSpeedPercent);
+    Serial.printf("  %-25s: %s\n", "motor.dshot_mode", getDShotModeString(settings.dshotMode).c_str());
 
     Serial.println("\n--------------------------------------");
 }
-
 
 void handleDumpJsonCommand()
 {
@@ -390,7 +593,7 @@ void handleDumpJsonCommand()
     Serial.print(settings.pidRoll.ki / (float)PID_SCALE_FACTOR, 3);
     Serial.print(",\"kd\":");
     Serial.print(settings.pidRoll.kd / (float)PID_SCALE_FACTOR, 3);
-    Serial.print("},");
+    Serial.print("}, ");
 
     Serial.print("\"pitch\":{\"kp\":");
     Serial.print(settings.pidPitch.kp / (float)PID_SCALE_FACTOR, 3);
@@ -398,7 +601,7 @@ void handleDumpJsonCommand()
     Serial.print(settings.pidPitch.ki / (float)PID_SCALE_FACTOR, 3);
     Serial.print(",\"kd\":");
     Serial.print(settings.pidPitch.kd / (float)PID_SCALE_FACTOR, 3);
-    Serial.print("},");
+    Serial.print("}, ");
 
     Serial.print("\"yaw\":{\"kp\":");
     Serial.print(settings.pidYaw.kp / (float)PID_SCALE_FACTOR, 3);
@@ -410,7 +613,7 @@ void handleDumpJsonCommand()
 
     Serial.print(",\"integral_limit\":");
     Serial.print(settings.pidIntegralLimit, 2);
-    Serial.print("},");
+    Serial.print("}, ");
 
     // Rate Settings
     Serial.print("\"rates\":{");
@@ -420,7 +623,7 @@ void handleDumpJsonCommand()
     Serial.print(settings.rates.maxRateYaw, 2);
     Serial.print(",\"acro\":");
     Serial.print(settings.rates.maxRateRollPitch, 2);
-    Serial.print("},");
+    Serial.print("}, ");
 
     // Filter Settings
     Serial.print("\"filter\":{");
@@ -428,7 +631,7 @@ void handleDumpJsonCommand()
     Serial.print(settings.filter.madgwickSampleFreq, 1);
     Serial.print(",\"madgwick_beta\":");
     Serial.print(settings.filter.madgwickBeta, 4);
-    Serial.print("},");
+    Serial.print("}, ");
 
     // Receiver Settings
     Serial.print("\"receiver\":{");
@@ -442,13 +645,13 @@ void handleDumpJsonCommand()
     Serial.print(settings.receiver.failsafeThreshold);
     Serial.print(",\"protocol\":");
     Serial.print((int)settings.receiverProtocol);
-    Serial.print("},");
+    Serial.print("}, ");
 
     // IMU Settings
     Serial.print("\"imu\":{");
     Serial.print("\"protocol\":");
     Serial.print((int)settings.imuProtocol);
-    Serial.print("},");
+    Serial.print("}, ");
 
     // Channel Mapping
     Serial.print("\"channel_mapping\":{");
@@ -456,18 +659,23 @@ void handleDumpJsonCommand()
     {
         Serial.print("\"");
         Serial.print(getFlightControlInputString((FlightControlInput)i));
-        Serial.print("\":");
+        Serial.print("\"");
+        Serial.print(":");
         Serial.print(settings.channelMapping.channel[i]);
-        if (i < NUM_FLIGHT_CONTROL_INPUTS - 1) {
+        if (i < NUM_FLIGHT_CONTROL_INPUTS - 1)
+        {
             Serial.print(",");
         }
     }
-    Serial.print("},");
+    Serial.print("}, ");
 
     // Motor Settings
     Serial.print("\"motor\":{");
     Serial.print("\"idle_speed\":");
     Serial.print(settings.motorIdleSpeedPercent, 1);
+    Serial.print(",\"dshot_mode\":\"");
+    Serial.print(getDShotModeString(settings.dshotMode));
+    Serial.print("\"");
     Serial.print("}");
 
     Serial.println("}}");

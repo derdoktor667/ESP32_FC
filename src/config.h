@@ -2,6 +2,7 @@
 #define CONFIG_H
 
 #include <Arduino.h>
+#include <DShotRMT.h>
 
 // =================================================================================
 // Hardware Configuration (do not change unless you modify the hardware)
@@ -130,6 +131,7 @@ struct FlightControllerSettings
 
     // Motor Settings
     float motorIdleSpeedPercent = 4.0f; // Minimum throttle percentage for motors when armed
+    dshot_mode_t dshotMode = DSHOT600;
 };
 
 static constexpr int PID_SCALE_FACTOR = 1000;
@@ -138,6 +140,7 @@ static constexpr int PID_SCALE_FACTOR = 1000;
 static constexpr int RECEIVER_PROTOCOL_COUNT = 2;
 static constexpr int IMU_PROTOCOL_COUNT = 1;
 static constexpr int RECEIVER_CHANNEL_COUNT = 16;
+static constexpr int NUM_MOTORS = 4;
 static constexpr unsigned long CLI_REBOOT_DELAY_MS = 100;
 static constexpr unsigned long IMU_INIT_FAIL_DELAY_MS = 10;
 static constexpr unsigned long SERIAL_BAUD_RATE = 115200;

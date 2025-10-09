@@ -18,5 +18,6 @@ CliCommand handleSerialCli(const FlightState &state);
 String getReceiverProtocolString(ReceiverProtocol protocol);
 String getImuProtocolString(ImuProtocol protocol);
 String getFlightControlInputString(FlightControlInput input);
+String getDShotModeString(dshot_mode_t mode);
 
 #endif

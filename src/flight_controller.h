@@ -34,14 +34,14 @@ private:
     // --- Hardware Objects ---
     ImuInterface *_imuInterface = nullptr; // Pointer to the active IMU interface
     ReceiverInterface *_receiver;
-    DShotRMT _motor1, _motor2, _motor3, _motor4;
+    DShotRMT *_motor1 = nullptr, *_motor2 = nullptr, *_motor3 = nullptr, *_motor4 = nullptr;
 
     // --- Processing Modules ---
     AttitudeEstimator _attitudeEstimator;
     SafetyManager *_safetyManager;
     SetpointManager *_setpointManager;
     PidProcessor _pidProcessor;
-    MotorMixer _motorMixer;
+    MotorMixer *_motorMixer = nullptr;
 
     // --- Timing ---
     unsigned long _lastSerialLogTime = 0;

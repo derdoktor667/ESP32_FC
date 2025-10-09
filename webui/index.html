@@ -1,131 +1,171 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESP32 Flight Controller Web Configurator</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <div class="container mt-4">
-        <h1 class="mb-4 text-center">ESP32 Flight Controller Web Configurator</h1>
+    <div class="main-container">
+        <h1 class="page-title">ESP32 Flight Controller Web Configurator</h1>
 
         <!-- Welcome Page -->
-        <div id="welcomePage" class="text-center">
-            <div class="card p-5">
-                <h2 class="mb-4">Connect to your ESP32 Flight Controller</h2>
-                <p class="lead">Please ensure your ESP32 is connected via USB and click the button below to establish a
+        <div id="welcomePage" class="page-section">
+            <div class="card-panel">
+                <h2 class="section-title">Connect to your ESP32 Flight Controller</h2>
+                <p class="lead-text">Please ensure your ESP32 is connected via USB and click the button below to establish a
                     serial connection.</p>
-                <button id="connectButton" class="btn btn-primary btn-lg mt-3">Connect</button>
-                <p class="mt-3">Status: <span id="connectionStatus">Disconnected</span></p>
+                <button id="connectButton" class="action-button">Connect</button>
+                <p class="status-text">Status: <span id="connectionStatus">Disconnected</span></p>
             </div>
         </div>
 
         <!-- Config Page (initially hidden) -->
-        <div id="configPage" style="display: none;">
-            <div class="card mb-4">
+        <div id="configPage" class="config-page" style="display: none;">
+            <div class="card-panel margin-bottom-4">
                 <div class="card-header">Serial Connection</div>
                 <div class="card-body">
-                    <button id="disconnectButton" class="btn btn-danger">Disconnect</button>
-                    <p class="mt-3">Status: <span id="configPageConnectionStatus">Disconnected</span></p>
+                    <button id="disconnectButton" class="action-button danger">Disconnect</button>
+                    <p class="status-text margin-top-3">Status: <span id="configPageConnectionStatus">Disconnected</span></p>
 
                 </div>
             </div>
 
-            <div class="card mb-4">
+            <div class="card-panel margin-bottom-4">
                 <div class="card-header">Live Data</div>
                 <div class="card-body">
                     <p>Attitude: 
-                        Roll: <span id="live-roll" class="fw-bold">0.00</span>, 
-                        Pitch: <span id="live-pitch" class="fw-bold">0.00</span>, 
-                        Yaw: <span id="live-yaw" class="fw-bold">0.00</span>
+                        Roll: <span id="live-roll" class="font-weight-bold">0.00</span>, 
+                        Pitch: <span id="live-pitch" class="font-weight-bold">0.00</span>, 
+                        Yaw: <span id="live-yaw" class="font-weight-bold">0.00</span>
+                    </p>
+                    <p>Setpoints:
+                        Roll: <span id="live-setpoint-roll" class="font-weight-bold">0.00</span>,
+                        Pitch: <span id="live-setpoint-pitch" class="font-weight-bold">0.00</span>,
+                        Yaw: <span id="live-setpoint-yaw" class="font-weight-bold">0.00</span>,
+                        Throttle: <span id="live-setpoint-throttle" class="font-weight-bold">0.00</span>
                     </p>
                     <p>Status: 
-                        Armed: <span id="live-armed" class="fw-bold">No</span>, 
-                        Failsafe: <span id="live-failsafe" class="fw-bold">No</span>, 
-                        Mode: <span id="live-mode" class="fw-bold">Unknown</span>
+                        Armed: <span id="live-armed" class="font-weight-bold">No</span>, 
+                        Failsafe: <span id="live-failsafe" class="font-weight-bold">No</span>, 
+                        Mode: <span id="live-mode" class="font-weight-bold">Unknown</span>
                     </p>
+                    <p>Loop Time: <span id="live-loop-time" class="font-weight-bold">0</span> µs</p>
+                    <p>IMU Temp: <span id="live-imu-temp" class="font-weight-bold">0.00</span> °C</p>
+                    <p>Battery: 
+                        Voltage: <span id="live-voltage" class="font-weight-bold">0.00</span> V, 
+                        Current: <span id="live-current" class="font-weight-bold">0.00</span> A
+                    </p>
+                    <p>RSSI: <span id="live-rssi" class="font-weight-bold">0</span></p>
+                    <p>Armed Time: <span id="live-armed-time" class="font-weight-bold">0</span> s</p>
+                    <p>CPU Load: <span id="live-cpu-load" class="font-weight-bold">0.00</span> %</p>
+                    <p>Motor Output: 
+                        <span id="live-motor-0" class="font-weight-bold">0</span>, 
+                        <span id="live-motor-1" class="font-weight-bold">0</span>, 
+                        <span id="live-motor-2" class="font-weight-bold">0</span>, 
+                        <span id="live-motor-3" class="font-weight-bold">0</span>
+                    </p>
+                    <p>Warnings: <span id="live-warnings" class="font-weight-bold">None</span></p>
+                    <p>Errors: <span id="live-errors" class="font-weight-bold">None</span></p>
                 </div>
             </div>
 
-            <div class="card mb-4">
+            <div class="card-panel margin-bottom-4">
                 <div class="card-header">Receiver Channels</div>
                 <div class="card-body" id="receiver-channels">
                     <!-- Channels will be dynamically added here -->
                 </div>
             </div>
 
-            <div class="card mb-4">
+            <div class="card-panel margin-bottom-4">
                 <div class="card-header">PID Tuning</div>
                 <div class="card-body">
-                    <div class="row mb-3">
+                    <div class="form-row margin-bottom-3">
                         <h5>Roll PID</h5>
-                        <div class="col">
+                        <div class="form-col">
                             <label class="form-label">Kp:</label>
-                            <input type="number" step="0.01" class="form-control" id="rollKp" value="0.0">
+                            <input type="number" step="0.01" class="form-input" id="rollKp" value="0.0">
                         </div>
-                        <div class="col">
+                        <div class="form-col">
                             <label class="form-label">Ki:</label>
-                            <input type="number" step="0.001" class="form-control" id="rollKi" value="0.0">
+                            <input type="number" step="0.001" class="form-input" id="rollKi" value="0.0">
                         </div>
-                        <div class="col">
+                        <div class="form-col">
                             <label class="form-label">Kd:</label>
-                            <input type="number" step="0.01" class="form-control" id="rollKd" value="0.0">
+                            <input type="number" step="0.01" class="form-input" id="rollKd" value="0.0">
                         </div>
                     </div>
 
-                    <div class="row mb-3">
+                    <div class="form-row margin-bottom-3">
                         <h5>Pitch PID</h5>
-                        <div class="col">
+                        <div class="form-col">
                             <label class="form-label">Kp:</label>
-                            <input type="number" step="00.01" class="form-control" id="pitchKp" value="0.0">
+                            <input type="number" step="00.01" class="form-input" id="pitchKp" value="0.0">
                         </div>
-                        <div class="col">
+                        <div class="form-col">
                             <label class="form-label">Ki:</label>
-                            <input type="number" step="0.001" class="form-control" id="pitchKi" value="0.0">
+                            <input type="number" step="0.001" class="form-input" id="pitchKi" value="0.0">
                         </div>
-                        <div class="col">
+                        <div class="form-col">
                             <label class="form-label">Kd:</label>
-                            <input type="number" step="0.01" class="form-control" id="pitchKd" value="0.0">
+                            <input type="number" step="0.01" class="form-input" id="pitchKd" value="0.0">
                         </div>
                     </div>
 
-                    <div class="row mb-3">
+                    <div class="form-row margin-bottom-3">
                         <h5>Yaw PID</h5>
-                        <div class="col">
+                        <div class="form-col">
                             <label class="form-label">Kp:</label>
-                            <input type="number" step="0.01" class="form-control" id="yawKp" value="0.0">
+                            <input type="number" step="0.01" class="form-input" id="yawKp" value="0.0">
                         </div>
-                        <div class="col">
+                        <div class="form-col">
                             <label class="form-label">Ki:</label>
-                            <input type="number" step="0.001" class="form-control" id="yawKi" value="0.0">
+                            <input type="number" step="0.001" class="form-input" id="yawKi" value="0.0">
                         </div>
-                        <div class="col">
+                        <div class="form-col">
                             <label class="form-label">Kd:</label>
-                            <input type="number" step="0.01" class="form-control" id="yawKd" value="0.0">
+                            <input type="number" step="0.01" class="form-input" id="yawKd" value="0.0">
                         </div>
                     </div>
 
-                    <button id="setPIDsButton" class="btn btn-success mt-3" disabled>Set PIDs & Save</button>
+                    <button id="setPIDsButton" class="action-button success margin-top-3" disabled>Set PIDs & Save</button>
                 </div>
             </div>
 
-            <div class="card mb-4">
+            <div class="card-panel margin-bottom-4">
+                <div class="card-header">Motor Settings</div>
+                <div class="card-body">
+                    <div class="form-row margin-bottom-3">
+                        <div class="form-col-half">
+                            <label for="dshotModeSelect" class="form-label">DShot Mode:</label>
+                            <select class="form-input" id="dshotModeSelect">
+                                <option value="DSHOT_OFF">DSHOT_OFF</option>
+                                <option value="DSHOT150">DSHOT150</option>
+                                <option value="DSHOT300">DSHOT300</option>
+                                <option value="DSHOT600">DSHOT600</option>
+                                <option value="DSHOT1200">DSHOT1200</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="setMotorSettingsButton" class="action-button success margin-top-3" disabled>Set Motor Settings & Save</button>
+                </div>
+            </div>
+
+            <div class="card-panel margin-bottom-4">
                 <div class="card-header">CLI Command</div>
                 <div class="card-body">
-                    <div class="input-group mb-3">
-                        <input type="text" class="form-control" id="cliCommandInput"
+                    <div class="input-group margin-bottom-3">
+                        <input type="text" class="form-input" id="cliCommandInput"
                             placeholder="Enter CLI command (e.g., get pid.roll.kp)" disabled>
-                        <button id="sendCommandButton" class="btn btn-secondary" disabled>Send Command</button>
+                        <button id="sendCommandButton" class="action-button secondary" disabled>Send Command</button>
                     </div>
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card-panel">
                 <div class="card-header">Serial Output</div>
                 <div class="card-body">
                     <pre id="serialOutput" class="serial-output-pre"></pre>

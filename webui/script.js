@@ -19,6 +19,8 @@ const serialOutput = document.getElementById('serialOutput');
 const cliCommandInput = document.getElementById('cliCommandInput');
 const sendCommandButton = document.getElementById('sendCommandButton');
 const setPIDsButton = document.getElementById('setPIDsButton');
+const dshotModeSelect = document.getElementById('dshotModeSelect');
+const setMotorSettingsButton = document.getElementById('setMotorSettingsButton');
 
 // PID Inputs
 const pidInputs = {
@@ -31,9 +33,28 @@ const pidInputs = {
 const liveRoll = document.getElementById('live-roll');
 const livePitch = document.getElementById('live-pitch');
 const liveYaw = document.getElementById('live-yaw');
+const liveSetpointRoll = document.getElementById('live-setpoint-roll');
+const liveSetpointPitch = document.getElementById('live-setpoint-pitch');
+const liveSetpointYaw = document.getElementById('live-setpoint-yaw');
+const liveSetpointThrottle = document.getElementById('live-setpoint-throttle');
 const liveArmed = document.getElementById('live-armed');
 const liveFailsafe = document.getElementById('live-failsafe');
 const liveMode = document.getElementById('live-mode');
+const liveLoopTime = document.getElementById('live-loop-time');
+const liveImuTemp = document.getElementById('live-imu-temp');
+const liveVoltage = document.getElementById('live-voltage');
+const liveCurrent = document.getElementById('live-current');
+const liveRssi = document.getElementById('live-rssi');
+const liveArmedTime = document.getElementById('live-armed-time');
+const liveCpuLoad = document.getElementById('live-cpu-load');
+const liveMotorOutput = [
+    document.getElementById('live-motor-0'),
+    document.getElementById('live-motor-1'),
+    document.getElementById('live-motor-2'),
+    document.getElementById('live-motor-3')
+];
+const liveWarnings = document.getElementById('live-warnings');
+const liveErrors = document.getElementById('live-errors');
 const receiverChannelsDiv = document.getElementById('receiver-channels');
 
 // --- Page Switching ---
@@ -50,6 +71,8 @@ function updateUIConnected(connected) {
     cliCommandInput.disabled = !connected;
     sendCommandButton.disabled = !connected;
     setPIDsButton.disabled = !connected;
+    dshotModeSelect.disabled = !connected;
+    setMotorSettingsButton.disabled = !connected;
 
     Object.values(pidInputs).forEach(axis => {
         Object.values(axis).forEach(input => input.disabled = !connected);
@@ -101,7 +124,7 @@ async function connectSerial() {
 
         // Enter API mode, get settings, then start live data
         await writeToSerial('api');
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise(resolve => setTimeout(resolve, 200)); // Increased delay
         await writeToSerial('dumpjson');
 
         const settingsPromise = new Promise((resolve, reject) => {
@@ -164,8 +187,9 @@ async function readFromSerial() {
             }
         } catch (error) {
             console.error('Error reading from serial port:', error);
-            // appendSerialOutput(`Read Error: ${error.message}\n`);
-            break;
+            appendSerialOutput(`Read Error: ${error.message}\n`);
+            // Do not break here, try to continue reading if possible, or handle specific errors.
+            // For now, we'll let the browser's serial API handle the actual port closure.
         }
     }
 }
@@ -183,10 +207,15 @@ function processLine(line) {
             }
         } else if (data.attitude) {
             updateLiveData(data);
+        } else if (data.status) { // Handle status messages that are not part of live data stream
+            appendSerialOutput(`Status: ${JSON.stringify(data)}\n`);
+        } else if (data.error) { // Handle error messages from ESP32
+            appendSerialOutput(`ESP32 Error: ${data.error}\n`);
         } else {
             appendSerialOutput(line + '\n');
         }
     } catch (e) {
+        console.warn('Non-JSON serial data or malformed JSON:', line, e);
         appendSerialOutput(line + '\n');
     }
 }
@@ -203,6 +232,10 @@ function populateSettings(settings) {
             }
         }
     }
+
+    if (settings.motor && settings.motor.dshot_mode) {
+        dshotModeSelect.value = settings.motor.dshot_mode;
+    }
 }
 
 function updateLiveData(data) {
@@ -212,6 +245,13 @@ function updateLiveData(data) {
         liveRoll.textContent = data.attitude.roll.toFixed(2);
         livePitch.textContent = data.attitude.pitch.toFixed(2);
         liveYaw.textContent = data.attitude.yaw.toFixed(2);
+    }
+
+    if (data.setpoints) {
+        liveSetpointRoll.textContent = data.setpoints.roll.toFixed(2);
+        liveSetpointPitch.textContent = data.setpoints.pitch.toFixed(2);
+        liveSetpointYaw.textContent = data.setpoints.yaw.toFixed(2);
+        liveSetpointThrottle.textContent = data.setpoints.throttle.toFixed(2);
     }
 
     if (data.status) {
@@ -228,6 +268,54 @@ function updateLiveData(data) {
             channelEl.textContent = `CH${index + 1}: ${channel}`;
             receiverChannelsDiv.appendChild(channelEl);
         });
+    }
+
+    if (data.loop_time_us) {
+        liveLoopTime.textContent = data.loop_time_us;
+    }
+
+    if (data.motor_output) {
+        for (let i = 0; i < data.motor_output.length; i++) {
+            if (liveMotorOutput[i]) {
+                liveMotorOutput[i].textContent = data.motor_output[i];
+            }
+        }
+    }
+
+    if (data.imu_temp) {
+        liveImuTemp.textContent = data.imu_temp.toFixed(2);
+    }
+
+    if (data.voltage) {
+        liveVoltage.textContent = data.voltage.toFixed(2);
+    }
+
+    if (data.current) {
+        liveCurrent.textContent = data.current.toFixed(2);
+    }
+
+    if (data.rssi) {
+        liveRssi.textContent = data.rssi;
+    }
+
+    if (data.armed_time_s) {
+        liveArmedTime.textContent = data.armed_time_s;
+    }
+
+    if (data.cpu_load) {
+        liveCpuLoad.textContent = data.cpu_load.toFixed(2);
+    }
+
+    if (data.warnings && data.warnings.length > 0) {
+        liveWarnings.textContent = data.warnings.join(', ');
+    } else {
+        liveWarnings.textContent = 'None';
+    }
+
+    if (data.errors && data.errors.length > 0) {
+        liveErrors.textContent = data.errors.join(', ');
+    } else {
+        liveErrors.textContent = 'None';
     }
 }
 
@@ -272,6 +360,12 @@ setPIDsButton.addEventListener('click', () => {
         writeToSerial(`set pid.${axis}.ki ${pidInputs[axis].ki.value}`);
         writeToSerial(`set pid.${axis}.kd ${pidInputs[axis].kd.value}`);
     }
+    setTimeout(() => writeToSerial('save'), 100);
+});
+
+setMotorSettingsButton.addEventListener('click', () => {
+    const selectedDShotMode = dshotModeSelect.value;
+    writeToSerial(`set motor.dshot_mode ${selectedDShotMode}`);
     setTimeout(() => writeToSerial('save'), 100);
 });
 

@@ -20,9 +20,7 @@ void printFlightStatus(const FlightState &state)
     Serial.print(state.attitude.pitch, 2);
     Serial.print(",\"yaw\":");
     Serial.print(state.attitude.yaw, 2);
-    Serial.print("}");
-
-    Serial.print(",");
+    Serial.print("},");
 
     // Setpoints
     Serial.print("\"setpoints\":{");
@@ -30,9 +28,11 @@ void printFlightStatus(const FlightState &state)
     Serial.print(state.setpoints.roll, 2);
     Serial.print(",\"pitch\":");
     Serial.print(state.setpoints.pitch, 2);
-    Serial.print("}");
-
-    Serial.print(",");
+    Serial.print(",\"yaw\":");
+    Serial.print(state.setpoints.yaw, 2);
+    Serial.print(",\"throttle\":");
+    Serial.print(state.setpoints.throttle, 2);
+    Serial.print("},");
 
     // Status
     Serial.print("\"status\":{");
@@ -53,9 +53,7 @@ void printFlightStatus(const FlightState &state)
         Serial.print("UNKNOWN");
         break;
     }
-    Serial.print("\"}");
-
-    Serial.print(",");
+    Serial.print("\"},");
 
     // Receiver Channels
     Serial.print("\"receiver\":[");
@@ -67,7 +65,57 @@ void printFlightStatus(const FlightState &state)
             Serial.print(",");
         }
     }
-    Serial.print("]");
+    Serial.print("],");
+
+    // Loop Time
+    Serial.print("\"loop_time_us\":");
+    Serial.print(state.loopTimeUs);
+    Serial.print(",");
+
+    // Motor Output
+    Serial.print("\"motor_output\":[");
+    for (int i = 0; i < NUM_MOTORS; i++)
+    {
+        Serial.print(state.motorOutputs[i]);
+        if (i < NUM_MOTORS - 1)
+        {
+            Serial.print(",");
+        }
+    }
+    Serial.print("],");
+
+    // IMU Temperature
+    Serial.print("\"imu_temp\":");
+    Serial.print(state.imuTemperature, 2);
+    Serial.print(",");
+
+    // Voltage and Current (if available)
+    Serial.print("\"voltage\":");
+    Serial.print(state.voltage, 2);
+    Serial.print(",\"current\":");
+    Serial.print(state.current, 2);
+    Serial.print(",");
+
+    // RSSI
+    Serial.print("\"rssi\":");
+    Serial.print(state.rssi);
+    Serial.print(",");
+
+    // Armed Time
+    Serial.print("\"armed_time_s\":");
+    Serial.print(state.armedTimeS);
+    Serial.print(",");
+
+    // CPU Load
+    Serial.print("\"cpu_load\":");
+    Serial.print(state.cpuLoad, 2);
+    Serial.print(",");
+
+    // Warnings (empty array for now, can be populated later)
+    Serial.print("\"warnings\":[],");
+
+    // Errors (empty array for now, can be populated later)
+    Serial.print("\"errors\":[]");
 
     Serial.println("}");
 }
