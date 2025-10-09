@@ -4,27 +4,27 @@
 #include "../FlightState.h"
 #include "../ReceiverInterface.h"
 
-// Manages the arming, disarming, and failsafe logic.
-//
-// This class checks the receiver channels for safety-related commands
-// and updates the flight state accordingly.
+// Manages the arming, disarming, and failsafe logic of the flight controller.
+// This module continuously monitors receiver input for specific safety-related
+// commands (e.g., arm/disarm switch, failsafe switch) and updates the
+// `isArmed` and `isFailsafeActive` flags within the FlightState.
 class SafetyManager
 {
 public:
-    // Constructor.
-    // - receiver: A reference to the active receiver.
-    // - settings: A reference to the flight controller settings.
+    // Constructor: Initializes the SafetyManager with references to the receiver and settings.
+    // @param receiver Reference to the active RC receiver interface.
+    // @param settings Reference to the global flight controller settings.
     SafetyManager(ReceiverInterface &receiver, const FlightControllerSettings &settings);
 
-    // Performs one cycle of the safety checks.
-    // Reads from the receiver and updates the isArmed and isFailsafeActive
-    // flags in the FlightState.
-    // - state: The current flight state to be updated.
+    // Performs one cycle of safety checks.
+    // It reads the relevant receiver channels, evaluates arming/disarming conditions,
+    // and checks for failsafe activation. The FlightState is updated accordingly.
+    // @param state Reference to the current FlightState to be updated with safety status.
     void update(FlightState &state);
 
 private:
-    ReceiverInterface &_receiver; // Reference to the receiver
-    const FlightControllerSettings &_settings; // Reference to global settings
+    ReceiverInterface &_receiver;              // Reference to the active RC receiver
+    const FlightControllerSettings &_settings; // Reference to global flight controller settings
 };
 
 #endif // SAFETY_MANAGER_MODULE_H

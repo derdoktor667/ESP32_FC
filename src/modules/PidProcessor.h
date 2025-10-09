@@ -4,24 +4,29 @@
 #include "../FlightState.h"
 #include "../pid_controller.h"
 
-// Processes the PID control loops for all axes.
-//
-// This class takes the desired setpoints and the current attitude,
-// calculates the necessary PID corrections, and stores them in the flight state.
+// Processes the PID control loops for all axes (Roll, Pitch, Yaw).
+// This module takes the desired setpoints (from SetpointManager) and the current
+// attitude (from AttitudeEstimator), calculates the necessary PID corrections
+// to reach the setpoints, and stores these corrections in the FlightState.
 class PidProcessor
 {
 public:
+    // Constructor: Initializes the PID controllers for Roll, Pitch, and Yaw.
+    // @param settings Reference to the global flight controller settings,
+    //                 which contain the PID gains (Kp, Ki, Kd).
     PidProcessor(const FlightControllerSettings &settings);
 
     // Performs one cycle of PID calculations for all axes.
-    // - state: The current flight state, used for input and updated with PID output.
+    // It reads the current attitude and setpoints from the FlightState,
+    // computes the PID outputs, and writes them back into the FlightState.
+    // @param state Reference to the current FlightState, used for input and updated with PID output.
     void update(FlightState &state);
 
 private:
-    PIDController _pidRoll;
-    PIDController _pidPitch;
-    PIDController _pidYaw;
-    const FlightControllerSettings &_settings; // Reference to global settings
+    PIDController _pidRoll;  // PID controller instance for the Roll axis
+    PIDController _pidPitch; // PID controller instance for the Pitch axis
+    PIDController _pidYaw;   // PID controller instance for the Yaw axis
+    const FlightControllerSettings &_settings; // Reference to global flight controller settings
 };
 
 #endif // PID_PROCESSOR_MODULE_H

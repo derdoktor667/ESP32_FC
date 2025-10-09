@@ -5,38 +5,45 @@
 #include "../ImuInterface.h"
 #include "MadgwickFilter.h"
 
-// Estimates the drone's attitude using a Madgwick filter.
-//
-// This class encapsulates the logic for sensor fusion, taking raw sensor
-// data and calculating the roll, pitch, and yaw angles.
+// Estimates the drone's attitude (roll, pitch, yaw) using sensor fusion.
+// This module encapsulates the logic for reading raw IMU data, applying a
+// Madgwick filter for robust attitude estimation, and updating the FlightState.
+// It also handles IMU calibration.
 class AttitudeEstimator
 {
 public:
-    // Default constructor for deferred initialization.
+    // Default constructor.
+    // Use init() for proper initialization after settings are loaded.
     AttitudeEstimator();
 
-    // Initializes the estimator with references to the IMU and settings.
+    // Initializes the AttitudeEstimator with required dependencies.
+    // This method must be called after settings are loaded and IMU is initialized.
+    // @param imu Reference to the IMU sensor interface.
+    // @param settings Reference to the global flight controller settings.
     void init(ImuInterface &imu, const FlightControllerSettings &settings);
 
-    // Initializes the estimator.
+    // Performs any necessary setup after initialization.
+    // This typically includes starting the Madgwick filter or other internal components.
     void begin();
 
-    // Performs one cycle of the attitude calculation.
-    // Reads from the IMU and updates the attitude in the FlightState.
-    // - state: The current flight state to be updated.
+    // Updates the drone's attitude based on the latest IMU readings.
+    // Reads raw accelerometer and gyroscope data, processes it through the
+    // Madgwick filter, and updates the roll, pitch, and yaw angles in the FlightState.
+    // @param state Reference to the current FlightState to be updated.
     void update(FlightState &state);
 
-    // Performs sensor calibration by averaging a number of readings.
-    // This method is made public to be callable from the FlightController (e.g., via CLI).
+    // Performs a sensor calibration routine for the IMU.
+    // This method averages a number of IMU readings to determine sensor biases.
+    // It is typically triggered via the CLI.
     void calibrate();
 
 private:
     ImuInterface *_imu = nullptr;                        // Pointer to the IMU sensor interface
-    const FlightControllerSettings *_settings = nullptr; // Pointer to global settings
+    const FlightControllerSettings *_settings = nullptr; // Pointer to global flight controller settings
 
-    MadgwickFilter _madgwickFilter; // Madgwick filter instance
+    MadgwickFilter _madgwickFilter; // Instance of the Madgwick filter for sensor fusion
 
-    unsigned long _lastUpdateTime = 0;
+    unsigned long _lastUpdateTime = 0; // Timestamp of the last update cycle for delta time calculation
 };
 
 #endif // ATTITUDE_ESTIMATOR_MODULE_H

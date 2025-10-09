@@ -7,25 +7,27 @@
 #include "PpmReceiver.h"
 #include <Arduino.h>
 
-// Constructor: Initializes all hardware objects and processing modules.
+// Constructor: Initializes hardware drivers and processing modules in a safe order.
 FlightController::FlightController()
-    // Initialize hardware objects
-    : _imuInterface(nullptr), // Initialize IMU interface pointer to nullptr
-      _receiver(nullptr), // Initialize receiver pointer to nullptr
-      _motor1(ESC_PIN_FRONT_RIGHT, DSHOT300, false),
+    // Initialize DShot motor drivers with their respective pins and protocol.
+    : _motor1(ESC_PIN_FRONT_RIGHT, DSHOT300, false),
       _motor2(ESC_PIN_FRONT_LEFT, DSHOT300, false),
       _motor3(ESC_PIN_REAR_RIGHT, DSHOT300, false),
       _motor4(ESC_PIN_REAR_LEFT, DSHOT300, false),
-      // Initialize modules that don't depend on _receiver yet
-      // _attitudeEstimator is now default constructed and initialized in initialize()
-      _safetyManager(nullptr), // Initialize safetyManager pointer to nullptr
-      _setpointManager(nullptr), // Initialize setpointManager pointer to nullptr
+      // Initialize modules that have no external dependencies.
       _pidProcessor(settings),
       _motorMixer(_motor1, _motor2, _motor3, _motor4, settings)
 {
+    // Pointers to interfaces and dependent modules are initialized to nullptr.
+    // They will be dynamically allocated in the initialize() method after
+    // settings have been loaded.
+    _imuInterface = nullptr;
+    _receiver = nullptr;
+    _safetyManager = nullptr;
+    _setpointManager = nullptr;
 }
 
-// Destructor: Cleans up dynamically allocated objects.
+// Destructor: Ensures all dynamically allocated objects are properly deleted.
 FlightController::~FlightController()
 {
     delete _receiver;
@@ -34,12 +36,15 @@ FlightController::~FlightController()
     delete _imuInterface;
 }
 
-// Initializes the flight controller.
+// Initializes all components of the flight controller in the correct sequence.
 void FlightController::initialize()
 {
-    loadSettings(); // Load settings from flash
+    // 1. Load persistent settings from flash memory first.
+    // This is critical as all subsequent initializations depend on these settings.
+    loadSettings();
 
-    // --- Receiver Initialization (Factory) ---
+    // 2. Initialize the RC receiver based on the selected protocol.
+    // This is a factory pattern: create the concrete receiver object.
     Serial.print("Initializing Receiver Protocol: ");
     switch (settings.receiverProtocol)
     {
@@ -53,16 +58,13 @@ void FlightController::initialize()
         break;
     default:
         Serial.println("Unknown! Halting.");
-        while (1);
+        while (1); // Halt on critical configuration error.
     }
     _receiver->begin();
     Serial.println("Receiver initialized.");
 
-    // Now that _receiver is valid, create modules that depend on it.
-    _safetyManager = new SafetyManager(*_receiver, settings);
-    _setpointManager = new SetpointManager(*_receiver, settings);
-
-    // --- IMU Initialization (Factory) ---
+    // 3. Initialize the IMU sensor based on the selected protocol.
+    // Factory pattern for the IMU object.
     Serial.print("Initializing IMU Protocol: ");
     switch (settings.imuProtocol)
     {
@@ -72,34 +74,48 @@ void FlightController::initialize()
         break;
     default:
         Serial.println("Unknown! Halting.");
-        while (1);
+        while (1); // Halt on critical configuration error.
     }
     _imuInterface->begin();
     Serial.println("IMU initialized.");
 
-    // Now that _imuInterface is valid, initialize the attitude estimator
-    _attitudeEstimator.init(*_imuInterface, settings); // Initialize AttitudeEstimator here
+    // 4. Initialize all processing modules that have dependencies.
+    // These modules require the receiver and/or IMU to be available.
+    _safetyManager = new SafetyManager(*_receiver, settings);
+    _setpointManager = new SetpointManager(*_receiver, settings);
+    _attitudeEstimator.init(*_imuInterface, settings);
+
+    // 5. Start the remaining components.
     _attitudeEstimator.begin();
     _motorMixer.begin();
 }
 
-// Main flight loop.
+// This is the main flight control loop, executed repeatedly.
 void FlightController::runLoop()
 {
-    // --- Read Inputs ---
-    // Read all receiver channels into the state at once.
+    // The flight control process follows a strict sequence (a "pipeline").
+
+    // 1. Read Pilot Input: Get the latest commands from the RC receiver.
     for (int i = 0; i < RECEIVER_CHANNEL_COUNT; i++) {
         _state.receiverChannels[i] = _receiver->getChannel(i);
     }
 
-    // --- Process Modules in Sequence ---
+    // 2. Estimate Attitude: Process IMU data to calculate the current orientation.
     _attitudeEstimator.update(_state);
+
+    // 3. Update Safety Status: Check for arming, disarming, and failsafe conditions.
     _safetyManager->update(_state);
+
+    // 4. Determine Setpoints: Calculate the target roll, pitch, and yaw rates.
     _setpointManager->update(_state);
+
+    // 5. Calculate PID Corrections: Compute the necessary adjustments to reach the setpoints.
     _pidProcessor.update(_state);
+
+    // 6. Mix and Apply Motor Commands: Combine PID outputs with throttle and send to motors.
     _motorMixer.apply(_state);
 
-    // --- Logging and CLI ---
+    // 7. Handle Communication: Process incoming CLI commands and send log data.
     if (millis() - _lastSerialLogTime >= settings.printIntervalMs)
     {
         printFlightStatus(_state);

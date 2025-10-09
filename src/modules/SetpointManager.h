@@ -4,24 +4,27 @@
 #include "../FlightState.h"
 #include "../ReceiverInterface.h"
 
-// Calculates the target setpoints based on receiver input and flight mode.
+// Calculates the target setpoints (desired roll, pitch, yaw rates/angles)
+// based on the pilot's receiver input and the currently active flight mode.
+// This module translates raw stick inputs into control targets for the PID controllers.
 class SetpointManager
 {
 public:
-    // Constructor.
-    // - receiver: A reference to the active receiver.
-    // - settings: A reference to the flight controller settings.
+    // Constructor: Initializes the SetpointManager with references to the receiver and settings.
+    // @param receiver Reference to the active RC receiver interface.
+    // @param settings Reference to the global flight controller settings.
     SetpointManager(ReceiverInterface &receiver, const FlightControllerSettings &settings);
 
     // Performs one cycle of setpoint calculation.
-    // Reads receiver channels and flight mode from the FlightState and updates
-    // the setpoints within the state.
-    // - state: The current flight state to be updated.
+    // It reads the relevant receiver channels and the current flight mode from the FlightState,
+    // applies scaling and mixing logic, and updates the `setpointRoll`, `setpointPitch`,
+    // and `setpointYaw` values within the FlightState.
+    // @param state Reference to the current FlightState to be updated with new setpoints.
     void update(FlightState &state);
 
 private:
-    ReceiverInterface &_receiver; // Reference to the receiver
-    const FlightControllerSettings &_settings; // Reference to global settings
+    ReceiverInterface &_receiver;              // Reference to the active RC receiver
+    const FlightControllerSettings &_settings; // Reference to global flight controller settings
 };
 
 #endif // SETPOINT_MANAGER_MODULE_H
