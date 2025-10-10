@@ -8,7 +8,7 @@ An advanced flight controller firmware for quadcopters and other RC vehicles, bu
 
 ## ✨ Key Features
 
-*   **JSON-based API**: A dedicated, machine-readable API mode (`api`) provides clean, JSON-only communication, perfect for web applications or other programmatic clients.
+*   **Robust JSON-based API**: A dedicated, machine-readable API mode (`api`) provides clean, JSON-only communication. The firmware starts silently and only transmits data when explicitly requested, making it ideal for web applications or other programmatic clients.
 *   **Advanced Web Configurator (`/webui`)**: A modern, single-page web application that automatically connects, fetches all settings, and streams live data from the flight controller. Features include:
     *   Automatic settings population on connect.
     *   Automatic live data streaming (Attitude, Status, Receiver Channels).
@@ -17,7 +17,7 @@ An advanced flight controller firmware for quadcopters and other RC vehicles, bu
 *   **Modular Object-Oriented Architecture**: The entire flight control logic is encapsulated in dedicated C++ classes, promoting clear responsibilities and easy extensibility.
 *   **Centralized Flight State**: A single `FlightState` struct holds all dynamic data (attitude, setpoints, armed status, etc.), making the drone's current state transparent and easy to manage.
 *   **Robust Flight Stabilization**: Utilizes an `ImuInterface` abstraction (initially MPU6050) and a **Madgwick filter** for precise attitude estimation, managed by the `AttitudeEstimator` module.
-*   **High-Performance Motor Control**: Employs hardware-accelerated DShot300 for low-latency, high-resolution communication with ESCs.
+*   **High-Performance Motor Control**: Employs hardware-accelerated DShot for low-latency, high-resolution communication with ESCs.
 *   **Flexible Control System**: Supports interchangeable receiver protocols (i-BUS, PPM) and features **configurable channel mapping**.
 *   **Critical Safety Management**: Dedicated `SafetyManager` module handles arming/disarming and high-priority Failsafe logic.
 *   **Centralized Configuration**: All tunable parameters (PIDs, rates, filters, etc.) are organized in a single `FlightControllerSettings` struct.
@@ -72,7 +72,7 @@ Follow these steps to get the flight controller up and running on your ESP32.
 
 ## 💻 Interface Modes (API & CLI)
 
-The firmware provides two distinct interface modes accessible over the serial connection.
+The firmware provides two distinct interface modes accessible over the serial connection. The device boots silently and waits for a mode selection command.
 
 ### API Mode (for Web App)
 

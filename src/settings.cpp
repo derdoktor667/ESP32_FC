@@ -50,7 +50,6 @@ void saveSettings()
     preferences.putInt("motor.dshot_mode", (int)settings.dshotMode);
 
     preferences.end();
-    Serial.println("Settings saved to flash memory.");
 }
 
 void loadSettings()

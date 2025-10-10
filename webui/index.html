@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESP32 Flight Controller Web Configurator</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 
 <body>
@@ -26,11 +27,30 @@
         <!-- Config Page (initially hidden) -->
         <div id="configPage" class="config-page" style="display: none;">
             <div class="card-panel margin-bottom-4">
-                <div class="card-header">Serial Connection</div>
+                <div class="card-header">
+                    <div class="header-flex">
+                        <span>Serial Connection</span>
+                        <button id="disconnectButton" class="action-button danger small">Disconnect</button>
+                    </div>
+                </div>
                 <div class="card-body">
-                    <button id="disconnectButton" class="action-button danger">Disconnect</button>
-                    <p class="status-text margin-top-3">Status: <span id="configPageConnectionStatus">Disconnected</span></p>
+                    <p class="status-text">Status: <span id="configPageConnectionStatus">Disconnected</span></p>
+                </div>
+            </div>
 
+            <div class="card-panel margin-bottom-4">
+                <div class="card-header">Global Actions</div>
+                <div class="card-body">
+                    <button id="loadSettingsButton" class="action-button secondary" disabled>Load Settings</button>
+                    <button id="saveSettingsButton" class="action-button success" disabled>Save Settings</button>
+                    <button id="calibrateImuButton" class="action-button" disabled>Calibrate IMU</button>
+                </div>
+            </div>
+
+            <div class="card-panel margin-bottom-4">
+                <div class="card-header">Attitude Visualization</div>
+                <div class="card-body">
+                    <div id="3d-container"></div>
                 </div>
             </div>
 
@@ -130,8 +150,6 @@
                             <input type="number" step="0.01" class="form-input" id="yawKd" value="0.0">
                         </div>
                     </div>
-
-                    <button id="setPIDsButton" class="action-button success margin-top-3" disabled>Set PIDs & Save</button>
                 </div>
             </div>
 
@@ -150,7 +168,6 @@
                             </select>
                         </div>
                     </div>
-                    <button id="setMotorSettingsButton" class="action-button success margin-top-3" disabled>Set Motor Settings & Save</button>
                 </div>
             </div>
 

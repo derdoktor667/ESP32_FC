@@ -50,6 +50,18 @@ body {
   font-weight: 500;
 }
 
+.header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.action-button.small {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+}
+
+
 .card-body {
   /* padding is already handled by card-panel */
 }
@@ -238,15 +250,41 @@ body {
 }
 
 .serial-output-pre {
+
   background-color: #212529;
+
   border: 1px solid #495057;
+
   padding: 1rem;
+
   max-height: 300px;
+
   overflow-y: scroll;
+
   white-space: pre-wrap;
+
   word-break: break-all;
+
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier,
+
     monospace;
+
   font-size: 0.875em;
+
   color: #f8f9fa;
+
+}
+
+
+
+#3d-container {
+
+    width: 100%;
+
+    height: 250px;
+
+    overflow: hidden;
+
+    border-radius: 0.25rem;
+
 }

@@ -47,6 +47,10 @@ void FlightController::initialize()
     // This is critical as all subsequent initializations depend on these settings.
     loadSettings();
 
+    // Force disable logging on boot to ensure no data is sent until requested.
+    // This overrides any potentially stale 'enableLogging = true' setting from flash.
+    settings.enableLogging = false;
+
     // Dynamically allocate DShotRMT objects based on loaded settings
     _motor1 = new DShotRMT(ESC_PIN_FRONT_RIGHT, settings.dshotMode, false);
     _motor2 = new DShotRMT(ESC_PIN_FRONT_LEFT, settings.dshotMode, false);
@@ -129,7 +133,7 @@ void FlightController::runLoop()
     _motorMixer->apply(_state);
 
     // 7. Handle Communication: Process incoming CLI commands and send log data.
-    if (millis() - _lastSerialLogTime >= settings.printIntervalMs)
+    if (settings.enableLogging && millis() - _lastSerialLogTime >= settings.printIntervalMs)
     {
         printFlightStatus(_state);
         _lastSerialLogTime = millis();

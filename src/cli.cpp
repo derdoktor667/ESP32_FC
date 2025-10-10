@@ -136,9 +136,9 @@ CliCommand executeCliCommand(String command, const FlightState &state, bool isAp
         if (commandArgs.equals("on"))
         {
             settings.enableLogging = true;
-            settings.printIntervalMs = 500;
+            settings.printIntervalMs = 25; // 40Hz update rate for smooth animation
             if (!isApiMode)
-                Serial.println("INFO: Continuous debug output enabled (500ms interval).");
+                Serial.println("INFO: Continuous debug output enabled (25ms interval).");
         }
         else if (commandArgs.equals("off"))
         {

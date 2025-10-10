@@ -4,6 +4,9 @@ let writer;
 let isConnected = false;
 let settingsPromiseResolver = null;
 
+// 3D Visualization
+let scene, camera, renderer, copterModel;
+
 // Page elements
 const welcomePage = document.getElementById('welcomePage');
 const configPage = document.getElementById('configPage');
@@ -18,9 +21,10 @@ const configPageConnectionStatus = document.getElementById('configPageConnection
 const serialOutput = document.getElementById('serialOutput');
 const cliCommandInput = document.getElementById('cliCommandInput');
 const sendCommandButton = document.getElementById('sendCommandButton');
-const setPIDsButton = document.getElementById('setPIDsButton');
+const loadSettingsButton = document.getElementById('loadSettingsButton');
+const saveSettingsButton = document.getElementById('saveSettingsButton');
+const calibrateImuButton = document.getElementById('calibrateImuButton');
 const dshotModeSelect = document.getElementById('dshotModeSelect');
-const setMotorSettingsButton = document.getElementById('setMotorSettingsButton');
 
 // PID Inputs
 const pidInputs = {
@@ -61,6 +65,10 @@ const receiverChannelsDiv = document.getElementById('receiver-channels');
 function showPage(pageId) {
     welcomePage.style.display = (pageId === 'welcomePage') ? 'block' : 'none';
     configPage.style.display = (pageId === 'configPage') ? 'block' : 'none';
+    if (pageId === 'configPage') {
+        // Ensure 3D scene is initialized and sized correctly when page is shown
+        setTimeout(init3D, 50); 
+    }
 }
 
 // --- UI State Management ---
@@ -70,9 +78,10 @@ function updateUIConnected(connected) {
     disconnectButton.disabled = !connected;
     cliCommandInput.disabled = !connected;
     sendCommandButton.disabled = !connected;
-    setPIDsButton.disabled = !connected;
+    loadSettingsButton.disabled = !connected;
+    saveSettingsButton.disabled = !connected;
+    calibrateImuButton.disabled = !connected;
     dshotModeSelect.disabled = !connected;
-    setMotorSettingsButton.disabled = !connected;
 
     Object.values(pidInputs).forEach(axis => {
         Object.values(axis).forEach(input => input.disabled = !connected);
@@ -317,6 +326,96 @@ function updateLiveData(data) {
     } else {
         liveErrors.textContent = 'None';
     }
+
+    // Update 3D model rotation if it exists
+    if (copterModel && data.attitude) {
+        // Convert degrees to radians for Three.js
+        const rollRad = data.attitude.roll * (Math.PI / 180);
+        const pitchRad = data.attitude.pitch * (Math.PI / 180);
+        const yawRad = data.attitude.yaw * (Math.PI / 180);
+
+        // Apply rotation - adjust axes as needed for correct visualization
+        copterModel.rotation.x = rollRad;
+        copterModel.rotation.z = pitchRad; // Often pitch is around Z in aerospace models
+        copterModel.rotation.y = yawRad;
+    }
+}
+
+// --- 3D Visualization ---
+function init3D() {
+    const container = document.getElementById('3d-container');
+    if (!container) return;
+
+    // Scene
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x343a40);
+
+    // Camera
+    camera = new THREE.PerspectiveCamera(75, container.clientWidth / 250, 0.1, 1000);
+    camera.position.z = 5;
+
+    // Renderer
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container.clientWidth, 250); // Fixed height
+    container.innerHTML = ''; // Clear previous content
+    container.appendChild(renderer.domElement);
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(5, 10, 7.5);
+    scene.add(directionalLight);
+
+    // Copter Model
+    copterModel = new THREE.Group();
+    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x0d6efd });
+    const propMaterial = new THREE.MeshStandardMaterial({ color: 0x6c757d });
+
+    // Main Body
+    const bodyGeometry = new THREE.BoxGeometry(1.5, 0.2, 1.5);
+    const mainBody = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    copterModel.add(mainBody);
+
+    // Arms
+    const armGeometry = new THREE.BoxGeometry(0.1, 0.1, 3);
+    const arm1 = new THREE.Mesh(armGeometry, bodyMaterial);
+    arm1.rotation.y = Math.PI / 4;
+    copterModel.add(arm1);
+
+    const arm2 = new THREE.Mesh(armGeometry, bodyMaterial);
+    arm2.rotation.y = -Math.PI / 4;
+    copterModel.add(arm2);
+
+    // Propellers (simple cylinders)
+    const propGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.05, 16);
+    const prop1 = new THREE.Mesh(propGeometry, propMaterial);
+    prop1.position.set(1.06, 0.15, 1.06);
+    copterModel.add(prop1);
+
+    const prop2 = new THREE.Mesh(propGeometry, propMaterial);
+    prop2.position.set(-1.06, 0.15, 1.06);
+    copterModel.add(prop2);
+
+    const prop3 = new THREE.Mesh(propGeometry, propMaterial);
+    prop3.position.set(1.06, 0.15, -1.06);
+    copterModel.add(prop3);
+
+    const prop4 = new THREE.Mesh(propGeometry, propMaterial);
+    prop4.position.set(-1.06, 0.15, -1.06);
+    copterModel.add(prop4);
+
+    scene.add(copterModel);
+
+    // Start animation loop
+    animate();
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+    }
 }
 
 async function writeToSerial(data) {
@@ -335,40 +434,186 @@ function appendSerialOutput(message) {
     serialOutput.scrollTop = serialOutput.scrollHeight;
 }
 
+// --- Settings Management ---
+
+function loadAllSettings() {
+
+    if (isConnected) {
+
+        appendSerialOutput('Requesting settings from device...\n');
+
+        writeToSerial('dumpjson');
+
+    }
+
+}
+
+
+
+function saveAllSettings() {
+
+    if (isConnected) {
+
+        appendSerialOutput('Sending all settings to device...\n');
+
+
+
+        // Send PID settings
+
+        for (const axis of ['roll', 'pitch', 'yaw']) {
+
+            writeToSerial(`set pid.${axis}.kp ${pidInputs[axis].kp.value}`);
+
+            writeToSerial(`set pid.${axis}.ki ${pidInputs[axis].ki.value}`);
+
+            writeToSerial(`set pid.${axis}.kd ${pidInputs[axis].kd.value}`);
+
+        }
+
+
+
+        // Send Motor settings
+
+        const selectedDShotMode = dshotModeSelect.value;
+
+        writeToSerial(`set motor.dshot_mode ${selectedDShotMode}`);
+
+
+
+        // Add other settings here as the UI grows...
+
+
+
+        // Finally, save all settings to flash memory
+
+        appendSerialOutput('Saving settings to flash...\n');
+
+        setTimeout(() => writeToSerial('save'), 200); // Delay to ensure previous commands are sent
+
+    }
+
+}
+
+
+
+
+
 // --- Event Listeners ---
+
 connectButton.addEventListener('click', connectSerial);
+
+
 
 disconnectButton.addEventListener('click', disconnectSerial);
 
+
+
 sendCommandButton.addEventListener('click', () => {
+
     const command = cliCommandInput.value.trim();
+
     if (command) {
+
         writeToSerial(command);
+
         cliCommandInput.value = '';
+
     }
+
 });
+
+
 
 cliCommandInput.addEventListener('keypress', (e) => {
+
     if (e.key === 'Enter') {
+
         sendCommandButton.click();
+
     }
+
 });
 
-setPIDsButton.addEventListener('click', () => {
-    for (const axis of ['roll', 'pitch', 'yaw']) {
-        writeToSerial(`set pid.${axis}.kp ${pidInputs[axis].kp.value}`);
-        writeToSerial(`set pid.${axis}.ki ${pidInputs[axis].ki.value}`);
-        writeToSerial(`set pid.${axis}.kd ${pidInputs[axis].kd.value}`);
+
+
+loadSettingsButton.addEventListener('click', loadAllSettings);
+
+
+
+saveSettingsButton.addEventListener('click', saveAllSettings);
+
+
+
+calibrateImuButton.addEventListener('click', () => {
+
+
+
+    if (isConnected) {
+
+
+
+        appendSerialOutput('Sending IMU calibration command...\n');
+
+
+
+        writeToSerial('calibrate_imu');
+
+
+
+
+
+
+
+        // Visually reset the 3D model's orientation immediately
+
+
+
+        if (copterModel) {
+
+
+
+            copterModel.rotation.x = 0;
+
+
+
+            copterModel.rotation.y = 0;
+
+
+
+            copterModel.rotation.z = 0;
+
+
+
+        }
+
+
+
     }
-    setTimeout(() => writeToSerial('save'), 100);
+
+
+
 });
 
-setMotorSettingsButton.addEventListener('click', () => {
-    const selectedDShotMode = dshotModeSelect.value;
-    writeToSerial(`set motor.dshot_mode ${selectedDShotMode}`);
-    setTimeout(() => writeToSerial('save'), 100);
-});
+
+
+
+
+
 
 // Initial UI state
+
+
+
 updateUIConnected(false);
+
+
+
 showPage('welcomePage');
+
+
+
+init3D(); // Initial call to set up the scene on page load
+
+
+
+
