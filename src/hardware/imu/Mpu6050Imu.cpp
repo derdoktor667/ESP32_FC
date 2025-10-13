@@ -1,4 +1,4 @@
-#include "Mpu6050Imu.h"
+#include "src/hardware/imu/Mpu6050Imu.h"
 
 // Constructor: Initializes the MPU6050 object with the given Wire port.
 Mpu6050Imu::Mpu6050Imu(TwoWire *wirePort)

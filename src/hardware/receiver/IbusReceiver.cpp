@@ -1,5 +1,5 @@
-#include "IbusReceiver.h"
-#include "flight_controller.h" // For settings access
+#include "src/hardware/receiver/IbusReceiver.h"
+#include "src/main/flight_controller.h" // For settings access
 
 // Constructor for the IbusReceiver.
 IbusReceiver::IbusReceiver(HardwareSerial &serialPort, gpio_num_t rxPin)

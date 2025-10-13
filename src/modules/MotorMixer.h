@@ -1,7 +1,7 @@
 #ifndef MOTOR_MIXER_MODULE_H
 #define MOTOR_MIXER_MODULE_H
 
-#include "../FlightState.h"
+#include "src/config/FlightState.h"
 #include <DShotRMT.h>
 
 // DShot protocol fixed throttle values

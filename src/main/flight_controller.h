@@ -1,15 +1,16 @@
 #ifndef FLIGHT_CONTROLLER_H
 #define FLIGHT_CONTROLLER_H
 
-#include "FlightState.h"
-#include "ReceiverInterface.h"
-#include "ImuInterface.h"
-#include "Mpu6050Imu.h"
-#include "modules/AttitudeEstimator.h"
-#include "modules/SafetyManager.h"
-#include "modules/SetpointManager.h"
-#include "modules/PidProcessor.h"
-#include "modules/MotorMixer.h"
+#include "src/config/FlightState.h"
+#include "src/hardware/receiver/ReceiverInterface.h"
+#include "src/hardware/imu/ImuInterface.h"
+#include "src/hardware/imu/Mpu6050Imu.h"
+#include "src/modules/AttitudeEstimator.h"
+#include "src/modules/SafetyManager.h"
+#include "src/modules/SetpointManager.h"
+#include "src/modules/PidProcessor.h"
+#include "src/modules/MotorMixer.h"
+#include "src/main/CommunicationManager.h" // Include CommunicationManager
 #include <DShotRMT.h>
 
 // The main orchestrator for the flight controller.
@@ -27,10 +28,13 @@ public:
     // Runs one iteration of the main flight loop.
     void runLoop();
 
-private:
-    // --- Core State ---
-    FlightState _state;
+    // Requests IMU calibration.
+    void requestImuCalibration();
 
+    // The public state of the flight controller, readable by other modules.
+    FlightState state;
+
+private:
     // --- Hardware Objects ---
     ImuInterface *_imuInterface = nullptr; // Pointer to the active IMU interface
     ReceiverInterface *_receiver;
@@ -43,8 +47,8 @@ private:
     PidProcessor _pidProcessor;
     MotorMixer *_motorMixer = nullptr;
 
-    // --- Timing ---
-    unsigned long _lastSerialLogTime = 0;
+    // --- Communication Manager ---
+    CommunicationManager _comms; // Communication Manager instance
 
     // Destructor to clean up dynamically allocated objects
     public: ~FlightController();

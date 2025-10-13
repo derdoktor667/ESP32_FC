@@ -126,7 +126,7 @@ struct FlightControllerSettings
     } receiver;
 
     // Serial Logging
-    unsigned long printIntervalMs = 0; // Print every 0 milliseconds (disabled by default)
+    unsigned long printIntervalMs = 40; // Print every 40 milliseconds (25 Hz)
     bool enableLogging = false; // Global flag to enable/disable all logging output
 
     // Motor Settings

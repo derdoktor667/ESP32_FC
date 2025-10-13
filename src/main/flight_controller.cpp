@@ -1,16 +1,15 @@
-#include "flight_controller.h"
-#include "config.h"
-#include "settings.h"
-#include "serial_logger.h"
-#include "cli.h"
-#include "IbusReceiver.h"
-#include "PpmReceiver.h"
+#include "src/main/flight_controller.h"
+#include "src/config/config.h"
+#include "src/config/settings.h"
+#include "src/hardware/receiver/IbusReceiver.h"
+#include "src/hardware/receiver/PpmReceiver.h"
 #include <Arduino.h>
 
 // Constructor: Initializes hardware drivers and processing modules in a safe order.
 FlightController::FlightController()
     // Initialize modules that have no external dependencies.
-    : _pidProcessor(settings)
+    : _pidProcessor(settings),
+      _comms(this) // Initialize CommunicationManager with a pointer to this FlightController instance
 {
     // Pointers to interfaces and dependent modules are initialized to nullptr.
     // They will be dynamically allocated in the initialize() method after
@@ -44,24 +43,14 @@ FlightController::~FlightController()
 void FlightController::initialize()
 {
     // 1. Load persistent settings from flash memory first.
-    // This is critical as all subsequent initializations depend on these settings.
     loadSettings();
 
-    // Force disable logging on boot to ensure no data is sent until requested.
-    // This overrides any potentially stale 'enableLogging = true' setting from flash.
-    settings.enableLogging = false;
-
-    // Dynamically allocate DShotRMT objects based on loaded settings
+    // 2. Dynamically allocate hardware drivers based on loaded settings.
     _motor1 = new DShotRMT(ESC_PIN_FRONT_RIGHT, settings.dshotMode, false);
     _motor2 = new DShotRMT(ESC_PIN_FRONT_LEFT, settings.dshotMode, false);
     _motor3 = new DShotRMT(ESC_PIN_REAR_RIGHT, settings.dshotMode, false);
     _motor4 = new DShotRMT(ESC_PIN_REAR_LEFT, settings.dshotMode, false);
 
-    // Dynamically allocate MotorMixer after DShotRMT objects are created
-    _motorMixer = new MotorMixer(_motor1, _motor2, _motor3, _motor4, settings);
-
-    // 2. Initialize the RC receiver based on the selected protocol.
-    // This is a factory pattern: create the concrete receiver object.
     Serial.print("Initializing Receiver Protocol: ");
     switch (settings.receiverProtocol)
     {
@@ -75,13 +64,11 @@ void FlightController::initialize()
         break;
     default:
         Serial.println("Unknown! Halting.");
-        while (1); // Halt on critical configuration error.
+        while (1);
     }
     _receiver->begin();
     Serial.println("Receiver initialized.");
 
-    // 3. Initialize the IMU sensor based on the selected protocol.
-    // Factory pattern for the IMU object.
     Serial.print("Initializing IMU Protocol: ");
     switch (settings.imuProtocol)
     {
@@ -91,56 +78,55 @@ void FlightController::initialize()
         break;
     default:
         Serial.println("Unknown! Halting.");
-        while (1); // Halt on critical configuration error.
+        while (1);
     }
     _imuInterface->begin();
     Serial.println("IMU initialized.");
 
-    // 4. Initialize all processing modules that have dependencies.
-    // These modules require the receiver and/or IMU to be available.
+    // 3. Initialize all processing modules that have dependencies.
+    _motorMixer = new MotorMixer(_motor1, _motor2, _motor3, _motor4, settings);
     _safetyManager = new SafetyManager(*_receiver, settings);
     _setpointManager = new SetpointManager(*_receiver, settings);
     _attitudeEstimator.init(*_imuInterface, settings);
     _motorMixer->begin();
 
-    // 5. Start the remaining components.
+    // 4. Start the remaining components.
     _attitudeEstimator.begin();
+
+    // 5. Initialize CommunicationManager
+    _comms.begin();
 }
 
 // This is the main flight control loop, executed repeatedly.
 void FlightController::runLoop()
 {
-    // The flight control process follows a strict sequence (a "pipeline").
+    // Update CommunicationManager first to handle any incoming commands
+    _comms.update(state);
 
-    // 1. Read Pilot Input: Get the latest commands from the RC receiver.
-    for (int i = 0; i < RECEIVER_CHANNEL_COUNT; i++) {
-        _state.receiverChannels[i] = _receiver->getChannel(i);
-    }
-
-    // 2. Estimate Attitude: Process IMU data to calculate the current orientation.
-    _attitudeEstimator.update(_state);
-
-    // 3. Update Safety Status: Check for arming, disarming, and failsafe conditions.
-    _safetyManager->update(_state);
-
-    // 4. Determine Setpoints: Calculate the target roll, pitch, and yaw rates.
-    _setpointManager->update(_state);
-
-    // 5. Calculate PID Corrections: Compute the necessary adjustments to reach the setpoints.
-    _pidProcessor.update(_state);
-
-    // 6. Mix and Apply Motor Commands: Combine PID outputs with throttle and send to motors.
-    _motorMixer->apply(_state);
-
-    // 7. Handle Communication: Process incoming CLI commands and send log data.
-    if (settings.enableLogging && millis() - _lastSerialLogTime >= settings.printIntervalMs)
+    // When logging is enabled (API mode), we skip the main flight logic
+    // to prevent stack overflows and ensure stable communication.
+    if (!settings.enableLogging)
     {
-        printFlightStatus(_state);
-        _lastSerialLogTime = millis();
+        // The flight control process follows a strict sequence (a "pipeline").
+        for (int i = 0; i < RECEIVER_CHANNEL_COUNT; i++)
+        {
+            state.receiverChannels[i] = _receiver->getChannel(i);
+        }
+        _attitudeEstimator.update(state);
+        _safetyManager->update(state);
+        _setpointManager->update(state);
+        _pidProcessor.update(state);
+        _motorMixer->apply(state);
     }
-    CliCommand cliCmd = handleSerialCli(_state);
-    if (cliCmd == CliCommand::CALIBRATE_IMU)
+    else
     {
-        _attitudeEstimator.calibrate();
+    // Even when not running the full pipeline, we must update the attitude
+    // so a connected client can get live data.
+    _attitudeEstimator.update(state);
     }
+}
+
+void FlightController::requestImuCalibration()
+{
+    _attitudeEstimator.calibrate();
 }

@@ -1,7 +1,7 @@
 #ifndef MPU6050_IMU_H
 #define MPU6050_IMU_H
 
-#include "ImuInterface.h"
+#include "src/hardware/imu/ImuInterface.h"
 #include <ESP32_MPU6050.h>
 
 // Concrete implementation of ImuInterface for the MPU6050 sensor.

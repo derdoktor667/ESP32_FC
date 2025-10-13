@@ -1,5 +1,5 @@
-#include "AttitudeEstimator.h"
-#include "../config.h"
+#include "src/modules/AttitudeEstimator.h"
+#include "src/config/config.h"
 #include <Arduino.h>
 
 // Default constructor: Initializes pointers to nullptr and Madgwick filter with dummy values.

@@ -2,8 +2,8 @@
 #define PID_CONTROLLER_H
 
 #include <Arduino.h>
-#include "config.h" // For PID_INTEGRAL_LIMIT
-#include "settings.h"
+#include "src/config/config.h" // For PID_INTEGRAL_LIMIT
+#include "src/config/settings.h"
 
 struct PIDController
 {

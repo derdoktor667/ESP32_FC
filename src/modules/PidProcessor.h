@@ -1,8 +1,8 @@
 #ifndef PID_PROCESSOR_MODULE_H
 #define PID_PROCESSOR_MODULE_H
 
-#include "../FlightState.h"
-#include "../pid_controller.h"
+#include "src/config/FlightState.h"
+#include "src/utils/pid/pid_controller.h"
 
 // Processes the PID control loops for all axes (Roll, Pitch, Yaw).
 // This module takes the desired setpoints (from SetpointManager) and the current

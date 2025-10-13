@@ -1,7 +1,7 @@
 #ifndef FLIGHT_STATE_H
 #define FLIGHT_STATE_H
 
-#include "config.h"
+#include "src/config/config.h"
 
 // A simple struct to hold 3-axis float data (e.g., for attitude or rates)
 struct Vector3f

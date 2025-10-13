@@ -1,5 +1,5 @@
-#include "PpmReceiver.h"
-#include "flight_controller.h" // For settings access
+#include "src/hardware/receiver/PpmReceiver.h"
+#include "src/main/flight_controller.h" // For settings access
 
 // --- Static variables for the Interrupt Service Routine (ISR) ---
 

@@ -1,8 +1,8 @@
 #ifndef SETPOINT_MANAGER_MODULE_H
 #define SETPOINT_MANAGER_MODULE_H
 
-#include "../FlightState.h"
-#include "../ReceiverInterface.h"
+#include "src/config/FlightState.h"
+#include "src/hardware/receiver/ReceiverInterface.h"
 
 // Calculates the target setpoints (desired roll, pitch, yaw rates/angles)
 // based on the pilot's receiver input and the currently active flight mode.
