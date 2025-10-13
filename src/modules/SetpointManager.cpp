@@ -11,11 +11,8 @@ SetpointManager::SetpointManager(ReceiverInterface &receiver, const FlightContro
 // Calculates the target setpoints for roll, pitch, and yaw based on receiver input and flight mode.
 void SetpointManager::update(FlightState &state)
 {
-    // 1. Read all raw channel values from the receiver and store them in the FlightState.
-    for (int i = 0; i < RECEIVER_CHANNEL_COUNT; ++i)
-    {
-        state.receiverChannels[i] = _receiver.getChannel(i);
-    }
+    // 1. Receiver channel values are assumed to be already updated in FlightController::runLoop().
+    //    Use the values directly from FlightState.
 
     // 2. Determine the current flight mode based on the mapped flight mode switch channel.
     uint16_t flightModeChannelValue = state.receiverChannels[_settings.channelMapping.channel[FLIGHT_MODE_SWITCH]];

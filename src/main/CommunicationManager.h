@@ -45,13 +45,12 @@ private:
 
     // Handles incoming serial data, parsing commands and managing mode changes.
     // @param state The current FlightState, used for command execution.
-    void _handleSerialInput(const FlightState &state);
+    void _handleSerialInput();
 
     // Executes a given command based on the current operating mode.
     // @param command The full command string received.
-    // @param state The current FlightState.
     // @param isApiMode True if the command originated from API mode.
-    void _executeCommand(String command, const FlightState &state, bool isApiMode);
+    void _executeCommand(String command, bool isApiMode);
 
     // --- Private Helper Functions for Command Implementations ---
     void _printCliHelp();

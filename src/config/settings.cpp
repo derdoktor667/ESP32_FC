@@ -57,9 +57,6 @@ void saveSettings()
         preferences.putInt(key.c_str(), settings.channelMapping.channel[i]);
     }
 
-    // Logging
-    preferences.putULong("log.interval", settings.printIntervalMs);
-    preferences.putBool("log.enabled", settings.enableLogging);
 
     // Motor Settings
     preferences.putFloat("motor.idle", settings.motorIdleSpeedPercent);
@@ -109,9 +106,6 @@ void loadSettings()
         // IMU Settings
         settings.imuProtocol = (ImuProtocol)preferences.getInt("imu.proto", (int)settings.imuProtocol);
 
-        // Logging
-        settings.printIntervalMs = preferences.getULong("log.interval", settings.printIntervalMs);
-        settings.enableLogging = preferences.getBool("log.enabled", settings.enableLogging);
 
         // Motor Settings
         settings.motorIdleSpeedPercent = preferences.getFloat("motor.idle", settings.motorIdleSpeedPercent);

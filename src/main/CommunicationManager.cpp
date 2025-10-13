@@ -45,8 +45,11 @@ CommunicationManager::CommunicationManager(FlightController* fc) : _fc(fc) {}
 
 void CommunicationManager::begin() {}
 
-void CommunicationManager::update(const FlightState &state) {
-    _handleSerialInput(state);
+void CommunicationManager::update(const FlightState &state)
+
+{
+
+    _handleSerialInput();
     if (_currentMode == OperatingMode::API && settings.enableLogging && millis() - _lastSerialLogTime >= settings.printIntervalMs) {
         _printFlightStatus(state);
         _lastSerialLogTime = millis();
@@ -55,7 +58,7 @@ void CommunicationManager::update(const FlightState &state) {
 
 // --- Private Methods: Main Logic ---
 
-void CommunicationManager::_handleSerialInput(const FlightState &state) {
+void CommunicationManager::_handleSerialInput() {
     if (Serial.available() == 0) return;
     String input = Serial.readStringUntil('\n');
     input.trim();
@@ -82,7 +85,7 @@ void CommunicationManager::_handleSerialInput(const FlightState &state) {
                 Serial.println("--- CLI Deactivated ---");
                 return;
             }
-            _executeCommand(input, state, false);
+            _executeCommand(input, false);
             if (!commandName.equalsIgnoreCase("save") && !commandName.equalsIgnoreCase("reboot") && !commandName.equalsIgnoreCase("reset")) {
                 Serial.print("ESP32_FC > ");
             }
@@ -90,12 +93,12 @@ void CommunicationManager::_handleSerialInput(const FlightState &state) {
         }
 
         case OperatingMode::API:
-            _executeCommand(input, state, true);
+            _executeCommand(input, true);
             break;
     }
 }
 
-void CommunicationManager::_executeCommand(String command, const FlightState &state, bool isApiMode) {
+void CommunicationManager::_executeCommand(String command, bool isApiMode) {
     command.toLowerCase();
     String commandName = "";
     String commandArgs = "";
@@ -417,10 +420,10 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode) {
     else if (param.equals("rx.failsafe_threshold")) settings.receiver.failsafeThreshold = valueStr.toInt();
     else if (param.equals("rx.protocol")) {
         int p = valueStr.toInt();
-        if (p >= 0 && p < RECEIVER_PROTOCOL_COUNT) settings.receiverProtocol = (ReceiverProtocol)p; else success = false;
+        if (p >= 0 && p < ReceiverProtocol::RECEIVER_PROTOCOL_COUNT) settings.receiverProtocol = (ReceiverProtocol)p; else success = false;
     } else if (param.equals("imu.protocol")) {
         int p = valueStr.toInt();
-        if (p >= 0 && p < IMU_PROTOCOL_COUNT) settings.imuProtocol = (ImuProtocol)p; else success = false;
+        if (p >= 0 && p < ImuProtocol::IMU_PROTOCOL_COUNT) settings.imuProtocol = (ImuProtocol)p; else success = false;
     } else if (param.startsWith("rx.map.")) {
         String inputName = param.substring(RX_MAP_PREFIX_LENGTH);
         int channelValue = valueStr.toInt();

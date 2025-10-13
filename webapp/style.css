@@ -4,11 +4,13 @@
     --card-background: #16213e;
     --text-color: #e0e0e0;
     --primary-color: #0f3460;
-    --accent-color: #e94560;
+    --accent-color: #007bff; /* Changed from pink to blue */
     --border-color: #0f3460;
     --input-background: #0f3460;
-    --button-bg: #e94560;
-    --button-hover-bg: #b83f55;
+    --button-bg: #007bff; /* Changed to match new accent color */
+    --button-hover-bg: #0056b3; /* Darker shade of blue for hover */
+    --secondary-button-bg: #4CAF50; /* A new secondary color */
+    --secondary-button-hover-bg: #45a049;
     --tab-inactive-bg: #16213e;
     --tab-active-bg: #0f3460;
     --tab-text-color: #e0e0e0;
@@ -27,16 +29,18 @@ body {
     align-items: center;
     min-height: 100vh;
     overflow: hidden; /* Prevent scrollbars */
+    line-height: 1.6; /* Improve readability */
+    font-size: 16px; /* Base font size */
 }
 
 .container {
     background-color: var(--card-background);
     border-radius: 12px;
-    box-shadow: 0 8px 24px var(--shadow-color);
-    max-width: 100%;
-    width: 100%;
-    height: 100vh;
-    margin: 0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* More pronounced shadow */
+    max-width: 1200px; /* Max width for the whole app */
+    width: 95%; /* Responsive width */
+    height: 95vh; /* Responsive height */
+    margin: 2.5vh auto; /* Center container vertically and horizontally */
     padding: 0;
     display: flex;
     flex-direction: column;
@@ -47,19 +51,21 @@ h1 {
     color: var(--accent-color);
     text-align: center;
     margin: 20px 0;
-    font-size: 2.5rem;
+    font-size: 2.8rem; /* Slightly larger */
     letter-spacing: 1px;
+    font-weight: 700; /* Bolder */
 }
 
 h2 {
     color: var(--text-color);
     text-align: center;
-    margin-bottom: 15px;
-    font-size: 1.8rem;
+    margin-bottom: 20px; /* More spacing */
+    font-size: 2rem; /* Slightly larger */
+    font-weight: 600; /* Bolder */
 }
 
 /* Screen Layouts */
-.connection-screen, .main-app-screen {
+.connection-screen {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -68,130 +74,132 @@ h2 {
     width: 100%;
     padding: 20px;
     box-sizing: border-box;
+    text-align: center; /* Center text within the screen */
 }
 
 .main-app-screen {
-    position: relative;
-    justify-content: flex-start; /* Align content to top */
+    display: grid;
+    grid-template-rows: auto 1fr auto; /* Controls, Dashboard, Settings */
+    gap: 15px;
+    padding: 15px;
+    box-sizing: border-box;
+    height: 100%;
+    width: 100%;
 }
 
 /* Controls */
 .controls {
-    position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10;
+    grid-row: 1;
     display: flex;
     gap: 10px;
-    width: auto;
     justify-content: center;
     flex-wrap: wrap;
-    background-color: rgba(22, 33, 62, 0.9); /* Slightly darker, more opaque */
+    background-color: rgba(22, 33, 62, 0.9);
     padding: 12px 25px;
     border-radius: 10px;
     box-shadow: 0 4px 12px var(--shadow-color);
+    align-self: start; /* Align to the top of its grid cell */
 }
 
 .controls button,
 .settings-section button,
-.tabs button,
 .quad-model-button {
     padding: 10px 20px;
     border: none;
     border-radius: 8px;
-    background-color: var(--button-bg);
+    background: linear-gradient(145deg, var(--button-bg), var(--button-hover-bg)); /* Subtle gradient */
     color: var(--tab-active-text-color);
     cursor: pointer;
     font-size: 1rem;
     font-weight: 600;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease; /* Smooth transitions for all properties */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); /* More prominent shadow */
+    text-transform: uppercase; /* Bootstrap-like text */
+    letter-spacing: 0.5px;
 }
 
 .controls button:hover,
 .settings-section button:hover,
-.tabs button:hover,
 .quad-model-button:hover {
-    background-color: var(--button-hover-bg);
-    transform: translateY(-1px);
+    background: linear-gradient(145deg, var(--button-hover-bg), var(--button-bg)); /* Reverse gradient on hover */
+    transform: translateY(-2px); /* More pronounced lift */
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6); /* Darker shadow on hover */
 }
 
 .controls button:active,
 .settings-section button:active,
-.tabs button:active,
 .quad-model-button:active {
     transform: translateY(0);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .controls button:disabled {
-    background-color: #555;
+    background: #555;
     cursor: not-allowed;
     box-shadow: none;
+    transform: none;
 }
 
 input[type="text"],
 input[type="number"] {
     background-color: var(--input-background);
     color: var(--text-color);
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--primary-color); /* Use primary color for border */
     padding: 10px 15px;
-    border-radius: 8px;
+    border-radius: 5px; /* Slightly less rounded */
     font-size: 1rem;
-    width: 200px;
+    width: 100%; /* Make inputs full width within their container */
+    max-width: 250px; /* Limit max width for better aesthetics */
     box-sizing: border-box;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.3s ease; /* Smooth transitions */
 }
 
 input[type="text"]:focus,
 input[type="number"]:focus {
     border-color: var(--accent-color);
-    box-shadow: 0 0 0 2px rgba(233, 69, 96, 0.3);
+    box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.4); /* More prominent focus shadow */
     outline: none;
+    background-color: rgba(22, 33, 62, 0.5); /* Slightly lighter background on focus */
+}
+
+.cli-input-container {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid var(--primary-color);
+}
+
+.cli-input-container input {
+    flex-grow: 1;
+    max-width: none; /* Override previous max-width */
 }
 
 /* Serial Monitor */
 #serialOutput {
+    flex-grow: 1;
+    height: auto;
+    min-height: 100px;
     width: 100%;
-    height: 200px; /* Slightly reduced height */
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--primary-color); /* Consistent border color */
     padding: 15px;
     margin-top: 15px;
-    overflow-y: scroll;
-    background-color: var(--input-background);
-    font-family: 'Fira Code', monospace; /* Monospace font for code */
-    color: var(--accent-color);
-    border-radius: 8px;
+    overflow-y: auto; /* Use auto for scrollbar only when needed */
+    background-color: #121a2b; /* Slightly darker background for console feel */
+    font-family: 'Fira Code', monospace;
+    color: #00ff00; /* Green text for console output */
+    border-radius: 5px; /* Consistent border-radius */
     white-space: pre-wrap;
     word-wrap: break-word;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3); /* More pronounced inner shadow */
+    line-height: 1.4; /* Tighter line height for console */
 }
 
-/* Dashboard Layout */
-.dashboard {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-    width: 100%;
-    height: 100%;
-    padding-top: 80px; /* Space for controls */
-    box-sizing: border-box;
-}
 
-.serial-monitor {
-    flex: none;
-    min-width: auto;
-    background-color: var(--card-background);
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px var(--shadow-color);
-    margin: 0 20px 20px 20px; /* Add margin for separation */
-}
+
 
 .quad-model {
-    flex: 1;
-    min-width: auto;
+    grid-row: 2; /* Position in the second row of main-app-screen */
     background-color: transparent;
     padding: 0;
     border-radius: 0;
@@ -199,15 +207,15 @@ input[type="number"]:focus {
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 100%;
-    height: 100%;
     position: relative;
+    overflow: hidden; /* Ensure canvas doesn't overflow */
+    min-height: 250px; /* Ensure it has some height */
 }
 
 .quad-model-button {
     position: absolute;
-    bottom: 20px;
-    right: 20px;
+    bottom: 10px;
+    right: 10px;
     z-index: 5;
 }
 
@@ -222,13 +230,13 @@ input[type="number"]:focus {
 
 /* Settings Section */
 .settings-section {
-    margin-top: 20px;
-    border-top: 1px solid var(--border-color);
-    padding-top: 20px;
+    grid-row: 3;
     background-color: var(--card-background);
     border-radius: 12px;
     box-shadow: 0 8px 24px var(--shadow-color);
-    margin: 20px;
+    padding: 15px;
+    overflow-y: auto; /* Allow scrolling if settings are too long */
+    min-height: 0; /* Allow grid item to shrink */
 }
 
 .settings-section h2 {
@@ -252,31 +260,41 @@ input[type="number"]:focus {
     display: none !important;
 }
 
+
 /* Tabs */
 .tabs {
     display: flex;
     flex-wrap: wrap;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--primary-color); /* More prominent separator */
     margin-bottom: 15px;
     padding: 0 15px;
+    justify-content: space-evenly; /* Distribute items evenly */
 }
 
 .tab-button {
-    background-color: var(--tab-inactive-bg);
-    color: var(--tab-text-color);
+    background-color: transparent; /* Transparent background */
+    color: var(--text-color);
     border: none;
-    padding: 10px 18px;
+    padding: 12px 20px; /* Slightly more padding */
     cursor: pointer;
-    border-radius: 8px 8px 0 0;
-    margin-right: 5px;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    border-radius: 0; /* No border-radius for a cleaner look */
+    margin-right: 0; /* No margin between buttons */
+    transition: all 0.3s ease; /* Smooth transitions */
     font-weight: 500;
+    position: relative;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tab-button:hover {
+    color: var(--accent-color); /* Highlight text on hover */
+    background-color: rgba(233, 69, 96, 0.1); /* Subtle background on hover */
 }
 
 .tab-button.active {
-    background-color: var(--tab-active-bg);
-    color: var(--tab-active-text-color);
-    border-bottom: 2px solid var(--accent-color); /* Highlight active tab */
+    color: var(--accent-color); /* Active tab text color */
+    border-bottom: 3px solid var(--accent-color); /* Thicker, colored bottom border */
+    font-weight: 700; /* Bolder active tab */
 }
 
 .tab-content-container {
@@ -311,12 +329,15 @@ input[type="number"]:focus {
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
+    .main-app-screen {
+        grid-template-rows: auto 1fr auto; /* Controls, Dashboard, Settings */
+        gap: 10px;
+        padding: 10px;
+    }
+
     .controls {
         flex-direction: column;
-        position: static;
-        transform: none;
-        width: 90%;
-        margin-bottom: 20px;
+        padding: 10px 15px;
     }
 
     .controls input[type="text"],
@@ -324,12 +345,8 @@ input[type="number"]:focus {
         width: 100%;
     }
 
-    .dashboard {
-        padding-top: 0;
-    }
-
-    .serial-monitor, .settings-section {
-        margin: 10px;
+    .settings-section {
+        padding: 10px;
     }
 
     .tab-content {

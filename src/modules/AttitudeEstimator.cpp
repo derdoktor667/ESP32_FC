@@ -41,10 +41,6 @@ void AttitudeEstimator::begin()
 // Performs one cycle of attitude calculation: reads IMU, updates filter, and stores attitude in state.
 void AttitudeEstimator::update(FlightState &state)
 {
-    // Update _lastUpdateTime for potential future uses or for debugging,
-    // although the Madgwick filter internally handles its own time step.
-    unsigned long currentTime = micros();
-
     _imu->update(); // Read the latest raw sensor data from the IMU
 
     // Get calibrated sensor data from the IMU interface.

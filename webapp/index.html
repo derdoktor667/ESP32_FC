@@ -25,23 +25,17 @@
         </div>
 
         <div id="mainAppScreen" class="main-app-screen hidden">
-            <div class="controls initial-hidden-element">
+            <div class="controls">
                 <button id="disconnectButton">Disconnect Serial</button>
-                <input type="text" id="cliCommandInput" placeholder="Enter CLI command">
-                <button id="sendCliButton">Send CLI Command</button>
+                <button id="saveAllSettingsButton">Save All Settings</button>
             </div>
 
-            <div class="dashboard">
-                <div class="quad-model">
-                    <canvas id="quadcopterCanvas"></canvas>
-                    <button id="calibrateImuButton" class="quad-model-button">Calibrate IMU</button>
-                </div>
-                <div class="serial-monitor initial-hidden-element">
-                    <div id="serialOutput"></div>
-                </div>
+            <div class="quad-model">
+                <canvas id="quadcopterCanvas"></canvas>
+                <button id="calibrateImuButton" class="quad-model-button">Calibrate IMU</button>
             </div>
 
-            <div class="settings-section initial-hidden-element">
+            <div class="settings-section hidden">
                 <h2>Settings</h2>
                 <div class="tabs">
                     <button class="tab-button active" data-tab="pid">PID</button>
@@ -50,7 +44,7 @@
                     <button class="tab-button" data-tab="motor">Motor</button>
                     <button class="tab-button" data-tab="filter">Filter</button>
                     <button class="tab-button" data-tab="imu">IMU</button>
-                    <button class="tab-button" data-tab="logging">Logging</button>
+                    <button class="tab-button" data-tab="console">Console</button> <!-- New Console Tab Button -->
                 </div>
                 <div id="settingsForm" class="tab-content-container">
                     <div id="pid" class="tab-content active"></div>
@@ -59,7 +53,13 @@
                     <div id="motor" class="tab-content hidden"></div>
                     <div id="filter" class="tab-content hidden"></div>
                     <div id="imu" class="tab-content hidden"></div>
-                    <div id="logging" class="tab-content hidden"></div>
+                    <div id="console" class="tab-content hidden"> <!-- New Console Tab Content -->
+                        <div id="serialOutput"></div>
+                        <div class="cli-input-container">
+                            <input type="text" id="cliCommandInput" placeholder="Enter CLI command">
+                            <button id="sendCliButton">Send CLI Command</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

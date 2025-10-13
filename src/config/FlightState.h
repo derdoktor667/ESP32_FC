@@ -9,7 +9,6 @@ struct Vector3f
     float roll = 0.0f;
     float pitch = 0.0f;
     float yaw = 0.0f;
-    float throttle = 0.0f;
 };
 
 // Holds the complete, dynamic state of the flight controller at any given moment.

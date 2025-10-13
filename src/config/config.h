@@ -29,6 +29,7 @@ enum ReceiverProtocol
     PROTOCOL_IBUS,
     PROTOCOL_PPM,
     // PROTOCOL_SBUS, // Future implementation
+    RECEIVER_PROTOCOL_COUNT // Keep this last to count the number of protocols
 };
 
 // Supported IMU Protocols
@@ -36,6 +37,7 @@ enum ImuProtocol
 {
     IMU_MPU6050,
     // Add other IMU protocols here as needed
+    IMU_PROTOCOL_COUNT // Keep this last to count the number of protocols
 };
 
 // Flight Control Inputs
@@ -178,8 +180,7 @@ struct FlightControllerSettings
 static constexpr int PID_SCALE_FACTOR = 1000;
 
 // General Constants
-static constexpr int RECEIVER_PROTOCOL_COUNT = 2;
-static constexpr int IMU_PROTOCOL_COUNT = 1;
+
 static constexpr int RECEIVER_CHANNEL_COUNT = 16;
 static constexpr int NUM_MOTORS = 4;
 static constexpr unsigned long CLI_REBOOT_DELAY_MS = 100;

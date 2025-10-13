@@ -2,22 +2,48 @@ import * as THREE from 'three';
 
 const connectButton = document.getElementById('connectButton');
 const disconnectButton = document.getElementById('disconnectButton');
-const sendCliButton = document.getElementById('sendCliButton');
-const cliCommandInput = document.getElementById('cliCommandInput');
+
 const serialOutput = document.getElementById('serialOutput');
 const connectionScreen = document.getElementById('connectionScreen');
 const mainAppScreen = document.getElementById('mainAppScreen');
 const settingsForm = document.getElementById('settingsForm');
+const settingsSection = document.querySelector('.settings-section'); // Add this line
 const tabButtons = document.querySelectorAll('.tab-button');
 const calibrateImuButton = document.getElementById('calibrateImuButton');
+const saveAllSettingsButton = document.getElementById('saveAllSettingsButton'); // New button constant
 
 connectButton.addEventListener('click', connectSerial);
 disconnectButton.addEventListener('click', disconnectSerial);
-sendCliButton.addEventListener('click', () => {
-    sendSerialData(cliCommandInput.value);
-    cliCommandInput.value = ''; // Clear input after sending
-});
+
 calibrateImuButton.addEventListener('click', calibrateImu);
+saveAllSettingsButton.addEventListener('click', saveAllSettings); // New event listener
+
+async function saveAllSettings() {
+    serialOutput.textContent += 'Attempting to save all settings...\n';
+    const settingInputs = settingsForm.querySelectorAll('input'); // Get all inputs within the settings form
+
+    for (const input of settingInputs) {
+        const key = input.name;
+        let newValue;
+
+        if (input.type === 'number') {
+            newValue = parseFloat(input.value);
+        } else if (input.type === 'checkbox') {
+            newValue = input.checked;
+        } else {
+            newValue = input.value;
+        }
+
+        if (key) { // Ensure key exists
+            await sendSerialData(`set ${key} ${newValue}`);
+            // Add a small delay to prevent overwhelming the serial buffer
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+    }
+    serialOutput.textContent += 'All settings save commands sent.\n';
+    // Optionally, request settings again to confirm they were saved and re-render
+    // sendSerialData('get_settings');
+}
 
 let serialPort;
 let serialReader;
@@ -33,9 +59,12 @@ function showScreen(screenId) {
     if (screenId === 'connection') {
         connectionScreen.classList.remove('hidden');
         mainAppScreen.classList.add('hidden');
+        settingsSection.classList.add('hidden'); // Hide settings section when connection screen is active
     } else {
         connectionScreen.classList.add('hidden');
         mainAppScreen.classList.remove('hidden');
+        settingsSection.classList.remove('hidden'); // Show settings section when main app screen is active
+        onWindowResize(); // Ensure canvas is correctly sized after screen transition
     }
 }
 
@@ -56,6 +85,16 @@ async function connectSerial() {
         init3D(); // Initialize 3D scene immediately after showing the main app screen
         window.addEventListener('resize', onWindowResize, false);
         onWindowResize(); // Call once to set initial size
+
+        // Re-get references and attach event listeners for CLI input
+        const cliCommandInput = document.getElementById('cliCommandInput');
+        const sendCliButton = document.getElementById('sendCliButton');
+        if (cliCommandInput && sendCliButton) {
+            sendCliButton.addEventListener('click', () => {
+                sendSerialData(cliCommandInput.value);
+                cliCommandInput.value = ''; // Clear input after sending
+            });
+        }
 
         serialReader = serialPort.readable.getReader();
         keepReading = true;
@@ -90,8 +129,6 @@ async function readSerial(signal) {
                 break;
             }
             const text = new TextDecoder().decode(value);
-            serialOutput.textContent += text;
-            serialOutput.scrollTop = serialOutput.scrollHeight;
 
             receivedData += text;
             // Process each line received
@@ -105,7 +142,8 @@ async function readSerial(signal) {
                     handleApiResponse(jsonResponse);
                 } catch (jsonError) {
                     // Not a JSON object, or malformed JSON, treat as regular serial output
-                    // console.error('JSON parsing error for line:', line, jsonError);
+                    serialOutput.textContent += line + '\n'; // Append non-JSON lines to console
+                    serialOutput.scrollTop = serialOutput.scrollHeight;
                 }
             }
 
@@ -194,8 +232,7 @@ const settingCategories = {
     "receiver": ["rx.min", "rx.max", "rx.arming_threshold", "rx.failsafe_threshold", "rx.protocol", "rx.map.throttle", "rx.map.roll", "rx.map.pitch", "rx.map.yaw", "rx.map.arm_switch", "rx.map.failsafe_switch", "rx.map.flight_mode_switch"],
     "motor": ["motor.idle_speed", "motor.dshot_mode"],
     "filter": ["madgwick.sample_freq", "madgwick.beta"],
-    "imu": ["imu.protocol"],
-    "logging": ["log.interval", "log.enabled"]
+    "imu": ["imu.protocol"]
 };
 
 function renderSettings(settingsData) {
@@ -308,52 +345,111 @@ function init3D() {
         directionalLight.position.set(0, 1, 1).normalize();
         scene.add(directionalLight);
 
-        // Add AxesHelper for visualization
-        const axesHelper = new THREE.AxesHelper(1); // Size 1 unit
-        scene.add(axesHelper);
+
 
         // Create quadcopter model using primitives
         quadcopterModel = new THREE.Group();
 
-        // Body
-        const bodyGeometry = new THREE.BoxGeometry(0.6, 0.1, 0.4);
-        const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff }); // Blue body
-        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-        quadcopterModel.add(body);
-
-        // Arms
-        const armGeometry = new THREE.BoxGeometry(0.8, 0.05, 0.05);
-        const armMaterial = new THREE.MeshPhongMaterial({ color: 0x808080 }); // Grey arms
-
-        const arm1 = new THREE.Mesh(armGeometry, armMaterial);
-        arm1.position.set(0, 0, 0);
-        arm1.rotation.z = Math.PI / 4; // Rotate 45 degrees
-        quadcopterModel.add(arm1);
-
-        const arm2 = new THREE.Mesh(armGeometry, armMaterial);
-        arm2.position.set(0, 0, 0);
-        arm2.rotation.z = -Math.PI / 4; // Rotate -45 degrees
-        quadcopterModel.add(arm2);
-
-        // Propellers (simplified as small cylinders)
-        const propellerGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.02, 32);
-        const propellerMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 }); // Green propellers
-
-        const propPositions = [
-            new THREE.Vector3(0.3, 0, 0.3),  // Front Right
-            new THREE.Vector3(-0.3, 0, -0.3), // Back Left
-            new THREE.Vector3(0.3, 0, -0.3),  // Back Right
-            new THREE.Vector3(-0.3, 0, 0.3)   // Front Left
-        ];
-
-        propPositions.forEach(pos => {
-            const prop = new THREE.Mesh(propellerGeometry, propellerMaterial);
-            prop.position.copy(pos);
-            prop.position.y += 0.05; // Lift slightly above arms
-            quadcopterModel.add(prop);
-        });
-
+                // Body
+                const bodyGeometry = new THREE.BoxGeometry(0.5, 0.08, 0.3); // Flatter and slightly wider
+                const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 }); // Dark grey body
+                const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+                quadcopterModel.add(body);
+            
+                // Orientation Marker (Front)
+                const markerGeometry = new THREE.BoxGeometry(0.05, 0.05, 0.05);
+                const markerMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 }); // Bright red
+                const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+                marker.position.set(0, 0.05, 0.15); // Position on top-front of the body
+                quadcopterModel.add(marker);        
+            // Arms (more realistic shape and position)
+            const armMaterial = new THREE.MeshPhongMaterial({ color: 0x555555 }); // Slightly lighter grey arms
+        
+            // Front-right arm
+            const armFRGeometry = new THREE.BoxGeometry(0.4, 0.03, 0.03); // Thinner, longer
+            const armFR = new THREE.Mesh(armFRGeometry, armMaterial);
+            armFR.position.set(0.2, 0, 0.15); // Positioned relative to body center
+            armFR.rotation.y = Math.PI / 4; // Angle outwards
+            quadcopterModel.add(armFR);
+        
+            // Back-left arm
+            const armBLGeometry = new THREE.BoxGeometry(0.4, 0.03, 0.03);
+            const armBL = new THREE.Mesh(armBLGeometry, armMaterial);
+            armBL.position.set(-0.2, 0, -0.15);
+            armBL.rotation.y = Math.PI / 4; // Angle outwards
+            quadcopterModel.add(armBL);
+        
+            // Front-left arm
+            const armFLGeometry = new THREE.BoxGeometry(0.4, 0.03, 0.03);
+            const armFL = new THREE.Mesh(armFLGeometry, armMaterial);
+            armFL.position.set(-0.2, 0, 0.15);
+            armFL.rotation.y = -Math.PI / 4; // Angle inwards
+            quadcopterModel.add(armFL);
+        
+            // Back-right arm
+            const armBRGeometry = new THREE.BoxGeometry(0.4, 0.03, 0.03);
+            const armBR = new THREE.Mesh(armBRGeometry, armMaterial);
+            armBR.position.set(0.2, 0, -0.15);
+            armBR.rotation.y = -Math.PI / 4; // Angle inwards
+            quadcopterModel.add(armBR);
+            // Motor and Propeller positions
+            const motorPropPositions = [
+                { x: 0.3, z: 0.25, armRotation: Math.PI / 4 },  // Front Right
+                { x: -0.3, z: -0.25, armRotation: Math.PI / 4 }, // Back Left
+                { x: 0.3, z: -0.25, armRotation: -Math.PI / 4 },  // Back Right
+                { x: -0.3, z: 0.25, armRotation: -Math.PI / 4 }   // Front Left
+            ];
+        
+            const motorGeometry = new THREE.CylinderGeometry(0.04, 0.04, 0.05, 16);
+            const motorMaterial = new THREE.MeshPhongMaterial({ color: 0x222222 }); // Dark grey motors
+        
+            const propellerGeometry = new THREE.BoxGeometry(0.15, 0.005, 0.03); // Flat propeller blade
+            const propellerMaterial = new THREE.MeshPhongMaterial({ color: 0x444444 }); // Darker grey propellers
+        
+            motorPropPositions.forEach(pos => {
+                // Motor
+                const motor = new THREE.Mesh(motorGeometry, motorMaterial);
+                motor.position.set(pos.x, -0.025, pos.z); // Position below arm
+                quadcopterModel.add(motor);
+        
+                // Propeller
+                const prop = new THREE.Mesh(propellerGeometry, propellerMaterial);
+                prop.position.set(pos.x, 0.02, pos.z); // Position above motor
+                prop.rotation.y = pos.armRotation; // Align with arm
+                quadcopterModel.add(prop);
+        
+                const prop2 = new THREE.Mesh(propellerGeometry, propellerMaterial);
+                prop2.position.set(pos.x, 0.02, pos.z); // Position above motor
+                prop2.rotation.y = pos.armRotation + Math.PI / 2; // Second blade perpendicular
+                quadcopterModel.add(prop2);
+            });
+        
+            // Landing Gear
+            const landingGearMaterial = new THREE.MeshPhongMaterial({ color: 0x666666 }); // Grey landing gear
+        
+            // Front leg
+            const legFGeometry = new THREE.BoxGeometry(0.02, 0.1, 0.02);
+            const legF = new THREE.Mesh(legFGeometry, landingGearMaterial);
+            legF.position.set(0.15, -0.08, 0.1);
+            quadcopterModel.add(legF);
+        
+            // Back leg
+            const legBGeometry = new THREE.BoxGeometry(0.02, 0.1, 0.02);
+            const legB = new THREE.Mesh(legBGeometry, landingGearMaterial);
+            legB.position.set(-0.15, -0.08, -0.1);
+            quadcopterModel.add(legB);
+        
+            // Crossbar
+            const crossbarGeometry = new THREE.BoxGeometry(0.35, 0.02, 0.02);
+            const crossbar = new THREE.Mesh(crossbarGeometry, landingGearMaterial);
+            crossbar.position.set(0, -0.12, 0);
+            quadcopterModel.add(crossbar);
         scene.add(quadcopterModel);
+
+        // Add local axes to the quadcopter model for debugging orientation
+        const axes = new THREE.AxesHelper(0.3); // Smaller axes for the model itself
+        quadcopterModel.add(axes);
+
         camera.position.z = 2; // Adjust camera position to see the model
 
         animate();

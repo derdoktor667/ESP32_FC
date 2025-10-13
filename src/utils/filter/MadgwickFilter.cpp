@@ -13,12 +13,8 @@ MadgwickFilter::MadgwickFilter(float sampleFreq, float beta) : _sampleFreq(sampl
 // Used to normalize vectors and quaternions.
 float MadgwickFilter::_invSqrt(float x)
 {
-    // This is a common fast inverse square root approximation.
-    // It's often used in graphics and embedded systems for performance.
-    // Note: For critical applications, consider `1.0f / sqrtf(x)` for better precision.
-    unsigned int i = 0x5F1F1412 - (*(unsigned int *)&x >> 1);
-    float y = *(float *)&i;
-    return y * (1.69000231f - 0.714158168f * x * y * y);
+    // Using standard sqrtf for better precision, critical for flight control.
+    return 1.0f / sqrtf(x);
 }
 
 // Madgwick filter update function.
@@ -99,7 +95,7 @@ float MadgwickFilter::getRoll() const
 {
     // Convert quaternion to Euler angles (roll, pitch, yaw)
     // Roll (x-axis rotation)
-    return atan2f(_q0 * _q1 + _q2 * _q3, 0.5f - _q1 * _q1 - _q2 * _q2) * (180.0f / PI);
+    return atan2f(_q0 * _q1 + _q2 * _q3, 0.5f - _q1 * _q1 - _q2 * _q2) * (180.0f / M_PI);
 }
 
 // Returns the estimated pitch angle in degrees.
@@ -110,11 +106,11 @@ float MadgwickFilter::getPitch() const
     float sinp = 2.0f * (_q0 * _q2 - _q1 * _q3);
     if (fabs(sinp) >= 1)
     {
-        return copysignf(PI / 2.0f, sinp) * (180.0f / PI); // Use 90 degrees if out of range
+        return copysignf(M_PI / 2.0f, sinp) * (180.0f / M_PI); // Use 90 degrees if out of range
     }
     else
     {
-        return asinf(sinp) * (180.0f / PI);
+        return asinf(sinp) * (180.0f / M_PI);
     }
 }
 
@@ -123,7 +119,7 @@ float MadgwickFilter::getPitch() const
 float MadgwickFilter::getYaw() const
 {
     // Yaw (z-axis rotation)
-    return atan2f(_q1 * _q2 + _q0 * _q3, 0.5f - _q2 * _q2 - _q3 * _q3) * (180.0f / PI);
+    return atan2f(_q1 * _q2 + _q0 * _q3, 0.5f - _q2 * _q2 - _q3 * _q3) * (180.0f / M_PI);
 }
 
 // Returns the current quaternion components.

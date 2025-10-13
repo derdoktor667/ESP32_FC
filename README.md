@@ -117,12 +117,14 @@ The CLI provides the following commands, categorized for clarity:
 For a more user-friendly interaction, a web application is provided in the `webapp/` directory. This application utilizes the Web Serial API to connect directly to your ESP32 from a web browser, allowing you to send CLI commands, view serial output, and dynamically configure settings.
 
 ### Key WebApp Features:
-*   **Modern UI/UX:** Features a modern, clean, and dark design for an intuitive and aesthetically pleasing user experience.
-*   **3D Quadcopter Model:** Displays a dynamically generated 3D quadcopter model using Three.js primitives, providing live visualization of the flight controller's attitude (roll, pitch, yaw).
+*   **Modern UI/UX:** Features a modern, clean, and dark design with a refreshed blue accent color for an intuitive and aesthetically pleasing user experience.
+*   **Responsive Layout:** Utilizes CSS Grid for a flexible and responsive layout, ensuring optimal viewing across various screen sizes.
+*   **Always-Visible 3D Quadcopter Model:** Displays a dynamically generated 3D quadcopter model using Three.js primitives, providing live visualization of the flight controller's attitude (roll, pitch, yaw). The model is now significantly more realistic, featuring refined body, arms, motors, propellers, and landing gear, along with a clear orientation marker.
+*   **Dedicated Console Tab:** Serial output and CLI command input are now organized within a dedicated "Console" tab for improved usability.
+*   **Dynamic Settings with Save All:** Automatically fetches and renders all current settings from the ESP32 upon connection. A new "Save All Settings" button allows for convenient bulk saving of configuration changes.
 *   **IMU Calibration Button:** A dedicated button to initiate IMU calibration and instantly reset the 3D model's orientation.
-*   **Connection Dialog**: Presents a clear connection screen initially, switching to the main interface upon successful serial connection.
-*   **Robust Serial Handling**: Implemented with `AbortController` for reliable connection and disconnection.
-*   **Dynamic Settings**: Automatically fetches and renders all current settings from the ESP32 upon connection, allowing for easy modification.
+*   **Robust Serial Handling:** Implemented with `AbortController` for reliable connection and disconnection.
+*   **Streamlined Interface:** The "Logging" category has been removed for a cleaner and more focused settings interface.
 
 ### How to Use the WebApp
 

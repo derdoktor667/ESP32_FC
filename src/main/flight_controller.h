@@ -31,6 +31,9 @@ public:
     // Runs one iteration of the main flight loop.
     void runLoop();
 
+    // Sets the CommunicationManager instance.
+    void setCommunicationManager(CommunicationManager* comms);
+
     // Requests IMU calibration.
     void requestImuCalibration();
 
