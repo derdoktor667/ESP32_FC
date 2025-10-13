@@ -1,5 +1,5 @@
 #include "src/modules/MotorMixer.h"
-#include "src/config/config.h"
+
 #include <Arduino.h>
 
 // Constructor: Initializes the MotorMixer with pointers to the four DShot motor objects and settings.

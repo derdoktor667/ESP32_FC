@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Flight Controller WebApp</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/loaders/GLTFLoader.js": "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js"
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <div id="connectionScreen" class="connection-screen">
+            <h2>Connect to ESP32</h2>
+            <button id="connectButton">Connect Serial</button>
+            <p>Please connect your ESP32 via USB and click 'Connect Serial'.</p>
+        </div>
+
+        <div id="mainAppScreen" class="main-app-screen hidden">
+            <div class="controls">
+                <button id="disconnectButton">Disconnect Serial</button>
+                <button id="saveAllSettingsButton">Save All Settings</button>
+            </div>
+
+            <div class="quad-model">
+                <canvas id="quadcopterCanvas"></canvas>
+                <button id="calibrateImuButton" class="quad-model-button">Calibrate IMU</button>
+            </div>
+
+            <div class="settings-section hidden">
+                <h2>Settings</h2>
+                <div class="tabs">
+                    <button class="tab-button active" data-tab="pid">PID</button>
+                    <button class="tab-button" data-tab="rates">Rates</button>
+                    <button class="tab-button" data-tab="receiver">Receiver</button>
+                    <button class="tab-button" data-tab="motor">Motor</button>
+                    <button class="tab-button" data-tab="filter">Filter</button>
+                    <button class="tab-button" data-tab="imu">IMU</button>
+                    <button class="tab-button" data-tab="console">Console</button> <!-- New Console Tab Button -->
+                </div>
+                <div id="settingsForm" class="tab-content-container">
+                    <div id="pid" class="tab-content active"></div>
+                    <div id="rates" class="tab-content hidden"></div>
+                    <div id="receiver" class="tab-content hidden"></div>
+                    <div id="motor" class="tab-content hidden"></div>
+                    <div id="filter" class="tab-content hidden"></div>
+                    <div id="imu" class="tab-content hidden"></div>
+                    <div id="console" class="tab-content hidden"> <!-- New Console Tab Content -->
+                        <div id="serialOutput"></div>
+                        <div class="cli-input-container">
+                            <input type="text" id="cliCommandInput" placeholder="Enter CLI command">
+                            <button id="sendCliButton">Send CLI Command</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+
+</html>

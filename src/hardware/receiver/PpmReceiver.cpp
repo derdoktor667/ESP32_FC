@@ -1,12 +1,13 @@
 #include "src/hardware/receiver/PpmReceiver.h"
-#include "src/main/flight_controller.h" // For settings access
+
 
 // --- Static variables for the Interrupt Service Routine (ISR) ---
 
 // Volatile is crucial here, as these variables are modified by an ISR and read in the main loop.
 static volatile uint16_t _ppm_channel_values[PPM_CHANNEL_COUNT] = {0};
 static volatile int _ppm_current_channel = 0;
-static volatile unsigned long _ppm_last_valid_pulse_time = 0; // Renamed for clarity
+static volatile unsigned long _ppm_last_valid_pulse_time = 0; // Stores micros() for pulse width calculation
+static volatile unsigned long _ppm_last_valid_frame_millis = 0; // Stores millis() for failsafe timeout
 
 // The minimum time (in microseconds) for a pulse to be considered a sync pulse.
 // A standard PPM frame is ~22.5ms, so a gap > 4ms is a reliable indicator of sync.
@@ -24,6 +25,7 @@ void IRAM_ATTR _handle_ppm_interrupt()
     {
         // A long gap indicates the start of a new frame (sync pulse).
         _ppm_current_channel = 0;
+        _ppm_last_valid_frame_millis = millis(); // Update last valid frame time
     }
     else
     {
@@ -40,7 +42,7 @@ void IRAM_ATTR _handle_ppm_interrupt()
 // --- PpmReceiver Class Implementation ---
 
 PpmReceiver::PpmReceiver(gpio_num_t ppmPin)
-    : _ppmPin(ppmPin), _lastReceiveTime(0) // Initialize _lastReceiveTime
+    : _ppmPin(ppmPin)
 {
 }
 
@@ -50,17 +52,13 @@ void PpmReceiver::begin()
     pinMode(_ppmPin, INPUT_PULLUP); // Use a pull-up to ensure a stable line if the receiver is disconnected
     attachInterrupt(digitalPinToInterrupt(_ppmPin), _handle_ppm_interrupt, RISING);
     _ppm_last_valid_pulse_time = micros(); // Assume signal is present at startup
-    _lastReceiveTime = millis(); // Initialize for hasFailsafe
+    _ppm_last_valid_frame_millis = millis(); // Initialize for failsafe
 }
 
 // The PPM signal is read by interrupts, so this function does nothing.
 void PpmReceiver::update()
 {
     // All work is done in the ISR. No-op.
-    // Update _lastReceiveTime here based on _ppm_last_valid_pulse_time to avoid direct ISR access to member.
-    // Or, make _lastReceiveTime static and update in ISR.
-    // Let's make _lastReceiveTime static and update in ISR for simplicity.
-    // This comment block will be removed in the next step.
 }
 
 // Gets the value of a specific PPM channel.
@@ -80,5 +78,5 @@ uint16_t PpmReceiver::getChannel(int channel) const
 bool PpmReceiver::hasFailsafe() const
 {
     // Failsafe is active if no signal has been received for a certain period.
-    return (millis() - _ppm_last_valid_pulse_time > PPM_SIGNAL_TIMEOUT_MS);
+    return (millis() - _ppm_last_valid_frame_millis > PPM_SIGNAL_TIMEOUT_MS);
 }

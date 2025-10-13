@@ -57,13 +57,10 @@ void saveSettings()
         preferences.putInt(key.c_str(), settings.channelMapping.channel[i]);
     }
 
-    // Logging
-    preferences.putULong("log.interval", settings.printIntervalMs);
-    preferences.putBool("log.enabled", settings.enableLogging);
 
     // Motor Settings
     preferences.putFloat("motor.idle", settings.motorIdleSpeedPercent);
-    preferences.putInt("motor.dshot_mode", (int)settings.dshotMode);
+    preferences.putInt("dshot_mode_val", (int)settings.dshotMode);
 
     preferences.end();
     Serial.println("INFO: Settings saved.");
@@ -109,13 +106,10 @@ void loadSettings()
         // IMU Settings
         settings.imuProtocol = (ImuProtocol)preferences.getInt("imu.proto", (int)settings.imuProtocol);
 
-        // Logging
-        settings.printIntervalMs = preferences.getULong("log.interval", settings.printIntervalMs);
-        settings.enableLogging = preferences.getBool("log.enabled", settings.enableLogging);
 
         // Motor Settings
         settings.motorIdleSpeedPercent = preferences.getFloat("motor.idle", settings.motorIdleSpeedPercent);
-        settings.dshotMode = (dshot_mode_t)preferences.getInt("motor.dshot_mode", (int)settings.dshotMode);
+        settings.dshotMode = (dshot_mode_t)preferences.getInt("dshot_mode_val", (int)settings.dshotMode);
 
         // Load channel mapping
         for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)
@@ -127,7 +121,10 @@ void loadSettings()
     else
     {
         Serial.println("INFO: No saved settings found. Initializing with default values and saving...");
-        preferences.end(); // End read-only session
+        preferences.end(); // End the read-only session
+        preferences.begin(PREFERENCES_NAMESPACE, false); // Re-open in read-write mode to clear
+        preferences.clear(); // Clear all preferences if not initialized
+        preferences.end(); // End the read-write session
         saveSettings();    // This will save the defaults and print the confirmation
         return;
     }

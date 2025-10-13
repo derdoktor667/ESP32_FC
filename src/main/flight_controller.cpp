@@ -37,10 +37,15 @@ FlightController::~FlightController()
     delete _motor3;
     delete _motor4;
     delete _motorMixer;
-    delete _comms;
+
 }
 
 // Initializes all components of the flight controller in the correct sequence.
+void FlightController::setCommunicationManager(CommunicationManager* comms)
+{
+    _comms = comms;
+}
+
 void FlightController::initialize()
 {
     // 1. Load persistent settings from flash memory first.
@@ -94,9 +99,7 @@ void FlightController::initialize()
     // 4. Start the remaining components.
     _attitudeEstimator.begin();
 
-    // 5. Initialize CommunicationManager
-    _comms = new CommunicationManager(this);
-    _comms->begin();
+
 }
 
 // This is the main flight control loop, executed repeatedly.

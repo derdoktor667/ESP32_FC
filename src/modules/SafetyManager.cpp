@@ -1,5 +1,5 @@
 #include "src/modules/SafetyManager.h"
-#include "src/config/config.h"
+
 #include <Arduino.h>
 
 // Constructor: Initializes the SafetyManager with references to the receiver and settings.

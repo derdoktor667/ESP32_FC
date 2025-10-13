@@ -29,6 +29,7 @@ enum ReceiverProtocol
     PROTOCOL_IBUS,
     PROTOCOL_PPM,
     // PROTOCOL_SBUS, // Future implementation
+    RECEIVER_PROTOCOL_COUNT // Keep this last to count the number of protocols
 };
 
 // Supported IMU Protocols
@@ -36,6 +37,7 @@ enum ImuProtocol
 {
     IMU_MPU6050,
     // Add other IMU protocols here as needed
+    IMU_PROTOCOL_COUNT // Keep this last to count the number of protocols
 };
 
 // Flight Control Inputs
@@ -178,8 +180,7 @@ struct FlightControllerSettings
 static constexpr int PID_SCALE_FACTOR = 1000;
 
 // General Constants
-static constexpr int RECEIVER_PROTOCOL_COUNT = 2;
-static constexpr int IMU_PROTOCOL_COUNT = 1;
+
 static constexpr int RECEIVER_CHANNEL_COUNT = 16;
 static constexpr int NUM_MOTORS = 4;
 static constexpr unsigned long CLI_REBOOT_DELAY_MS = 100;
@@ -187,6 +188,12 @@ static constexpr unsigned long IMU_INIT_FAIL_DELAY_MS = 10;
 static constexpr unsigned long SERIAL_BAUD_RATE = 115200;
 static constexpr int RX_MAP_PREFIX_LENGTH = 7;
 static constexpr bool INFINITE_LOOP_CONDITION = true;
+
+static constexpr int FLIGHT_MODE_ACRO_THRESHOLD = 1200;
+static constexpr int FLIGHT_MODE_ANGLE_THRESHOLD = 1800;
+
+static constexpr int DSHOT_MIN_THROTTLE = 48;  // Minimum DShot throttle value (e.g., for motor idle)
+static constexpr int DSHOT_MAX_THROTTLE = 2047; // Maximum DShot throttle value
 
 // Create a single, global instance of the settings
 // extern FlightControllerSettings settings; // Now declared in settings.h
