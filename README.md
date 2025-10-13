@@ -85,16 +85,23 @@ This mode is for manual debugging and configuration via a serial monitor.
 
 ### Available Commands
 
-*   `get <parameter>`: Retrieves the current value of a specific setting.
+The CLI provides the following commands, categorized for clarity:
+
+**General Commands:**
+*   `help`: Display this help message.
+*   `exit`: Deactivate CLI and return to flight mode.
+*   `reboot`: Reboot the ESP32 flight controller.
+
+**Settings Management:**
+*   `get <parameter>`: Retrieve a specific setting or category (e.g., `get pid`, `get rx.channels`).
 *   `get_settings`: Retrieves all settings as a single JSON object (API mode only).
-*   `set <parameter> <value>`: Sets a new value for a setting.
-*   `dump`: Prints all settings in a human-readable format (CLI mode only).
-*   `save`: Saves the current settings to flash memory and reboots the device.
-*   `reset`: Resets all settings to their defaults and reboots.
-*   `reboot`: Reboots the ESP32.
-*   `calibrate_imu`: Triggers a manual IMU calibration.
-*   `help`: Displays the list of available commands (CLI mode only).
-*   `exit`: Deactivates the CLI mode and returns to `FLIGHT` mode.
+*   `set <parameter> <value>`: Set a new value for a specified setting.
+*   `dump`: Display all current flight controller settings (CLI mode only).
+*   `save`: Save current settings to non-volatile memory.
+*   `reset`: Reset all settings to factory defaults and save.
+
+**Calibration Commands:**
+*   `calibrate_imu`: Initiate IMU sensor calibration.
 
 ---
 

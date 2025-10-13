@@ -143,16 +143,23 @@ void CommunicationManager::_executeCommand(String command, const FlightState &st
 // --- Private Methods: Command Implementations ---
 
 void CommunicationManager::_printCliHelp() {
-    Serial.println("\nAvailable commands:");
-    Serial.printf("  %-22s - %s\n", "get <parameter>", "Get a specific setting value or category (e.g., 'get pid', 'get motor', 'get rx.channels').");
-    Serial.printf("  %-22s - %s\n", "set <param> <value>", "Set a new value for a setting.");
-    Serial.printf("  %-22s - %s\n", "dump", "Print all current settings.");
-    Serial.printf("  %-22s - %s\n", "save", "Save current settings to flash memory.");
-    Serial.printf("  %-22s - %s\n", "reset", "Reset all settings to defaults.");
-    Serial.printf("  %-22s - %s\n", "reboot", "Reboot the flight controller.");
-    Serial.printf("  %-22s - %s\n", "calibrate_imu", "Manually trigger IMU calibration.");
-    Serial.printf("  %-22s - %s\n", "help", "Show this help message.");
-    Serial.printf("  %-22s - %s\n", "exit", "Deactivate the CLI and return to flight mode.");
+    Serial.println("\n--- Flight Controller CLI Help ---");
+    Serial.println("\nGeneral Commands:");
+    Serial.printf("  %-22s - %s\n", "help", "Display this help message.");
+    Serial.printf("  %-22s - %s\n", "exit", "Deactivate CLI and return to flight mode.");
+    Serial.printf("  %-22s - %s\n", "reboot", "Reboot the ESP32 flight controller.");
+
+    Serial.println("\nSettings Management:");
+    Serial.printf("  %-22s - %s\n", "get <parameter>", "Retrieve a specific setting or category (e.g., 'get pid', 'get rx.channels').");
+    Serial.printf("  %-22s - %s\n", "set <param> <value>", "Set a new value for a specified setting.");
+    Serial.printf("  %-22s - %s\n", "dump", "Display all current flight controller settings.");
+    Serial.printf("  %-22s - %s\n", "save", "Save current settings to non-volatile memory.");
+    Serial.printf("  %-22s - %s\n", "reset", "Reset all settings to factory defaults and save.");
+
+    Serial.println("\nCalibration Commands:");
+    Serial.printf("  %-22s - %s\n", "calibrate_imu", "Initiate IMU sensor calibration.");
+
+    Serial.println("\n--- End of Help ---");
 }
 
 void CommunicationManager::_printPidSettings(bool isApiMode) {
@@ -321,7 +328,7 @@ void CommunicationManager::_handleGetCommand(String args, bool isApiMode) {
     else if (param.equals("rx.protocol")) valueStr = String((int)settings.receiverProtocol);
     else if (param.equals("imu.protocol")) valueStr = String((int)settings.imuProtocol);
     else if (param.startsWith("rx.map.")) {
-        String inputName = param.substring(7);
+        String inputName = param.substring(RX_MAP_PREFIX_LENGTH);
         found = false;
         for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i) {
             if (inputName.equalsIgnoreCase(getFlightControlInputString((FlightControlInput)i))) {
@@ -412,7 +419,7 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode) {
         int p = valueStr.toInt();
         if (p >= 0 && p < IMU_PROTOCOL_COUNT) settings.imuProtocol = (ImuProtocol)p; else success = false;
     } else if (param.startsWith("rx.map.")) {
-        String inputName = param.substring(7);
+        String inputName = param.substring(RX_MAP_PREFIX_LENGTH);
         int channelValue = valueStr.toInt();
         bool mapping_found = false;
         if (channelValue >= 0 && channelValue < RECEIVER_CHANNEL_COUNT) {

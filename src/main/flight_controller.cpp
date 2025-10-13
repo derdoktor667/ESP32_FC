@@ -3,13 +3,13 @@
 #include "src/config/settings.h"
 #include "src/hardware/receiver/IbusReceiver.h"
 #include "src/hardware/receiver/PpmReceiver.h"
+#include "src/main/CommunicationManager.h" // Include full definition of CommunicationManager
 #include <Arduino.h>
 
 // Constructor: Initializes hardware drivers and processing modules in a safe order.
 FlightController::FlightController()
     // Initialize modules that have no external dependencies.
-    : _pidProcessor(settings),
-      _comms(this) // Initialize CommunicationManager with a pointer to this FlightController instance
+    : _pidProcessor(settings)
 {
     // Pointers to interfaces and dependent modules are initialized to nullptr.
     // They will be dynamically allocated in the initialize() method after
@@ -37,6 +37,7 @@ FlightController::~FlightController()
     delete _motor3;
     delete _motor4;
     delete _motorMixer;
+    delete _comms;
 }
 
 // Initializes all components of the flight controller in the correct sequence.
@@ -64,7 +65,7 @@ void FlightController::initialize()
         break;
     default:
         Serial.println("Unknown! Halting.");
-        while (1);
+        while (INFINITE_LOOP_CONDITION);
     }
     _receiver->begin();
     Serial.println("Receiver initialized.");
@@ -78,7 +79,7 @@ void FlightController::initialize()
         break;
     default:
         Serial.println("Unknown! Halting.");
-        while (1);
+        while (INFINITE_LOOP_CONDITION);
     }
     _imuInterface->begin();
     Serial.println("IMU initialized.");
@@ -94,14 +95,15 @@ void FlightController::initialize()
     _attitudeEstimator.begin();
 
     // 5. Initialize CommunicationManager
-    _comms.begin();
+    _comms = new CommunicationManager(this);
+    _comms->begin();
 }
 
 // This is the main flight control loop, executed repeatedly.
 void FlightController::runLoop()
 {
     // Update CommunicationManager first to handle any incoming commands
-    _comms.update(state);
+    _comms->update(state);
 
     // When logging is enabled (API mode), we skip the main flight logic
     // to prevent stack overflows and ensure stable communication.

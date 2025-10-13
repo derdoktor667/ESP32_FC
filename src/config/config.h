@@ -27,14 +27,14 @@ const gpio_num_t ESC_PIN_REAR_LEFT = GPIO_NUM_33; // Rear-Left
 enum ReceiverProtocol
 {
     PROTOCOL_IBUS,
-    PROTOCOL_PPM,  // Pulse-Position Modulation
+    PROTOCOL_PPM,
     // PROTOCOL_SBUS, // Future implementation
 };
 
 // Supported IMU Protocols
 enum ImuProtocol
 {
-    IMU_MPU6050, // MPU6050 sensor
+    IMU_MPU6050,
     // Add other IMU protocols here as needed
 };
 
@@ -59,6 +59,47 @@ enum FlightMode
   ANGLE_MODE,
 };
 
+// Default values for FlightControllerSettings
+static constexpr int DEFAULT_PID_ROLL_KP = 800;
+static constexpr int DEFAULT_PID_ROLL_KI = 1;
+static constexpr int DEFAULT_PID_ROLL_KD = 50;
+static constexpr int DEFAULT_PID_PITCH_KP = 800;
+static constexpr int DEFAULT_PID_PITCH_KI = 1;
+static constexpr int DEFAULT_PID_PITCH_KD = 50;
+static constexpr int DEFAULT_PID_YAW_KP = 1500;
+static constexpr int DEFAULT_PID_YAW_KI = 5;
+static constexpr int DEFAULT_PID_YAW_KD = 100;
+static constexpr float DEFAULT_PID_INTEGRAL_LIMIT = 400.0f;
+
+static constexpr float DEFAULT_MAX_ANGLE_ROLL_PITCH = 30.0f;
+static constexpr float DEFAULT_MAX_RATE_YAW = 90.0f;
+static constexpr float DEFAULT_MAX_RATE_ROLL_PITCH = 90.0f;
+
+static constexpr int DEFAULT_MPU_CALIBRATION_READINGS = 1000;
+static constexpr float DEFAULT_ACCEL_Z_GRAVITY = 1.0f;
+
+static constexpr float DEFAULT_MADGWICK_SAMPLE_FREQ = 250.0f;
+static constexpr float DEFAULT_MADGWICK_BETA = 0.1f;
+
+static constexpr int DEFAULT_IBUS_MIN_VALUE = 1000;
+static constexpr int DEFAULT_IBUS_MAX_VALUE = 2000;
+static constexpr int DEFAULT_ARMING_THRESHOLD = 1500;
+static constexpr int DEFAULT_FAILSAFE_THRESHOLD = 1500;
+
+static constexpr unsigned long DEFAULT_PRINT_INTERVAL_MS = 40;
+
+static constexpr float DEFAULT_MOTOR_IDLE_SPEED_PERCENT = 4.0f;
+static constexpr dshot_mode_t DEFAULT_DSHOT_MODE = DSHOT600;
+
+// iBUS Channel Mappings (0-indexed)
+static constexpr int IBUS_CHANNEL_THROTTLE = 1;
+static constexpr int IBUS_CHANNEL_ROLL = 0;
+static constexpr int IBUS_CHANNEL_PITCH = 2;
+static constexpr int IBUS_CHANNEL_YAW = 3;
+static constexpr int IBUS_CHANNEL_ARM_SWITCH = 4;
+static constexpr int IBUS_CHANNEL_FAILSAFE_SWITCH = 5;
+static constexpr int IBUS_CHANNEL_FLIGHT_MODE_SWITCH = 6;
+
 struct FlightControllerSettings
 {
     // Receiver Protocol Selection
@@ -73,13 +114,13 @@ struct FlightControllerSettings
         int channel[NUM_FLIGHT_CONTROL_INPUTS];
     } channelMapping = {
         .channel = {
-            [THROTTLE] = 1, // iBUS Channel 2 (0-indexed)
-            [ROLL] = 0,     // iBUS Channel 1
-            [PITCH] = 2,    // iBUS Channel 3
-            [YAW] = 3,      // iBUS Channel 4
-            [ARM_SWITCH] = 4, // iBUS Channel 5
-            [FAILSAFE_SWITCH] = 5, // iBUS Channel 6
-            [FLIGHT_MODE_SWITCH] = 6 // iBUS Channel 7
+            [THROTTLE] = IBUS_CHANNEL_THROTTLE,
+            [ROLL] = IBUS_CHANNEL_ROLL,
+            [PITCH] = IBUS_CHANNEL_PITCH,
+            [YAW] = IBUS_CHANNEL_YAW,
+            [ARM_SWITCH] = IBUS_CHANNEL_ARM_SWITCH,
+            [FAILSAFE_SWITCH] = IBUS_CHANNEL_FAILSAFE_SWITCH,
+            [FLIGHT_MODE_SWITCH] = IBUS_CHANNEL_FLIGHT_MODE_SWITCH
         }
     };
 
@@ -87,51 +128,51 @@ struct FlightControllerSettings
     struct
     {
         int kp, ki, kd;
-    } pidRoll{800, 1, 50},
-        pidPitch{800, 1, 50},
-        pidYaw{1500, 5, 100};
+    } pidRoll{DEFAULT_PID_ROLL_KP, DEFAULT_PID_ROLL_KI, DEFAULT_PID_ROLL_KD},
+        pidPitch{DEFAULT_PID_PITCH_KP, DEFAULT_PID_PITCH_KI, DEFAULT_PID_PITCH_KD},
+        pidYaw{DEFAULT_PID_YAW_KP, DEFAULT_PID_YAW_KI, DEFAULT_PID_YAW_KD};
 
     // PID Integral Wind-up Limit
-    float pidIntegralLimit = 400.0;
+    float pidIntegralLimit = DEFAULT_PID_INTEGRAL_LIMIT;
 
     // Target angle and rate limits
     struct
     {
-        float maxAngleRollPitch = 30.0; // Degrees for ANGLE_MODE
-        float maxRateYaw = 90.0;        // Degrees/second for yaw axis
-        float maxRateRollPitch = 90.0;  // Degrees/second for ACRO_MODE
+        float maxAngleRollPitch = DEFAULT_MAX_ANGLE_ROLL_PITCH;
+        float maxRateYaw = DEFAULT_MAX_RATE_YAW;
+        float maxRateRollPitch = DEFAULT_MAX_RATE_ROLL_PITCH;
     } rates;
 
     // MPU6050 Calibration
     struct
     {
-        int mpuCalibrationReadings = 1000;
-        float accelZGravity = 1.0; // Assuming Z-axis is up and should read 1g
+        int mpuCalibrationReadings = DEFAULT_MPU_CALIBRATION_READINGS;
+        float accelZGravity = DEFAULT_ACCEL_Z_GRAVITY;
     } calibration;
 
     // Attitude Estimation
     struct
     {
-        float madgwickSampleFreq = 250.0f; // Hz
-        float madgwickBeta = 0.1f;         // Madgwick filter gain
+        float madgwickSampleFreq = DEFAULT_MADGWICK_SAMPLE_FREQ;
+        float madgwickBeta = DEFAULT_MADGWICK_BETA;
     } filter;
 
     // Receiver Settings
     struct
     {
-        int ibusMinValue = 1000;
-        int ibusMaxValue = 2000;
-        int armingThreshold = 1500;
-        int failsafeThreshold = 1500;
+        int ibusMinValue = DEFAULT_IBUS_MIN_VALUE;
+        int ibusMaxValue = DEFAULT_IBUS_MAX_VALUE;
+        int armingThreshold = DEFAULT_ARMING_THRESHOLD;
+        int failsafeThreshold = DEFAULT_FAILSAFE_THRESHOLD;
     } receiver;
 
     // Serial Logging
-    unsigned long printIntervalMs = 40; // Print every 40 milliseconds (25 Hz)
+    unsigned long printIntervalMs = DEFAULT_PRINT_INTERVAL_MS;
     bool enableLogging = false; // Global flag to enable/disable all logging output
 
     // Motor Settings
-    float motorIdleSpeedPercent = 4.0f; // Minimum throttle percentage for motors when armed
-    dshot_mode_t dshotMode = DSHOT600;
+    float motorIdleSpeedPercent = DEFAULT_MOTOR_IDLE_SPEED_PERCENT;
+    dshot_mode_t dshotMode = DEFAULT_DSHOT_MODE;
 };
 
 static constexpr int PID_SCALE_FACTOR = 1000;
@@ -144,6 +185,8 @@ static constexpr int NUM_MOTORS = 4;
 static constexpr unsigned long CLI_REBOOT_DELAY_MS = 100;
 static constexpr unsigned long IMU_INIT_FAIL_DELAY_MS = 10;
 static constexpr unsigned long SERIAL_BAUD_RATE = 115200;
+static constexpr int RX_MAP_PREFIX_LENGTH = 7;
+static constexpr bool INFINITE_LOOP_CONDITION = true;
 
 // Create a single, global instance of the settings
 // extern FlightControllerSettings settings; // Now declared in settings.h

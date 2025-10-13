@@ -10,8 +10,11 @@
 #include "src/modules/SetpointManager.h"
 #include "src/modules/PidProcessor.h"
 #include "src/modules/MotorMixer.h"
-#include "src/main/CommunicationManager.h" // Include CommunicationManager
+// #include "src/main/CommunicationManager.h" // Include CommunicationManager - REMOVED to break circular dependency
 #include <DShotRMT.h>
+
+// Forward declaration to break circular dependency
+class CommunicationManager;
 
 // The main orchestrator for the flight controller.
 //
@@ -48,7 +51,7 @@ private:
     MotorMixer *_motorMixer = nullptr;
 
     // --- Communication Manager ---
-    CommunicationManager _comms; // Communication Manager instance
+    CommunicationManager* _comms = nullptr; // Communication Manager instance (now a pointer)
 
     // Destructor to clean up dynamically allocated objects
     public: ~FlightController();
