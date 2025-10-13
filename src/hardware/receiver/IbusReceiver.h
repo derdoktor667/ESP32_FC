@@ -1,7 +1,7 @@
 #ifndef IBUS_RECEIVER_H
 #define IBUS_RECEIVER_H
 
-#include "ReceiverInterface.h"
+#include "src/hardware/receiver/ReceiverInterface.h"
 #include <FlyskyIBUS.h>
 
 // iBUS protocol implementation of the ReceiverInterface.

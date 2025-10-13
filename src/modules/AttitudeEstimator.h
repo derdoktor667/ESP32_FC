@@ -1,9 +1,9 @@
 #ifndef ATTITUDE_ESTIMATOR_MODULE_H
 #define ATTITUDE_ESTIMATOR_MODULE_H
 
-#include "../FlightState.h"
-#include "../ImuInterface.h"
-#include "MadgwickFilter.h"
+#include "src/config/FlightState.h"
+#include "src/hardware/imu/ImuInterface.h"
+#include "src/utils/filter/MadgwickFilter.h"
 
 // Estimates the drone's attitude (roll, pitch, yaw) using sensor fusion.
 // This module encapsulates the logic for reading raw IMU data, applying a

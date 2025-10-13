@@ -1,6 +1,6 @@
-#include "SetpointManager.h"
-#include "../config.h"
-#include "MotorMixer.h" // For DSHOT_MIN_THROTTLE and DSHOT_MAX_THROTTLE constants
+#include "src/modules/SetpointManager.h"
+#include "src/config/config.h"
+#include "src/modules/MotorMixer.h" // For DSHOT_MIN_THROTTLE and DSHOT_MAX_THROTTLE constants
 #include <Arduino.h>
 
 // Constructor: Initializes the SetpointManager with references to the receiver and settings.

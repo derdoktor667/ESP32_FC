@@ -1,7 +1,7 @@
 #ifndef PPM_RECEIVER_H
 #define PPM_RECEIVER_H
 
-#include "ReceiverInterface.h"
+#include "src/hardware/receiver/ReceiverInterface.h"
 
 // The number of channels expected in the PPM stream
 constexpr int PPM_CHANNEL_COUNT = 8;

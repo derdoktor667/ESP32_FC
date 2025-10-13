@@ -1,5 +1,5 @@
-#include "PidProcessor.h"
-#include "../config.h"
+#include "src/modules/PidProcessor.h"
+#include "src/config/config.h"
 
 // Constructor: Initializes the PID controllers for Roll, Pitch, and Yaw axes.
 // PID gains (Kp, Ki, Kd) are loaded from the global settings, scaled by PID_SCALE_FACTOR.

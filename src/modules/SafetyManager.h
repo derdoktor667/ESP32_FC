@@ -1,8 +1,8 @@
 #ifndef SAFETY_MANAGER_MODULE_H
 #define SAFETY_MANAGER_MODULE_H
 
-#include "../FlightState.h"
-#include "../ReceiverInterface.h"
+#include "src/config/FlightState.h"
+#include "src/hardware/receiver/ReceiverInterface.h"
 
 // Manages the arming, disarming, and failsafe logic of the flight controller.
 // This module continuously monitors receiver input for specific safety-related

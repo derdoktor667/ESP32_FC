@@ -1,7 +1,7 @@
 #ifndef MOTOR_MIXER_MODULE_H
 #define MOTOR_MIXER_MODULE_H
 
-#include "../FlightState.h"
+#include "src/config/FlightState.h"
 #include <DShotRMT.h>
 
 // DShot protocol fixed throttle values
@@ -15,12 +15,12 @@ class MotorMixer
 {
 public:
     // Constructor: Initializes the MotorMixer with references to the DShot motor instances and settings.
-    // @param motor1 Reference to the Front-Right DShot motor instance.
-    // @param motor2 Reference to the Front-Left DShot motor instance.
-    // @param motor3 Reference to the Rear-Right DShot motor instance.
-    // @param motor4 Reference to the Rear-Left DShot motor instance.
+    // @param motor1 Pointer to the Front-Right DShot motor instance.
+    // @param motor2 Pointer to the Front-Left DShot motor instance.
+    // @param motor3 Pointer to the Rear-Right DShot motor instance.
+    // @param motor4 Pointer to the Rear-Left DShot motor instance.
     // @param settings Reference to the global flight controller settings.
-    MotorMixer(DShotRMT &motor1, DShotRMT &motor2, DShotRMT &motor3, DShotRMT &motor4, const FlightControllerSettings &settings);
+    MotorMixer(DShotRMT *motor1, DShotRMT *motor2, DShotRMT *motor3, DShotRMT *motor4, const FlightControllerSettings &settings);
 
     // Initializes the DShot motors.
     // This typically involves setting up the RMT channels.
@@ -33,10 +33,10 @@ public:
     void apply(FlightState &state);
 
 private:
-    DShotRMT &_motor1; // Reference to the Front-Right DShot motor driver
-    DShotRMT &_motor2; // Reference to the Front-Left DShot motor driver
-    DShotRMT &_motor3; // Reference to the Rear-Right DShot motor driver
-    DShotRMT &_motor4; // Reference to the Rear-Left DShot motor driver
+    DShotRMT *_motor1; // Pointer to the Front-Right DShot motor driver
+    DShotRMT *_motor2; // Pointer to the Front-Left DShot motor driver
+    DShotRMT *_motor3; // Pointer to the Rear-Right DShot motor driver
+    DShotRMT *_motor4; // Pointer to the Rear-Left DShot motor driver
     const FlightControllerSettings &_settings; // Reference to global flight controller settings
 };
 

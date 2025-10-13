@@ -2,26 +2,22 @@
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/derdoktor667/ESP32_FC/ci.yml?branch=main&style=for-the-badge) ![GitHub](https://img.shields.io/github/license/derdoktor667/ESP32_FC?style=for-the-badge)
 
-An advanced flight controller firmware for quadcopters and other RC vehicles, built on the powerful ESP32 platform and the Arduino framework.
+An advanced, high-performance flight controller firmware for quadcopters, built on the ESP32 and the Arduino framework. This project features a highly modular, object-oriented C++ architecture with a clean separation between flight logic and communication.
 
 ---
 
 ## ✨ Key Features
 
-*   **JSON-based API**: A dedicated, machine-readable API mode (`api`) provides clean, JSON-only communication, perfect for web applications or other programmatic clients.
-*   **Advanced Web Configurator (`/webui`)**: A modern, single-page web application that automatically connects, fetches all settings, and streams live data from the flight controller. Features include:
-    *   Automatic settings population on connect.
-    *   Automatic live data streaming (Attitude, Status, Receiver Channels).
-    *   Real-time PID adjustment and saving.
-    *   A full-featured serial monitor for direct command interaction.
-*   **Modular Object-Oriented Architecture**: The entire flight control logic is encapsulated in dedicated C++ classes, promoting clear responsibilities and easy extensibility.
-*   **Centralized Flight State**: A single `FlightState` struct holds all dynamic data (attitude, setpoints, armed status, etc.), making the drone's current state transparent and easy to manage.
-*   **Robust Flight Stabilization**: Utilizes an `ImuInterface` abstraction (initially MPU6050) and a **Madgwick filter** for precise attitude estimation, managed by the `AttitudeEstimator` module.
-*   **High-Performance Motor Control**: Employs hardware-accelerated DShot300 for low-latency, high-resolution communication with ESCs.
+*   **Clean Modular Architecture**: The firmware is built on two primary components: a `FlightController` class that handles only real-time flight tasks, and a `CommunicationManager` class that manages all serial I/O, providing a clear separation of concerns.
+*   **Robust Tri-Mode Serial Interface**: The `CommunicationManager` provides three distinct operating modes for maximum flexibility:
+    *   **FLIGHT Mode**: The default, silent mode for normal flight operations.
+    *   **API Mode**: A machine-readable JSON interface optimized for programmatic clients and external applications.
+    *   **CLI Mode**: A human-readable command-line interface for manual debugging.
+*   **High-Performance JSON API**: The `api` mode provides a clean, JSON-only interface. Settings can be fetched with a single `get_settings` command, and a separate, high-frequency `live_data` stream provides real-time attitude and status with minimal overhead.
+*   **Stack Overflow Protection**: The firmware intelligently pauses the CPU-intensive flight control pipeline when the API mode is active, dedicating resources to stable communication and preventing crashes.
+*   **High-Performance Motor Control**: Employs hardware-accelerated DShot for low-latency, high-resolution communication with ESCs.
 *   **Flexible Control System**: Supports interchangeable receiver protocols (i-BUS, PPM) and features **configurable channel mapping**.
-*   **Critical Safety Management**: Dedicated `SafetyManager` module handles arming/disarming and high-priority Failsafe logic.
-*   **Centralized Configuration**: All tunable parameters (PIDs, rates, filters, etc.) are organized in a single `FlightControllerSettings` struct.
-*   **Interactive CLI**: A user-friendly serial CLI (`cli`) for manual tuning and debugging, running parallel to the API mode.
+*   **Centralized & Persistent Configuration**: All tunable parameters are organized in a single `FlightControllerSettings` struct and are reliably saved to and loaded from flash memory.
 
 ---
 
@@ -46,7 +42,6 @@ Follow these steps to get the flight controller up and running on your ESP32.
 *   An ESP32 development board.
 *   [Arduino IDE](https://www.arduino.cc/en/software) or [Arduino CLI](https://arduino.github.io/arduino-cli/latest/) installed.
 *   All necessary hardware (MPU6050, ESCs, motors, RC receiver) connected according to the pin definitions in `src/config.h`.
-*   A modern web browser supporting the [Web Serial API](https://developer.chrome.com/docs/capabilities/web-apis/web-serial) (e.g., Google Chrome) for the web configurator.
 
 ### Installation
 
@@ -70,17 +65,16 @@ Follow these steps to get the flight controller up and running on your ESP32.
 
 ---
 
-## 💻 Interface Modes (API & CLI)
+## 💻 Interface Modes
 
-The firmware provides two distinct interface modes accessible over the serial connection.
+The firmware boots into a silent `FLIGHT` mode. To interact with it, you must activate one of the two interactive modes.
 
-### API Mode (for Web App)
+### API Mode (for Programmatic Clients)
 
-This is the primary mode for programmatic interaction, used by the web configurator. It ensures clean, machine-readable JSON communication.
+This is the primary mode for programmatic interaction. It ensures clean, machine-readable JSON communication.
 
-1.  **Activation**: Send `api`.
-2.  **Response**: The device acknowledges with `{"status":"api_mode_activated"}`.
-3.  **Behavior**: In API mode, all output is strictly JSON. No prompts, welcome messages, or info texts are sent. Commands are sent one per line.
+1.  **Activation**: Send `api` over the serial connection.
+2.  **Response**: The device acknowledges with `{"status":"api_mode_activated"}` and begins streaming `live_data`.
 
 ### CLI Mode (for Humans)
 
@@ -88,84 +82,55 @@ This mode is for manual debugging and configuration via a serial monitor.
 
 1.  **Activation**: Connect to the ESP32 with a serial monitor (115200 baud). Type `cli` and press Enter.
 2.  **Response**: The CLI activates and presents the `ESP32_FC >` prompt.
-3.  **Behavior**: Provides interactive, human-readable feedback.
 
 ### Available Commands
 
-*   `get <parameter>`: Retrieves the current value of a setting.
-*   `set <parameter> <value>`: Sets a new value for a setting.
-*   `dump`: Prints all settings in a human-readable format (CLI mode only).
-*   `dumpjson`: Prints all settings as a single JSON object (API mode primary use).
-*   `debug on/off`: Starts or stops the continuous stream of live flight data as JSON objects.
-*   `save`: Saves the current settings to flash memory and reboots the device.
-*   `reset`: Resets all settings to their defaults and reboots.
-*   `reboot`: Reboots the ESP32.
-*   `calibrate_imu`: Triggers a manual IMU calibration.
-*   `help`: Displays the list of available commands (CLI mode only).
-*   `exit`: Deactivates the CLI mode.
+The CLI provides the following commands, categorized for clarity:
 
----
+**General Commands:**
+*   `help`: Display this help message.
+*   `exit`: Deactivate CLI and return to flight mode.
+*   `reboot`: Reboot the ESP32 flight controller.
 
-## 🌐 Web Configurator Usage
+**Settings Management:**
+*   `get <parameter>`: Retrieve a specific setting or category (e.g., `get pid`, `get rx.channels`).
+*   `get_settings`: Retrieves all settings as a single JSON object (API mode only).
+*   `set <parameter> <value>`: Set a new value for a specified setting.
+*   `dump`: Display all current flight controller settings (CLI mode only).
+*   `save`: Save current settings to non-volatile memory.
+*   `reset`: Reset all settings to factory defaults and save.
 
-The ESP32 Flight Controller includes a powerful, modern web-based configurator that runs entirely in your browser.
-
-### Accessing the Web Configurator
-
-1.  **Upload Firmware:** Ensure the latest firmware is on your ESP32.
-2.  **Open `index.html`:** In your cloned repository, navigate to the `webui/` directory and open `index.html` in a Web Serial API-compatible browser (e.g., Google Chrome, Edge).
-
-### Automated Workflow
-
-The web app is designed for a seamless experience:
-
-1.  **Click "Connect"**: The app establishes a connection, waits for the ESP32 to stabilize, and automatically enters API mode.
-2.  **Auto-Fetch Settings**: It immediately requests all settings from the flight controller, and the PID tuning fields populate with the current values from your device.
-3.  **Auto-Start Live Data**: Once settings are received, the app automatically starts streaming live data, including attitude (roll, pitch, yaw), device status (armed, failsafe), and all receiver channel values.
-
-### Features
-
-*   **Automatic Configuration**: No manual commands needed to get started. Just connect and view.
-*   **Live PID Tuning**: Adjust Roll, Pitch, and Yaw Kp, Ki, and Kd values in real-time. Click "Set PIDs & Save" to apply changes and save them to the ESP32's flash memory.
-*   **Live Data Visualization**: Monitor flight status and receiver inputs at a glance.
-*   **Full Serial Monitor**: A command-line interface is still provided for sending any manual commands and viewing all raw communication with the device.
+**Calibration Commands:**
+*   `calibrate_imu`: Initiate IMU sensor calibration.
 
 ---
 
 ## 🛠️ Code Structure
 
-The firmware is organized into a clean, modular, object-oriented structure within the `src/` directory.
+The firmware is organized into a clean, modular, object-oriented structure within the `src/` directory:
 
-| Module                    | Responsibility                                                                  |
-| ------------------------- | ------------------------------------------------------------------------------- |
-| `FlightState.h`           | Defines the central `FlightState` struct, encapsulating all dynamic flight data. |
-| `flight_controller.h/.cpp`  | The main `FlightController` class, orchestrating all modules and the main loop. |
-| `config.h`                | Central hub for hardware definitions, `FlightControllerSettings` struct, and `FlightMode` enum. |
-| `settings.h/.cpp`         | Manages loading and saving settings to persistent storage.                      |
-| `ReceiverInterface.h`     | Defines the abstract base class for all RC receiver protocols.                  |
-| `IbusReceiver.h/.cpp`     | Concrete implementation for the Flysky i-BUS protocol.                        |
-| `PpmReceiver.h/.cpp`      | Custom implementation for the PPM protocol.                                   |
-| `ImuInterface.h`          | Defines the abstract base class for all IMU sensor protocols.                   |
-| `Mpu6050Imu.h/.cpp`       | Concrete implementation for the MPU6050 IMU sensor.                           |
-| `MadgwickFilter.h/.cpp`   | Implements the Madgwick filter for robust attitude estimation.                  |
-| `pid_controller.h/.cpp`     | PID controller logic (used by `PidProcessor`).                                  |
-| `serial_logger.h/.cpp`      | Manages formatted serial output for debugging and status monitoring.            |
-| `cli.h/.cpp`              | Implements the dual-mode (CLI/API) command handling logic.                      |
-| `modules/`                | Directory containing the core processing modules:                               |
-| &nbsp;&nbsp;`AttitudeEstimator.h/.cpp` | Encapsulates IMU reading, calibration, and Madgwick filter for attitude estimation. |
-| &nbsp;&nbsp;`SafetyManager.h/.cpp`     | Manages arming, disarming, and failsafe logic based on receiver input.          |
-| &nbsp;&nbsp;`SetpointManager.h/.cpp`   | Calculates target setpoints for roll, pitch, and yaw based on receiver input and configurable channel mapping. |
-| &nbsp;&nbsp;`PidProcessor.h/.cpp`      | Manages and executes the PID control loops for all axes.                        |
-| &nbsp;&nbsp;`MotorMixer.h/.cpp`        | Mixes PID outputs with throttle and sends commands to the motors.               |
----
-
-## ⚙️ Continuous Integration (CI)
-
-The project utilizes GitHub Actions for continuous integration, ensuring code quality and compatibility. The CI workflow includes:
-
-*   **Matrix Builds**: Compiles the firmware for various ESP32 board configurations and example sketches.
-*   **Optimized Caching**: Speeds up build times by caching dependencies.
-*   **Arduino Compatibility**: Validates that the project compiles correctly within the Arduino ecosystem.
+| Module                        | Responsibility                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------- |
+| `ESP32_FC.ino`                | Main entry point. Creates and runs the `FlightController` and `CommunicationManager`. |
+| `main/`                       | Contains the top-level orchestrator classes.                                    |
+| &nbsp;&nbsp;`flight_controller.h/.cpp`    | The main `FlightController` class, orchestrating all flight-related modules.    |
+| &nbsp;&nbsp;`CommunicationManager.h/.cpp` | Manages all serial communication (CLI/API) and logging.                       |
+| `config/`                     | Contains global configuration and state definitions.                            |
+| &nbsp;&nbsp;`config.h`                    | Central hub for hardware definitions and the `FlightControllerSettings` struct. |
+| &nbsp;&nbsp;`FlightState.h`               | Defines the central `FlightState` struct.                                       |
+| &nbsp;&nbsp;`settings.h/.cpp`             | Manages loading and saving settings to persistent storage.                      |
+| `hardware/`                   | Contains hardware abstraction layers.                                           |
+| &nbsp;&nbsp;`imu/`                      | IMU sensor interfaces and implementations.                                      |
+| &nbsp;&nbsp;`receiver/`                 | RC receiver interfaces and implementations.                                     |
+| `modules/`                    | Contains the core flight processing modules.                                    |
+| &nbsp;&nbsp;`AttitudeEstimator.h/.cpp` | Encapsulates IMU reading and attitude estimation.                               |
+| &nbsp;&nbsp;`SafetyManager.h/.cpp`     | Manages arming, disarming, and failsafe logic.                                  |
+| &nbsp;&nbsp;`SetpointManager.h/.cpp`   | Calculates target setpoints.                                                    |
+| &nbsp;&nbsp;`PidProcessor.h/.cpp`      | Manages and executes the PID control loops.                                     |
+| &nbsp;&nbsp;`MotorMixer.h/.cpp`        | Mixes PID outputs and sends commands to the motors.                             |
+| `utils/`                      | Contains reusable utility components.                                           |
+| &nbsp;&nbsp;`filter/`                   | Madgwick filter implementation.                                                 |
+| &nbsp;&nbsp;`pid/`                      | PID controller logic.                                                           |
 
 ---
 

@@ -1,7 +1,7 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
-#include "config.h"
+#include "src/config/config.h"
 
 // Declare the global settings instance to be accessible across the project
 extern FlightControllerSettings settings;

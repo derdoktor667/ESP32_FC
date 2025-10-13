@@ -1,7 +1,7 @@
-#include "src/flight_controller.h"
-#include "src/config.h"
+#include "src/main/flight_controller.h"
+#include "src/config/config.h"
 
-// Global instance of the main flight controller class
+// Global instances of the core components
 FlightController fc;
 
 void setup()
