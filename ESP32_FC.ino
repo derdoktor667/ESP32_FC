@@ -7,7 +7,10 @@ FlightController fc;
 void setup()
 {
     Serial.begin(SERIAL_BAUD_RATE);
+
     fc.initialize();
+    
+    Serial.println(" ");
     Serial.println("\n--- ESP32 Flight Controller Ready ---");
 }
 

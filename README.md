@@ -8,6 +8,12 @@ An advanced, high-performance flight controller firmware for quadcopters, built 
 
 ## ✨ Key Features
 
+*   **Enhanced Web Application (`webapp/index.html`):**
+    *   **Modern UI/UX:** Implemented a modern, clean, and dark design for a significantly enhanced user experience.
+    *   **3D Quadcopter Model:** Features a dynamically generated 3D quadcopter model using Three.js primitives for live attitude visualization.
+    *   **IMU Calibration:** Includes a dedicated "Calibrate IMU" button to send a serial command and reset the 3D model's orientation.
+    *   **Web Serial API Integration:** Robust handling for serial connection/disconnection, automatic fetching and dynamic rendering of ESP32 settings, and the ability to send CLI commands.
+    *   **CDN Module Loading:** Three.js and its addons are loaded via CDN using `importmap` for efficient module resolution.
 *   **Enhanced Code Quality & Reliability**: Significant project-wide cleanup, including removal of unused code, redundant includes, and resolution of a DShot mode persistence bug, leading to a more robust and maintainable codebase.
 *   **Clean Modular Architecture**: The firmware is built on two primary components: a `FlightController` class that handles only real-time flight tasks, and a `CommunicationManager` class that manages all serial I/O, providing a clear separation of concerns.
 *   **Robust Tri-Mode Serial Interface**: The `CommunicationManager` provides three distinct operating modes for maximum flexibility:
@@ -103,6 +109,33 @@ The CLI provides the following commands, categorized for clarity:
 
 **Calibration Commands:**
 *   `calibrate_imu`: Initiate IMU sensor calibration.
+
+---
+
+## 🌐 Web Application Interface
+
+For a more user-friendly interaction, a web application is provided in the `webapp/` directory. This application utilizes the Web Serial API to connect directly to your ESP32 from a web browser, allowing you to send CLI commands, view serial output, and dynamically configure settings.
+
+### Key WebApp Features:
+*   **Modern UI/UX:** Features a modern, clean, and dark design for an intuitive and aesthetically pleasing user experience.
+*   **3D Quadcopter Model:** Displays a dynamically generated 3D quadcopter model using Three.js primitives, providing live visualization of the flight controller's attitude (roll, pitch, yaw).
+*   **IMU Calibration Button:** A dedicated button to initiate IMU calibration and instantly reset the 3D model's orientation.
+*   **Connection Dialog**: Presents a clear connection screen initially, switching to the main interface upon successful serial connection.
+*   **Robust Serial Handling**: Implemented with `AbortController` for reliable connection and disconnection.
+*   **Dynamic Settings**: Automatically fetches and renders all current settings from the ESP32 upon connection, allowing for easy modification.
+
+### How to Use the WebApp
+
+1.  **Start a Local HTTP Server:** The Web Serial API requires a secure context (HTTPS) or a local HTTP server. The easiest way to run the web app is by using a simple HTTP server. If you have Node.js and npm installed, you can use `http-server`:
+    ```bash
+    npm install -g http-server
+    cd /home/derdoktor667/Github/ESP32_FC/webapp
+    http-server
+    ```
+    Then, open your web browser and navigate to the address provided by `http-server` (e.g., `http://localhost:8080`).
+2.  **Connect your ESP32** to your computer via USB.
+3.  **In the web app, click "Connect Serial"**. Your browser should prompt you to select a serial port. Choose the ESP32's port.
+4.  **Once connected, the app will automatically enter API mode and fetch all current settings.** You can then use the CLI command input or the dynamically generated settings form to interact with your ESP32.
 
 ---
 

@@ -1,0 +1,338 @@
+/* General Styling */
+:root {
+    --background-color: #1a1a2e;
+    --card-background: #16213e;
+    --text-color: #e0e0e0;
+    --primary-color: #0f3460;
+    --accent-color: #e94560;
+    --border-color: #0f3460;
+    --input-background: #0f3460;
+    --button-bg: #e94560;
+    --button-hover-bg: #b83f55;
+    --tab-inactive-bg: #16213e;
+    --tab-active-bg: #0f3460;
+    --tab-text-color: #e0e0e0;
+    --tab-active-text-color: #ffffff;
+    --shadow-color: rgba(0, 0, 0, 0.4);
+}
+
+body {
+    font-family: 'Inter', sans-serif; /* Modern font */
+    margin: 0;
+    padding: 0;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden; /* Prevent scrollbars */
+}
+
+.container {
+    background-color: var(--card-background);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px var(--shadow-color);
+    max-width: 100%;
+    width: 100%;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+h1 {
+    color: var(--accent-color);
+    text-align: center;
+    margin: 20px 0;
+    font-size: 2.5rem;
+    letter-spacing: 1px;
+}
+
+h2 {
+    color: var(--text-color);
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 1.8rem;
+}
+
+/* Screen Layouts */
+.connection-screen, .main-app-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.main-app-screen {
+    position: relative;
+    justify-content: flex-start; /* Align content to top */
+}
+
+/* Controls */
+.controls {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    gap: 10px;
+    width: auto;
+    justify-content: center;
+    flex-wrap: wrap;
+    background-color: rgba(22, 33, 62, 0.9); /* Slightly darker, more opaque */
+    padding: 12px 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.controls button,
+.settings-section button,
+.tabs button,
+.quad-model-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--button-bg);
+    color: var(--tab-active-text-color);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.controls button:hover,
+.settings-section button:hover,
+.tabs button:hover,
+.quad-model-button:hover {
+    background-color: var(--button-hover-bg);
+    transform: translateY(-1px);
+}
+
+.controls button:active,
+.settings-section button:active,
+.tabs button:active,
+.quad-model-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.controls button:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+input[type="text"],
+input[type="number"] {
+    background-color: var(--input-background);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 1rem;
+    width: 200px;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(233, 69, 96, 0.3);
+    outline: none;
+}
+
+/* Serial Monitor */
+#serialOutput {
+    width: 100%;
+    height: 200px; /* Slightly reduced height */
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    margin-top: 15px;
+    overflow-y: scroll;
+    background-color: var(--input-background);
+    font-family: 'Fira Code', monospace; /* Monospace font for code */
+    color: var(--accent-color);
+    border-radius: 8px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Dashboard Layout */
+.dashboard {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+    padding-top: 80px; /* Space for controls */
+    box-sizing: border-box;
+}
+
+.serial-monitor {
+    flex: none;
+    min-width: auto;
+    background-color: var(--card-background);
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px var(--shadow-color);
+    margin: 0 20px 20px 20px; /* Add margin for separation */
+}
+
+.quad-model {
+    flex: 1;
+    min-width: auto;
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.quad-model-button {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 5;
+}
+
+#quadcopterCanvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+    background-color: transparent;
+    border-radius: 0;
+    border: none;
+}
+
+/* Settings Section */
+.settings-section {
+    margin-top: 20px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 20px;
+    background-color: var(--card-background);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px var(--shadow-color);
+    margin: 20px;
+}
+
+.settings-section h2 {
+    margin-top: 0;
+    padding-left: 15px;
+    text-align: left;
+}
+
+.settings-section label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.settings-section div {
+    margin-bottom: 15px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 15px;
+    padding: 0 15px;
+}
+
+.tab-button {
+    background-color: var(--tab-inactive-bg);
+    color: var(--tab-text-color);
+    border: none;
+    padding: 10px 18px;
+    cursor: pointer;
+    border-radius: 8px 8px 0 0;
+    margin-right: 5px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    font-weight: 500;
+}
+
+.tab-button.active {
+    background-color: var(--tab-active-bg);
+    color: var(--tab-active-text-color);
+    border-bottom: 2px solid var(--accent-color); /* Highlight active tab */
+}
+
+.tab-content-container {
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    border-radius: 0 0 8px 8px;
+    background-color: var(--input-background);
+}
+
+.tab-content {
+    padding: 10px 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Responsive grid */
+    gap: 20px;
+}
+
+.setting-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.setting-item input[type="checkbox"] {
+    width: auto;
+    margin-top: 5px;
+}
+
+.setting-item button {
+    margin-top: 10px;
+    align-self: flex-start; /* Align save button to start */
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .controls {
+        flex-direction: column;
+        position: static;
+        transform: none;
+        width: 90%;
+        margin-bottom: 20px;
+    }
+
+    .controls input[type="text"],
+    .controls button {
+        width: 100%;
+    }
+
+    .dashboard {
+        padding-top: 0;
+    }
+
+    .serial-monitor, .settings-section {
+        margin: 10px;
+    }
+
+    .tab-content {
+        grid-template-columns: 1fr;
+    }
+}
