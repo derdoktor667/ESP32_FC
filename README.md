@@ -8,6 +8,7 @@ An advanced, high-performance flight controller firmware for quadcopters, built 
 
 ## ✨ Key Features
 
+*   **Enhanced Code Quality & Reliability**: Significant project-wide cleanup, including removal of unused code, redundant includes, and resolution of a DShot mode persistence bug, leading to a more robust and maintainable codebase.
 *   **Clean Modular Architecture**: The firmware is built on two primary components: a `FlightController` class that handles only real-time flight tasks, and a `CommunicationManager` class that manages all serial I/O, providing a clear separation of concerns.
 *   **Robust Tri-Mode Serial Interface**: The `CommunicationManager` provides three distinct operating modes for maximum flexibility:
     *   **FLIGHT Mode**: The default, silent mode for normal flight operations.

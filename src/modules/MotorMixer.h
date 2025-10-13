@@ -5,8 +5,7 @@
 #include <DShotRMT.h>
 
 // DShot protocol fixed throttle values
-static constexpr int DSHOT_MIN_THROTTLE = 48;  // Minimum DShot throttle value (e.g., for motor idle)
-static constexpr int DSHOT_MAX_THROTTLE = 2047; // Maximum DShot throttle value
+
 
 // Mixes PID outputs with throttle and sends commands to the motors.
 // This module takes the desired throttle and PID corrections from the FlightState,

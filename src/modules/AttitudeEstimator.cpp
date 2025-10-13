@@ -36,7 +36,6 @@ void AttitudeEstimator::begin()
 
     // Perform initial calibration of the IMU to remove biases.
     calibrate();
-    _lastUpdateTime = micros(); // Record the time of the last update for delta time calculations
 }
 
 // Performs one cycle of attitude calculation: reads IMU, updates filter, and stores attitude in state.
@@ -45,7 +44,6 @@ void AttitudeEstimator::update(FlightState &state)
     // Update _lastUpdateTime for potential future uses or for debugging,
     // although the Madgwick filter internally handles its own time step.
     unsigned long currentTime = micros();
-    _lastUpdateTime = currentTime;
 
     _imu->update(); // Read the latest raw sensor data from the IMU
 

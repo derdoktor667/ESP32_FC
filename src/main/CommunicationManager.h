@@ -4,11 +4,9 @@
 #include <Arduino.h>
 #include "src/config/FlightState.h"
 #include "src/config/settings.h"
-// #include "src/utils/cli/CliCommandProcessor.h" // Include the new command processor - REMOVED to break circular dependency
 
 // Forward declarations to break circular dependencies
 class FlightController;
-class CliCommandProcessor;
 
 // Manages all serial communication for the flight controller.
 // This includes handling CLI commands, API requests, and streaming live data.
@@ -35,17 +33,15 @@ public:
     // @param state The current FlightState to be used for live data streaming.
     void update(const FlightState &state);
 
-    // Streams live flight data as a JSON object to the serial port.
-    // This method is called periodically when in API mode.
-    // @param state The current FlightState containing the data to be streamed.
-    void _printFlightStatus(const FlightState &state);
-
 private:
     FlightController* _fc;                     // Pointer to the FlightController instance
     OperatingMode _currentMode = OperatingMode::FLIGHT; // Current operating mode
     unsigned long _lastSerialLogTime = 0;      // Timestamp of the last serial log output
 
-    CliCommandProcessor* _cliCommandProcessor;  // Instance of the CLI command processor (now a pointer)
+    // Streams live flight data as a JSON object to the serial port.
+    // This method is called periodically when in API mode.
+    // @param state The current FlightState containing the data to be streamed.
+    void _printFlightStatus(const FlightState &state);
 
     // Handles incoming serial data, parsing commands and managing mode changes.
     // @param state The current FlightState, used for command execution.

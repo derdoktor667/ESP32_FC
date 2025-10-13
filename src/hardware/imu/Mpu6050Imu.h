@@ -8,7 +8,7 @@
 class Mpu6050Imu : public ImuInterface
 {
 public:
-    Mpu6050Imu(TwoWire *wirePort = &Wire);
+    Mpu6050Imu();
 
     bool begin() override;
     void update() override;

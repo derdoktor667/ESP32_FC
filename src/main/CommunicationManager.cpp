@@ -337,8 +337,11 @@ void CommunicationManager::_handleGetCommand(String args, bool isApiMode) {
                 break;
             }
         }
-    } else if (param.equals("motor.idle_speed")) valueStr = String(settings.motorIdleSpeedPercent, 1);
-    else if (param.equals("motor.dshot_mode")) valueStr = String(getDShotModeString(settings.dshotMode));
+    }
+    else if (param.equals("motor.idle_speed")) valueStr = String(settings.motorIdleSpeedPercent, 1);
+    else if (param.equals("motor.dshot_mode")) {
+        valueStr = String(getDShotModeString(settings.dshotMode));
+    }
     else if (param.equals("rx.channels")) {
         if (isApiMode) {
             Serial.print("{\"rx.channels\":[");

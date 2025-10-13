@@ -188,6 +188,12 @@ static constexpr unsigned long SERIAL_BAUD_RATE = 115200;
 static constexpr int RX_MAP_PREFIX_LENGTH = 7;
 static constexpr bool INFINITE_LOOP_CONDITION = true;
 
+static constexpr int FLIGHT_MODE_ACRO_THRESHOLD = 1200;
+static constexpr int FLIGHT_MODE_ANGLE_THRESHOLD = 1800;
+
+static constexpr int DSHOT_MIN_THROTTLE = 48;  // Minimum DShot throttle value (e.g., for motor idle)
+static constexpr int DSHOT_MAX_THROTTLE = 2047; // Maximum DShot throttle value
+
 // Create a single, global instance of the settings
 // extern FlightControllerSettings settings; // Now declared in settings.h
 

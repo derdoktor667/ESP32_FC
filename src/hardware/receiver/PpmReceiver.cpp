@@ -1,5 +1,5 @@
 #include "src/hardware/receiver/PpmReceiver.h"
-#include "src/main/flight_controller.h" // For settings access
+
 
 // --- Static variables for the Interrupt Service Routine (ISR) ---
 
@@ -40,7 +40,7 @@ void IRAM_ATTR _handle_ppm_interrupt()
 // --- PpmReceiver Class Implementation ---
 
 PpmReceiver::PpmReceiver(gpio_num_t ppmPin)
-    : _ppmPin(ppmPin), _lastReceiveTime(0) // Initialize _lastReceiveTime
+    : _ppmPin(ppmPin)
 {
 }
 
@@ -50,17 +50,12 @@ void PpmReceiver::begin()
     pinMode(_ppmPin, INPUT_PULLUP); // Use a pull-up to ensure a stable line if the receiver is disconnected
     attachInterrupt(digitalPinToInterrupt(_ppmPin), _handle_ppm_interrupt, RISING);
     _ppm_last_valid_pulse_time = micros(); // Assume signal is present at startup
-    _lastReceiveTime = millis(); // Initialize for hasFailsafe
 }
 
 // The PPM signal is read by interrupts, so this function does nothing.
 void PpmReceiver::update()
 {
     // All work is done in the ISR. No-op.
-    // Update _lastReceiveTime here based on _ppm_last_valid_pulse_time to avoid direct ISR access to member.
-    // Or, make _lastReceiveTime static and update in ISR.
-    // Let's make _lastReceiveTime static and update in ISR for simplicity.
-    // This comment block will be removed in the next step.
 }
 
 // Gets the value of a specific PPM channel.

@@ -1,11 +1,9 @@
 #include "src/hardware/imu/Mpu6050Imu.h"
 
 // Constructor: Initializes the MPU6050 object with the given Wire port.
-Mpu6050Imu::Mpu6050Imu(TwoWire *wirePort)
+Mpu6050Imu::Mpu6050Imu()
     : _mpu() // Initialize _mpu with default constructor
 {
-    // Store wirePort for later use in begin()
-    // The ESP32_MPU6050 library's begin() method takes the TwoWire* argument.
 }
 
 // Initializes the MPU6050 sensor.

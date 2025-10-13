@@ -43,7 +43,7 @@ private:
 
     MadgwickFilter _madgwickFilter; // Instance of the Madgwick filter for sensor fusion
 
-    unsigned long _lastUpdateTime = 0; // Timestamp of the last update cycle for delta time calculation
+
 };
 
 #endif // ATTITUDE_ESTIMATOR_MODULE_H
