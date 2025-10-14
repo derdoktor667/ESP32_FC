@@ -58,31 +58,10 @@ private:
 
     // --- Private Helper Functions for Command Implementations ---
     void _printCliHelp();
-    void _printPidSettings(bool isApiMode);
-    void _printRatesSettings(bool isApiMode);
-    void _printFilterSettings(bool isApiMode);
-    void _printReceiverSettings(bool isApiMode);
-    void _printImuSettings(bool isApiMode);
-    void _printMotorSettings(bool isApiMode);
     void _handleGetCommand(String args, bool isApiMode);
     void _handleSetCommand(String args, bool isApiMode);
     void _handleDumpCommand();
     void _handleDumpJsonCommand();
-
-    // --- Command Helpers for Get/Set ---
-    void _handleGetPid(String args, bool isApiMode);
-    void _handleGetRates(String args, bool isApiMode);
-    void _handleGetFilter(String args, bool isApiMode);
-    void _handleGetReceiver(String args, bool isApiMode);
-    void _handleGetImu(String args, bool isApiMode);
-    void _handleGetMotor(String args, bool isApiMode);
-
-    void _handleSetPid(String param, String value, bool isApiMode);
-    void _handleSetRates(String param, String value, bool isApiMode);
-    void _handleSetFilter(String param, String value, bool isApiMode);
-    void _handleSetReceiver(String param, String value, bool isApiMode);
-    void _handleSetImu(String param, String value, bool isApiMode);
-    void _handleSetMotor(String param, String value, bool isApiMode);
 
     // --- Response Formatting Helpers ---
     void _printGetResponse(const String& param, const String& value, bool isApiMode, bool isString = false);

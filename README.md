@@ -8,15 +8,10 @@ An advanced, high-performance flight controller firmware for quadcopters, built 
 
 ## ✨ Key Features
 
-*   **Safety-First API Mode**: The API mode now includes a critical safety timeout. If the web client disconnects without warning, the firmware automatically returns to flight mode, ensuring the drone does not remain in a non-responsive state.
+*   **Maintainable & Extensible API**: The CLI/API command processor has been completely refactored. It now uses a data-driven 'Settings Registry' instead of brittle `if-else` chains. This makes the code cleaner, more robust, and significantly easier to extend with new settings.
+*   **Safety-First API Mode**: The API mode now includes a critical safety timeout. If a client disconnects without warning, the firmware automatically returns to flight mode, ensuring the drone does not remain in a non-responsive state.
 *   **User-Friendly CLI**: The command-line interface has been significantly improved with a detailed, categorized `help` menu, making it easier than ever to configure and debug the flight controller.
 *   **Robust & Reliable Configuration**: Settings management has been completely overhauled. The firmware now reliably loads settings from flash and automatically saves a default configuration on the first boot, ensuring predictable behavior.
-*   **Enhanced Web Application (`webapp/index.html`):**
-    *   **Modern UI/UX:** Implemented a modern, clean, and dark design for a significantly enhanced user experience.
-    *   **3D Quadcopter Model:** Features a dynamically generated 3D quadcopter model using Three.js primitives for live attitude visualization.
-    *   **IMU Calibration:** Includes a dedicated "Calibrate IMU" button to send a serial command and reset the 3D model's orientation.
-    *   **Web Serial API Integration:** Robust handling for serial connection/disconnection, automatic fetching and dynamic rendering of ESP32 settings, and the ability to send CLI commands.
-    *   **CDN Module Loading:** Three.js and its addons are loaded via CDN using `importmap` for efficient module resolution.
 *   **Enhanced Code Quality & Reliability**: Significant project-wide cleanup, including removal of unused code, redundant includes, and resolution of a DShot mode persistence bug, leading to a more robust and maintainable codebase.
 *   **Clean Modular Architecture**: The firmware is built on two primary components: a `FlightController` class that handles only real-time flight tasks, and a `CommunicationManager` class that manages all serial I/O, providing a clear separation of concerns.
 *   **Robust Tri-Mode Serial Interface**: The `CommunicationManager` provides three distinct operating modes for maximum flexibility:
@@ -151,35 +146,6 @@ Use the `help` command in the CLI to see a full, up-to-date list of commands and
 
 --- End of Help ---
 ```
-
----
-
-## 🌐 Web Application Interface
-
-For a more user-friendly interaction, a web application is provided in the `webapp/` directory. This application utilizes the Web Serial API to connect directly to your ESP32 from a web browser, allowing you to send CLI commands, view serial output, and dynamically configure settings.
-
-### Key WebApp Features:
-*   **Modern UI/UX:** Features a modern, clean, and dark design with a refreshed blue accent color for an intuitive and aesthetically pleasing user experience.
-*   **Responsive Layout:** Utilizes CSS Grid for a flexible and responsive layout, ensuring optimal viewing across various screen sizes.
-*   **Always-Visible 3D Quadcopter Model:** Displays a dynamically generated 3D quadcopter model using Three.js primitives, providing live visualization of the flight controller's attitude (roll, pitch, yaw). The model is now significantly more realistic, featuring refined body, arms, motors, propellers, and landing gear, along with a clear orientation marker.
-*   **Dedicated Console Tab:** Serial output and CLI command input are now organized within a dedicated "Console" tab for improved usability.
-*   **Dynamic Settings with Save All:** Automatically fetches and renders all current settings from the ESP32 upon connection. A new "Save All Settings" button allows for convenient bulk saving of configuration changes.
-*   **IMU Calibration Button:** A dedicated button to initiate IMU calibration and instantly reset the 3D model's orientation.
-*   **Robust Serial Handling:** Implemented with `AbortController` for reliable connection and disconnection.
-*   **Streamlined Interface:** The "Logging" category has been removed for a cleaner and more focused settings interface.
-
-### How to Use the WebApp
-
-1.  **Start a Local HTTP Server:** The Web Serial API requires a secure context (HTTPS) or a local HTTP server. The easiest way to run the web app is by using a simple HTTP server. If you have Node.js and npm installed, you can use `http-server`:
-    ```bash
-    npm install -g http-server
-    cd /home/derdoktor667/Github/ESP32_FC/webapp
-    http-server
-    ```
-    Then, open your web browser and navigate to the address provided by `http-server` (e.g., `http://localhost:8080`).
-2.  **Connect your ESP32** to your computer via USB.
-3.  **In the web app, click "Connect Serial"**. Your browser should prompt you to select a serial port. Choose the ESP32's port.
-4.  **Once connected, the app will automatically enter API mode and fetch all current settings.** You can then use the CLI command input or the dynamically generated settings form to interact with your ESP32.
 
 ---
 
