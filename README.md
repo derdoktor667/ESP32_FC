@@ -8,6 +8,9 @@ An advanced, high-performance flight controller firmware for quadcopters, built 
 
 ## ✨ Key Features
 
+*   **Safety-First API Mode**: The API mode now includes a critical safety timeout. If the web client disconnects without warning, the firmware automatically returns to flight mode, ensuring the drone does not remain in a non-responsive state.
+*   **User-Friendly CLI**: The command-line interface has been significantly improved with a detailed, categorized `help` menu, making it easier than ever to configure and debug the flight controller.
+*   **Robust & Reliable Configuration**: Settings management has been completely overhauled. The firmware now reliably loads settings from flash and automatically saves a default configuration on the first boot, ensuring predictable behavior.
 *   **Enhanced Web Application (`webapp/index.html`):**
     *   **Modern UI/UX:** Implemented a modern, clean, and dark design for a significantly enhanced user experience.
     *   **3D Quadcopter Model:** Features a dynamically generated 3D quadcopter model using Three.js primitives for live attitude visualization.
@@ -92,23 +95,62 @@ This mode is for manual debugging and configuration via a serial monitor.
 
 ### Available Commands
 
-The CLI provides the following commands, categorized for clarity:
+Use the `help` command in the CLI to see a full, up-to-date list of commands and available settings. The output will look like this:
 
-**General Commands:**
-*   `help`: Display this help message.
-*   `exit`: Deactivate CLI and return to flight mode.
-*   `reboot`: Reboot the ESP32 flight controller.
+```
+--- Flight Controller CLI Help ---
 
-**Settings Management:**
-*   `get <parameter>`: Retrieve a specific setting or category (e.g., `get pid`, `get rx.channels`).
-*   `get_settings`: Retrieves all settings as a single JSON object (API mode only).
-*   `set <parameter> <value>`: Set a new value for a specified setting.
-*   `dump`: Display all current flight controller settings (CLI mode only).
-*   `save`: Save current settings to non-volatile memory.
-*   `reset`: Reset all settings to factory defaults and save.
+[ General Commands ]
+  help                 - Display this help message.
+  exit                 - Deactivate CLI and return to flight mode.
+  reboot               - Reboot the ESP32 flight controller.
 
-**Calibration Commands:**
-*   `calibrate_imu`: Initiate IMU sensor calibration.
+[ Settings Management ]
+  get <parameter>      - Get a specific setting or a whole category.
+  set <param> <value>  - Set a new value for a parameter.
+  dump                 - Display all current settings.
+  save                 - Save all settings to flash and reboot.
+  reset                - Reset all settings to defaults, save, and reboot.
+
+[ Calibration Commands ]
+  calibrate_imu        - Initiate IMU sensor calibration.
+
+[ Available Settings ]
+  You can 'get' a whole category (e.g., 'get pid') or get/set a specific parameter.
+
+  --- PID Settings ---
+    pid.roll.kp, pid.roll.ki, pid.roll.kd
+    pid.pitch.kp, pid.pitch.ki, pid.pitch.kd
+    pid.yaw.kp, pid.yaw.ki, pid.yaw.kd
+    pid.integral_limit
+
+  --- Rate Settings ---
+    rates.angle       (Max angle in ANGLE mode)
+    rates.yaw         (Max yaw rate in deg/s)
+    rates.acro        (Max roll/pitch rate in deg/s for ACRO mode)
+
+  --- Filter Settings ---
+    madgwick.sample_freq
+    madgwick.beta
+
+  --- Receiver Settings ---
+    rx.min, rx.max
+    rx.arming_threshold, rx.failsafe_threshold
+    rx.protocol (0=IBUS, 1=PPM)
+    rx.map.throttle, rx.map.roll, rx.map.pitch, rx.map.yaw
+    rx.map.arm_switch, rx.map.failsafe_switch, rx.map.flight_mode_switch
+
+
+  --- IMU Settings ---
+    imu.protocol (0=MPU6050)
+
+  --- Motor Settings ---
+    motor.idle_speed
+    motor.dshot_mode (DSHOT_OFF, DSHOT150, DSHOT300, DSHOT600, DSHOT1200)
+
+
+--- End of Help ---
+```
 
 ---
 

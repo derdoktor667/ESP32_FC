@@ -49,6 +49,7 @@ let serialPort;
 let serialReader;
 let keepReading = false;
 let abortController; // AbortController instance for serial reads
+let apiPingInterval = null; // To hold the ping timer
 
 // Three.js variables
 let scene, camera, renderer;
@@ -111,6 +112,12 @@ async function connectSerial() {
             sendSerialData('get_settings');
         }, 1000); // Another short delay
 
+        // Start sending pings to keep the API mode active
+        if (apiPingInterval) clearInterval(apiPingInterval);
+        apiPingInterval = setInterval(() => {
+            sendSerialData('ping', true); // Send ping silently
+        }, 500);
+
     } catch (error) {
         serialOutput.textContent += `Error connecting: ${error}\n`;
     }
@@ -164,6 +171,12 @@ async function readSerial(signal) {
 }
 
 async function disconnectSerial() {
+    // Stop the API ping interval
+    if (apiPingInterval) {
+        clearInterval(apiPingInterval);
+        apiPingInterval = null;
+    }
+
     if (serialPort) {
         try {
             keepReading = false; // Signal the read loop to stop
@@ -193,14 +206,16 @@ async function disconnectSerial() {
     }
 }
 
-async function sendSerialData(data) {
+async function sendSerialData(data, silent = false) {
     if (serialPort && serialPort.writable) {
         try {
             const writer = serialPort.writable.getWriter();
             const dataArrayBuffer = new TextEncoder().encode(data + '\n');
             await writer.write(dataArrayBuffer);
             writer.releaseLock();
-            serialOutput.textContent += `Sent: ${data}\n`;
+            if (!silent) {
+                serialOutput.textContent += `Sent: ${data}\n`;
+            }
         } catch (error) {
             serialOutput.textContent += `Error sending: ${error}\n`;
         }
@@ -218,6 +233,8 @@ function handleApiResponse(response) {
         updateQuadcopterModel(response.live_data.attitude.roll, response.live_data.attitude.pitch, response.live_data.attitude.yaw);
     } else if (response.status === 'api_mode_activated') {
         serialOutput.textContent += 'API Mode Activated.\n';
+    } else if (response.status === 'api_mode_timeout') {
+        serialOutput.textContent += 'API Mode timed out due to inactivity. Returning to flight mode.\n';
     } else if (response.error) {
         serialOutput.textContent += `API Error: ${response.error}\n`;
     } else {

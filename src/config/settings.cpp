@@ -62,16 +62,14 @@ void saveSettings()
     preferences.putFloat("motor.idle", settings.motorIdleSpeedPercent);
     preferences.putInt("dshot_mode_val", (int)settings.dshotMode);
 
-    preferences.end();
     Serial.println("INFO: Settings saved.");
 }
 
 void loadSettings()
 {
-    Serial.println("INFO: Loading settings from flash...");
-    preferences.begin(PREFERENCES_NAMESPACE, true); // true = read-only mode
+    preferences.begin(PREFERENCES_NAMESPACE, false); // Open in read-write mode
 
-    // Check if the settings have ever been saved
+    // Check if settings have been initialized before.
     bool initialized = preferences.getBool(INIT_KEY, false);
 
     if (initialized)
@@ -117,18 +115,16 @@ void loadSettings()
             String key = "rx.map." + String(i);
             settings.channelMapping.channel[i] = preferences.getInt(key.c_str(), settings.channelMapping.channel[i]);
         }
+        Serial.println("INFO: Settings loaded.");
     }
     else
     {
-        Serial.println("INFO: No saved settings found. Initializing with default values and saving...");
-        preferences.end(); // End the read-only session
-        preferences.begin(PREFERENCES_NAMESPACE, false); // Re-open in read-write mode to clear
-        preferences.clear(); // Clear all preferences if not initialized
-        preferences.end(); // End the read-write session
-        saveSettings();    // This will save the defaults and print the confirmation
-        return;
+        // This is the first run, or settings were cleared.
+        // The 'settings' object already holds the default values from config.h.
+        // We just need to save them to flash for the first time.
+        Serial.println("INFO: No saved settings found. Saving default values...");
+        saveSettings(); // This will also set the 'initialized' flag.
     }
 
     preferences.end();
-    Serial.println("INFO: Settings loaded.");
 }

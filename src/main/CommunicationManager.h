@@ -37,6 +37,10 @@ private:
     FlightController* _fc;                     // Pointer to the FlightController instance
     OperatingMode _currentMode = OperatingMode::FLIGHT; // Current operating mode
     unsigned long _lastSerialLogTime = 0;      // Timestamp of the last serial log output
+    unsigned long _lastApiPingTime = 0;        // Timestamp of the last API ping
+    
+    // Timeout for API mode if no ping is received (e.g., 2 seconds)
+    static constexpr unsigned long API_MODE_TIMEOUT_MS = 2000;
 
     // Streams live flight data as a JSON object to the serial port.
     // This method is called periodically when in API mode.
@@ -64,6 +68,25 @@ private:
     void _handleSetCommand(String args, bool isApiMode);
     void _handleDumpCommand();
     void _handleDumpJsonCommand();
+
+    // --- Command Helpers for Get/Set ---
+    void _handleGetPid(String args, bool isApiMode);
+    void _handleGetRates(String args, bool isApiMode);
+    void _handleGetFilter(String args, bool isApiMode);
+    void _handleGetReceiver(String args, bool isApiMode);
+    void _handleGetImu(String args, bool isApiMode);
+    void _handleGetMotor(String args, bool isApiMode);
+
+    void _handleSetPid(String param, String value, bool isApiMode);
+    void _handleSetRates(String param, String value, bool isApiMode);
+    void _handleSetFilter(String param, String value, bool isApiMode);
+    void _handleSetReceiver(String param, String value, bool isApiMode);
+    void _handleSetImu(String param, String value, bool isApiMode);
+    void _handleSetMotor(String param, String value, bool isApiMode);
+
+    // --- Response Formatting Helpers ---
+    void _printGetResponse(const String& param, const String& value, bool isApiMode, bool isString = false);
+    void _printSetResponse(const String& param, const String& value, bool success, bool isApiMode, bool isString = false);
 };
 
 #endif // COMMUNICATION_MANAGER_H
