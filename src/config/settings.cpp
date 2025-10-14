@@ -1,8 +1,16 @@
+// settings.cpp
+//
+// This file implements the functions for managing persistent storage (Non-Volatile Storage - NVS)
+// of the FlightControllerSettings. It handles saving and loading settings to/from the ESP32's flash memory.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #include <Preferences.h>
 #include "src/config/settings.h"
 
-// Instantiate the global settings object
-// This will be initialized with the default values from the struct definition in config.h
+// Instantiate the global settings object, initialized with default values from config.h
 FlightControllerSettings settings;
 
 // Create a Preferences object to interact with non-volatile storage
@@ -22,45 +30,45 @@ void saveSettings()
     preferences.putBool(INIT_KEY, true);
 
     // Save all settings from the struct
-    preferences.putInt("pid.r.kp", settings.pidRoll.kp);
-    preferences.putInt("pid.r.ki", settings.pidRoll.ki);
-    preferences.putInt("pid.r.kd", settings.pidRoll.kd);
-    preferences.putInt("pid.p.kp", settings.pidPitch.kp);
-    preferences.putInt("pid.p.ki", settings.pidPitch.ki);
-    preferences.putInt("pid.p.kd", settings.pidPitch.kd);
-    preferences.putInt("pid.y.kp", settings.pidYaw.kp);
-    preferences.putInt("pid.y.ki", settings.pidYaw.ki);
-    preferences.putInt("pid.y.kd", settings.pidYaw.kd);
-    preferences.putFloat("pid.lim", settings.pidIntegralLimit);
+    preferences.putInt(NVSKeys::PID_ROLL_KP, settings.pidRoll.kp);
+    preferences.putInt(NVSKeys::PID_ROLL_KI, settings.pidRoll.ki);
+    preferences.putInt(NVSKeys::PID_ROLL_KD, settings.pidRoll.kd);
+    preferences.putInt(NVSKeys::PID_PITCH_KP, settings.pidPitch.kp);
+    preferences.putInt(NVSKeys::PID_PITCH_KI, settings.pidPitch.ki);
+    preferences.putInt(NVSKeys::PID_PITCH_KD, settings.pidPitch.kd);
+    preferences.putInt(NVSKeys::PID_YAW_KP, settings.pidYaw.kp);
+    preferences.putInt(NVSKeys::PID_YAW_KI, settings.pidYaw.ki);
+    preferences.putInt(NVSKeys::PID_YAW_KD, settings.pidYaw.kd);
+    preferences.putFloat(NVSKeys::PID_INTEGRAL_LIMIT, settings.pidIntegralLimit);
 
-    preferences.putFloat("rate.angle", settings.rates.maxAngleRollPitch);
-    preferences.putFloat("rate.y", settings.rates.maxRateYaw);
-    preferences.putFloat("rate.acro_rp", settings.rates.maxRateRollPitch);
+    preferences.putFloat(NVSKeys::RATES_MAX_ANGLE_ROLL_PITCH, settings.rates.maxAngleRollPitch);
+    preferences.putFloat(NVSKeys::RATES_MAX_RATE_YAW, settings.rates.maxRateYaw);
+    preferences.putFloat(NVSKeys::RATES_MAX_RATE_ROLL_PITCH, settings.rates.maxRateRollPitch);
 
-    preferences.putFloat("filter.madgwick.sample_freq", settings.filter.madgwickSampleFreq);
-    preferences.putFloat("filter.madgwick.beta", settings.filter.madgwickBeta);
+    preferences.putFloat(NVSKeys::FILTER_MADGWICK_SAMPLE_FREQ, settings.filter.madgwickSampleFreq);
+    preferences.putFloat(NVSKeys::FILTER_MADGWICK_BETA, settings.filter.madgwickBeta);
 
     // Receiver Settings
-    preferences.putInt("rx.proto", (int)settings.receiverProtocol);
-    preferences.putInt("rx.min", settings.receiver.ibusMinValue);
-    preferences.putInt("rx.max", settings.receiver.ibusMaxValue);
-    preferences.putInt("rx.arming", settings.receiver.armingThreshold);
-    preferences.putInt("rx.failsafe", settings.receiver.failsafeThreshold);
+    preferences.putInt(NVSKeys::RX_PROTOCOL, (int)settings.receiverProtocol);
+    preferences.putInt(NVSKeys::RX_MIN_VALUE, settings.receiver.ibusMinValue);
+    preferences.putInt(NVSKeys::RX_MAX_VALUE, settings.receiver.ibusMaxValue);
+    preferences.putInt(NVSKeys::RX_ARMING_THRESHOLD, settings.receiver.armingThreshold);
+    preferences.putInt(NVSKeys::RX_FAILSAFE_THRESHOLD, settings.receiver.failsafeThreshold);
 
     // IMU Settings
-    preferences.putInt("imu.proto", (int)settings.imuProtocol);
+    preferences.putInt(NVSKeys::IMU_PROTOCOL, (int)settings.imuProtocol);
 
     // Save channel mapping
     for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)
     {
-        String key = "rx.map." + String(i);
+        String key = String(NVSKeys::RX_CHANNEL_MAP_PREFIX) + String(i);
         preferences.putInt(key.c_str(), settings.channelMapping.channel[i]);
     }
 
 
     // Motor Settings
-    preferences.putFloat("motor.idle", settings.motorIdleSpeedPercent);
-    preferences.putInt("dshot_mode_val", (int)settings.dshotMode);
+    preferences.putFloat(NVSKeys::MOTOR_IDLE_SPEED, settings.motorIdleSpeedPercent);
+    preferences.putInt(NVSKeys::DSHOT_MODE_VAL, (int)settings.dshotMode);
 
     Serial.println("INFO: Settings saved.");
 }
@@ -76,43 +84,43 @@ void loadSettings()
     {
         Serial.println("INFO: Saved settings found. Loading...");
         // Load all settings into the struct
-        settings.pidRoll.kp = preferences.getInt("pid.r.kp", settings.pidRoll.kp);
-        settings.pidRoll.ki = preferences.getInt("pid.r.ki", settings.pidRoll.ki);
-        settings.pidRoll.kd = preferences.getInt("pid.r.kd", settings.pidRoll.kd);
-        settings.pidPitch.kp = preferences.getInt("pid.p.kp", settings.pidPitch.kp);
-        settings.pidPitch.ki = preferences.getInt("pid.p.ki", settings.pidPitch.ki);
-        settings.pidPitch.kd = preferences.getInt("pid.p.kd", settings.pidPitch.kd);
-        settings.pidYaw.kp = preferences.getInt("pid.y.kp", settings.pidYaw.kp);
-        settings.pidYaw.ki = preferences.getInt("pid.y.ki", settings.pidYaw.ki);
-        settings.pidYaw.kd = preferences.getInt("pid.y.kd", settings.pidYaw.kd);
-        settings.pidIntegralLimit = preferences.getFloat("pid.lim", settings.pidIntegralLimit);
+        settings.pidRoll.kp = preferences.getInt(NVSKeys::PID_ROLL_KP, settings.pidRoll.kp);
+        settings.pidRoll.ki = preferences.getInt(NVSKeys::PID_ROLL_KI, settings.pidRoll.ki);
+        settings.pidRoll.kd = preferences.getInt(NVSKeys::PID_ROLL_KD, settings.pidRoll.kd);
+        settings.pidPitch.kp = preferences.getInt(NVSKeys::PID_PITCH_KP, settings.pidPitch.kp);
+        settings.pidPitch.ki = preferences.getInt(NVSKeys::PID_PITCH_KI, settings.pidPitch.ki);
+        settings.pidPitch.kd = preferences.getInt(NVSKeys::PID_PITCH_KD, settings.pidPitch.kd);
+        settings.pidYaw.kp = preferences.getInt(NVSKeys::PID_YAW_KP, settings.pidYaw.kp);
+        settings.pidYaw.ki = preferences.getInt(NVSKeys::PID_YAW_KI, settings.pidYaw.ki);
+        settings.pidYaw.kd = preferences.getInt(NVSKeys::PID_YAW_KD, settings.pidYaw.kd);
+        settings.pidIntegralLimit = preferences.getFloat(NVSKeys::PID_INTEGRAL_LIMIT, settings.pidIntegralLimit);
 
-        settings.rates.maxAngleRollPitch = preferences.getFloat("rate.angle", settings.rates.maxAngleRollPitch);
-        settings.rates.maxRateYaw = preferences.getFloat("rate.y", settings.rates.maxRateYaw);
-        settings.rates.maxRateRollPitch = preferences.getFloat("rate.acro_rp", settings.rates.maxRateRollPitch);
+        settings.rates.maxAngleRollPitch = preferences.getFloat(NVSKeys::RATES_MAX_ANGLE_ROLL_PITCH, settings.rates.maxAngleRollPitch);
+        settings.rates.maxRateYaw = preferences.getFloat(NVSKeys::RATES_MAX_RATE_YAW, settings.rates.maxRateYaw);
+        settings.rates.maxRateRollPitch = preferences.getFloat(NVSKeys::RATES_MAX_RATE_ROLL_PITCH, settings.rates.maxRateRollPitch);
 
-        settings.filter.madgwickSampleFreq = preferences.getFloat("filter.madgwick.sample_freq", settings.filter.madgwickSampleFreq);
-        settings.filter.madgwickBeta = preferences.getFloat("filter.madgwick.beta", settings.filter.madgwickBeta);
+        settings.filter.madgwickSampleFreq = preferences.getFloat(NVSKeys::FILTER_MADGWICK_SAMPLE_FREQ, settings.filter.madgwickSampleFreq);
+        settings.filter.madgwickBeta = preferences.getFloat(NVSKeys::FILTER_MADGWICK_BETA, settings.filter.madgwickBeta);
 
         // Receiver Settings
-        settings.receiverProtocol = (ReceiverProtocol)preferences.getInt("rx.proto", (int)settings.receiverProtocol);
-        settings.receiver.ibusMinValue = preferences.getInt("rx.min", settings.receiver.ibusMinValue);
-        settings.receiver.ibusMaxValue = preferences.getInt("rx.max", settings.receiver.ibusMaxValue);
-        settings.receiver.armingThreshold = preferences.getInt("rx.arming", settings.receiver.armingThreshold);
-        settings.receiver.failsafeThreshold = preferences.getInt("rx.failsafe", settings.receiver.failsafeThreshold);
+        settings.receiverProtocol = (ReceiverProtocol)preferences.getInt(NVSKeys::RX_PROTOCOL, (int)settings.receiverProtocol);
+        settings.receiver.ibusMinValue = preferences.getInt(NVSKeys::RX_MIN_VALUE, settings.receiver.ibusMinValue);
+        settings.receiver.ibusMaxValue = preferences.getInt(NVSKeys::RX_MAX_VALUE, settings.receiver.ibusMaxValue);
+        settings.receiver.armingThreshold = preferences.getInt(NVSKeys::RX_ARMING_THRESHOLD, settings.receiver.armingThreshold);
+        settings.receiver.failsafeThreshold = preferences.getInt(NVSKeys::RX_FAILSAFE_THRESHOLD, settings.receiver.failsafeThreshold);
 
         // IMU Settings
-        settings.imuProtocol = (ImuProtocol)preferences.getInt("imu.proto", (int)settings.imuProtocol);
+        settings.imuProtocol = (ImuProtocol)preferences.getInt(NVSKeys::IMU_PROTOCOL, (int)settings.imuProtocol);
 
 
         // Motor Settings
-        settings.motorIdleSpeedPercent = preferences.getFloat("motor.idle", settings.motorIdleSpeedPercent);
-        settings.dshotMode = (dshot_mode_t)preferences.getInt("dshot_mode_val", (int)settings.dshotMode);
+        settings.motorIdleSpeedPercent = preferences.getFloat(NVSKeys::MOTOR_IDLE_SPEED, settings.motorIdleSpeedPercent);
+        settings.dshotMode = (dshot_mode_t)preferences.getInt(NVSKeys::DSHOT_MODE_VAL, (int)settings.dshotMode);
 
         // Load channel mapping
         for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)
         {
-            String key = "rx.map." + String(i);
+            String key = String(NVSKeys::RX_CHANNEL_MAP_PREFIX) + String(i);
             settings.channelMapping.channel[i] = preferences.getInt(key.c_str(), settings.channelMapping.channel[i]);
         }
         Serial.println("INFO: Settings loaded.");

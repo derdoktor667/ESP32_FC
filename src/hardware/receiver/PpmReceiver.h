@@ -1,3 +1,13 @@
+// PpmReceiver.h
+//
+// This file defines the PpmReceiver class, a concrete implementation of the
+// ReceiverInterface for the PPM (Pulse Position Modulation) protocol. It uses
+// GPIO interrupts to decode the PPM signal and extract channel values.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #ifndef PPM_RECEIVER_H
 #define PPM_RECEIVER_H
 
@@ -26,6 +36,7 @@ public:
 private:
     gpio_num_t _ppmPin; // The GPIO pin used for PPM input
     static constexpr unsigned long PPM_SIGNAL_TIMEOUT_MS = 500; // Milliseconds before signal is considered lost
+    static constexpr uint16_t PPM_INVALID_CHANNEL_VALUE = 0; // Value indicating an invalid channel
 };
 
 #endif // PPM_RECEIVER_H

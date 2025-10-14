@@ -1,3 +1,13 @@
+// flight_controller.h
+//
+// This file defines the FlightController class, the main orchestrator for the
+// ESP32 Flight Controller firmware. It manages all hardware objects and
+// processing modules, and controls the overall flight state and main loop.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #ifndef FLIGHT_CONTROLLER_H
 #define FLIGHT_CONTROLLER_H
 
@@ -10,7 +20,6 @@
 #include "src/modules/SetpointManager.h"
 #include "src/modules/PidProcessor.h"
 #include "src/modules/MotorMixer.h"
-// #include "src/main/CommunicationManager.h" // Include CommunicationManager - REMOVED to break circular dependency
 #include <DShotRMT.h>
 
 // Forward declaration to break circular dependency
@@ -24,6 +33,7 @@ class FlightController
 {
 public:
     FlightController();
+    ~FlightController(); // Destructor to clean up dynamically allocated objects
 
     // Initializes all hardware and modules.
     void initialize();
@@ -55,9 +65,6 @@ private:
 
     // --- Communication Manager ---
     CommunicationManager* _comms = nullptr; // Communication Manager instance (now a pointer)
-
-    // Destructor to clean up dynamically allocated objects
-    public: ~FlightController();
 };
 
 #endif // FLIGHT_CONTROLLER_H

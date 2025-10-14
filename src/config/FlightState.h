@@ -1,3 +1,14 @@
+// FlightState.h
+//
+// This file defines the central FlightState struct, which holds the complete,
+// dynamic state of the flight controller at any given moment. It acts as the
+// single source of truth for the drone's state, eliminating global variables
+// and making the data flow explicit.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #ifndef FLIGHT_STATE_H
 #define FLIGHT_STATE_H
 
@@ -38,7 +49,7 @@ struct FlightState
     // --- Control & Output ---
     float throttle = 0.0f;         // Base throttle from the receiver, mapped to output range
     Vector3f pidOutput;            // The output from the PID controllers for each axis
-    float motorOutputs[4] = {0.0f}; // Final throttle values for each motor
+    float motorOutputs[NUM_MOTORS] = {0.0f}; // Final throttle values for each motor
 
     // --- System Metrics ---
     uint32_t loopTimeUs = 0;       // Duration of the main flight loop in microseconds

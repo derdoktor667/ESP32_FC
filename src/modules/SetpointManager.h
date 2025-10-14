@@ -1,3 +1,14 @@
+// SetpointManager.h
+//
+// This file defines the SetpointManager class, which is responsible for
+// calculating the target setpoints (desired roll, pitch, yaw rates/angles)
+// based on the pilot's receiver input and the currently active flight mode.
+// It translates raw stick inputs into control targets for the PID controllers.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #ifndef SETPOINT_MANAGER_MODULE_H
 #define SETPOINT_MANAGER_MODULE_H
 

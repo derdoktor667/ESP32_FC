@@ -1,3 +1,13 @@
+// SafetyManager.h
+//
+// This file defines the SafetyManager class, which is responsible for handling
+// the arming, disarming, and failsafe logic of the flight controller. It monitors
+// receiver inputs and sensor states to ensure safe operation of the drone.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #ifndef SAFETY_MANAGER_MODULE_H
 #define SAFETY_MANAGER_MODULE_H
 

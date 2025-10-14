@@ -1,11 +1,18 @@
+// MotorMixer.h
+//
+// This file defines the MotorMixer class, which is responsible for mixing
+// PID outputs with the main throttle input to calculate individual motor
+// commands. It then sends these commands to the ESCs via the DShotRMT protocol.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #ifndef MOTOR_MIXER_MODULE_H
 #define MOTOR_MIXER_MODULE_H
 
 #include "src/config/FlightState.h"
 #include <DShotRMT.h>
-
-// DShot protocol fixed throttle values
-
 
 // Mixes PID outputs with throttle and sends commands to the motors.
 // This module takes the desired throttle and PID corrections from the FlightState,

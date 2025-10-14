@@ -1,3 +1,14 @@
+// AttitudeEstimator.cpp
+//
+// This file implements the AttitudeEstimator class, which is responsible for
+// processing IMU data and estimating the drone's attitude (roll, pitch, yaw).
+// It utilizes a Madgwick filter for sensor fusion and delegates IMU-specific
+// calibration to the IMU interface.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #include "src/modules/AttitudeEstimator.h"
 #include "src/config/config.h"
 #include <Arduino.h>
@@ -6,11 +17,12 @@
 // Actual initialization happens in init() once settings are available.
 AttitudeEstimator::AttitudeEstimator()
     : _imu(nullptr), _settings(nullptr),
-      _madgwickFilter(0.0f, 0.0f)
+      _madgwickFilter(0.0f, 0.0f) // Initialize with dummy values; will be re-initialized in init()
 {
 }
 
 // Init method: Sets up references to IMU and settings, then properly initializes the Madgwick filter.
+// This method must be called after settings are loaded and the IMU is initialized.
 void AttitudeEstimator::init(ImuInterface &imu, const FlightControllerSettings &settings)
 {
     _imu = &imu;
@@ -19,10 +31,10 @@ void AttitudeEstimator::init(ImuInterface &imu, const FlightControllerSettings &
     _madgwickFilter = MadgwickFilter(_settings->filter.madgwickSampleFreq, _settings->filter.madgwickBeta);
 }
 
-// Performs the initial calibration.
+// Performs the initial calibration of the IMU.
 void AttitudeEstimator::begin()
 {
-    // Perform initial calibration of the IMU to remove biases.
+    // Delegate initial calibration to the IMU interface.
     calibrate();
 }
 

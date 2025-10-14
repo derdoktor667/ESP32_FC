@@ -1,3 +1,14 @@
+// pid_controller.h
+//
+// This file defines the PIDController class, a generic implementation of a
+// Proportional-Integral-Derivative (PID) controller. It is used to calculate
+// control outputs based on an error signal, aiming to minimize the difference
+// between a setpoint and a current value.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #ifndef PID_CONTROLLER_H
 #define PID_CONTROLLER_H
 

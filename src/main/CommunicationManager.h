@@ -1,3 +1,17 @@
+// CommunicationManager.h
+//
+// This file defines the CommunicationManager class, which handles all serial
+// communication (CLI/API) and logging for the ESP32 Flight Controller. It
+// manages different operating modes (FLIGHT, CLI, API) and processes incoming
+// commands and outgoing flight status data.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
+#ifndef COMMUNICATION_MANAGER_H
+#define COMMUNICATION_MANAGER_H
+
 #include "src/config/FlightState.h"
 #include "src/config/config.h"
 #include "src/config/settings.h"
@@ -44,6 +58,15 @@ private:
 
     static constexpr unsigned long API_MODE_TIMEOUT_MS = 2000; // API mode timeout in milliseconds
 
+public:
+    enum class SetResult {
+        SUCCESS,
+        INVALID_FORMAT,
+        UNKNOWN_PARAMETER,
+        INVALID_VALUE,
+        OUT_OF_RANGE
+    };
+
     // Private helper methods for command processing
     void _handleSerialInput();
     void _executeCommand(String command, bool isApiMode);
@@ -54,7 +77,9 @@ private:
     void _printCliHelp();
     void _printFlightStatus(const FlightState &state);
     void _printGetResponse(const String& param, const String& value, bool isApiMode, bool isString);
-    void _printSetResponse(const String& param, const String& value, bool success, bool isApiMode, bool isString);
+    void _printSetResponse(const String& param, const String& value, SetResult result, bool isApiMode, bool isString = false, const String& expected = "");
     void _handleStatusCommand();
     void _handleVersionCommand(); // New method for version command
 };
+
+#endif // COMMUNICATION_MANAGER_H

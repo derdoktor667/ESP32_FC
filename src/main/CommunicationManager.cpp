@@ -1,3 +1,14 @@
+// CommunicationManager.cpp
+//
+// This file implements the CommunicationManager class, which handles all serial
+// communication (CLI/API) and logging for the ESP32 Flight Controller. It
+// manages different operating modes (FLIGHT, CLI, API) and processes incoming
+// commands and outgoing flight status data.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #include "CommunicationManager.h"
 #include "flight_controller.h"
 #include "../config/config.h"
@@ -83,9 +94,92 @@ static const Setting settingsRegistry[] = {
 };
 const int numSettings = sizeof(settingsRegistry) / sizeof(Setting);
 
-// Forward declarations for helpers
-void _printGetResponse(const String& param, const String& value, bool isApiMode, bool isString = false);
-void _printSetResponse(const String& param, const String& value, bool success, bool isApiMode, bool isString = false);
+// --- Command Helpers for Get/Set ---
+
+// Helper function to print a GET response to serial, formatted as JSON for API mode or plain text for CLI mode.
+void _printGetResponse(const String& param, const String& value, bool isApiMode, bool isString) {
+    if (isApiMode) {
+        Serial.print("{\"get\":{\"");
+        Serial.print(param);
+        Serial.print("\":");
+        if (isString) Serial.print("\"");
+        Serial.print(value);
+        if (isString) Serial.print("\"");
+        Serial.println("}}");
+    } else {
+        Serial.println(value);
+    }
+}
+
+// Helper function to print a SET response to serial, formatted as JSON for API mode or plain text for CLI mode.
+// Provides detailed error messages based on the SetResult enum.
+void _printSetResponse(const String& param, const String& value, CommunicationManager::SetResult result, bool isApiMode, bool isString, const String& expected) {
+    if (isApiMode) {
+        Serial.print("{\"set\":{\"");
+        Serial.print(param);
+        Serial.print("\":");
+        if (isString) Serial.print("\"");
+        Serial.print(value);
+        if (isString) Serial.print("\"");
+        Serial.print(",\"status\":\"");
+        switch (result) {
+            case CommunicationManager::SetResult::SUCCESS: Serial.print("success"); break;
+            case CommunicationManager::SetResult::INVALID_FORMAT: Serial.print("error"); Serial.print(",\"message\":\"Invalid 'set' command format. Use: set <parameter> <value>\""); break;
+            case CommunicationManager::SetResult::UNKNOWN_PARAMETER: Serial.print("error"); Serial.print(",\"message\":\"Unknown parameter\""); break;
+            case CommunicationManager::SetResult::INVALID_VALUE: Serial.print("error"); Serial.print(",\"message\":\"Invalid value. Expected: "); Serial.print(expected); Serial.print("\""); break;
+            case CommunicationManager::SetResult::OUT_OF_RANGE: Serial.print("error"); Serial.print(",\"message\":\"Value out of range. Expected: "); Serial.print(expected); Serial.print("\""); break;
+        }
+        Serial.println("}}");
+    } else {
+        switch (result) {
+            case CommunicationManager::SetResult::SUCCESS:
+                Serial.print("Set "); Serial.print(param); Serial.print(" to "); Serial.println(value);
+                break;
+            case CommunicationManager::SetResult::INVALID_FORMAT:
+                Serial.println("Invalid 'set' format. Use: set <parameter> <value>");
+                break;
+            case CommunicationManager::SetResult::UNKNOWN_PARAMETER:
+                Serial.print("Unknown parameter: "); Serial.println(param);
+                break;
+            case CommunicationManager::SetResult::INVALID_VALUE:
+                Serial.print("Invalid value '" ); Serial.print(value); Serial.print("' for parameter '" ); Serial.print(param); Serial.print("'. Expected: "); Serial.println(expected);
+                break;
+            case CommunicationManager::SetResult::OUT_OF_RANGE:
+                Serial.print("Value '" ); Serial.print(value); Serial.print("' for parameter '" ); Serial.print(param); Serial.print("' is out of range. Expected: "); Serial.println(expected);
+                break;
+        }
+    }
+}
+
+// Helper function to print live flight status data to serial, formatted as JSON for API mode.
+void _printFlightStatus(const FlightState &state) {
+    if (isnan(state.attitude.roll) || isnan(state.attitude.pitch) || isnan(state.attitude.yaw)) {
+        Serial.println("{\"error\":\"Attitude data is NaN. Check IMU connection.\"}");
+        return;
+    }
+    Serial.print("{\"live_data\":{\"attitude\":{\"roll\":");
+    Serial.print(state.attitude.roll, 2);
+    Serial.print(",\"pitch\":");
+    Serial.print(state.attitude.pitch, 2);
+    Serial.print(",\"yaw\":");
+    Serial.print(state.attitude.yaw, 2);
+    Serial.print("},\"status\":{\"armed\":");
+    Serial.print(state.isArmed ? "true" : "false");
+    Serial.print(",\"failsafe\":");
+    Serial.print(state.isFailsafeActive ? "true" : "false");
+    Serial.print(",\"mode\":\"");
+    switch (state.currentFlightMode) {
+        case ACRO_MODE: Serial.print("ACRO"); break;
+        case ANGLE_MODE: Serial.print("ANGLE"); break;
+        default: Serial.print("UNKNOWN"); break;
+    }
+    Serial.print("\"},\"motor_output\":[");
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        Serial.print(state.motorOutputs[i]);
+        if (i < NUM_MOTORS - 1) Serial.print(",");
+    }
+    Serial.println("]}}");
+}
 
 // --- Public Methods ---
 
@@ -119,7 +213,7 @@ void CommunicationManager::_handleSerialInput() {
             if (input.equalsIgnoreCase("cli")) {
                 _currentMode = OperatingMode::CLI;
                 settings.enableLogging = false;
-                Serial.println("--- CLI Activated ---");
+                Serial.println("--- CLI  Activated ---");
                 Serial.print("ESP32_FC > ");
             } else if (input.equalsIgnoreCase("api")) {
                 _currentMode = OperatingMode::API;
@@ -131,7 +225,7 @@ void CommunicationManager::_handleSerialInput() {
             String commandName = (input.indexOf(' ') != -1) ? input.substring(0, input.indexOf(' ')) : input;
             if (commandName.equalsIgnoreCase("exit")) {
                 _currentMode = OperatingMode::FLIGHT;
-                Serial.println("--- CLI Deactivated ---");
+                Serial.println("--- CLI  Deactivated ---");
                 return;
             }
             _executeCommand(input, false);
@@ -283,8 +377,8 @@ void CommunicationManager::_handleDumpJsonCommand() {
         switch (s.type) {
             case SettingType::FLOAT: Serial.print(*(float*)s.value / s.scaleFactor, 4); break;
             case SettingType::UINT16: Serial.print(*(uint16_t*)s.value); break;
-            case SettingType::RECEIVER_PROTOCOL: Serial.print(*(uint8_t*)s.value); break;
-            case SettingType::IMU_PROTOCOL: Serial.print(*(uint8_t*)s.value); break;
+            case SettingType::RECEIVER_PROTOCOL: Serial.print("\""); Serial.print(getReceiverProtocolString(*(ReceiverProtocol*)s.value)); Serial.print("\""); break;
+            case SettingType::IMU_PROTOCOL: Serial.print("\""); Serial.print(getImuProtocolString(*(ImuProtocol*)s.value)); Serial.print("\""); break;
             case SettingType::DSHOT_MODE: Serial.print("\""); Serial.print(getDShotModeString(*(dshot_mode_t*)s.value)); Serial.print("\""); break;
         }
     }
@@ -325,33 +419,47 @@ void CommunicationManager::_handleGetCommand(String args, bool isApiMode) {
 void CommunicationManager::_handleSetCommand(String args, bool isApiMode) {
     int lastSpace = args.lastIndexOf(' ');
     if (lastSpace == -1) {
-        if (isApiMode) Serial.println("{\"error\":\"Invalid 'set' format\"}");
-        else Serial.println("Invalid 'set' format. Use: set <parameter> <value>");
+        _printSetResponse("", "", CommunicationManager::SetResult::INVALID_FORMAT, isApiMode);
         return;
     }
     String param = args.substring(0, lastSpace);
     String valueStr = args.substring(lastSpace + 1);
 
-    bool isString = false; // Deklaration hinzugefügt
-
     for (int i = 0; i < numSettings; ++i) {
         const Setting& s = settingsRegistry[i];
         if (param.equalsIgnoreCase(s.name)) {
-            bool success = true;
+            CommunicationManager::SetResult result = CommunicationManager::SetResult::SUCCESS;
+            String expectedValue = "";
             switch (s.type) {
-                case SettingType::FLOAT: *(float*)s.value = valueStr.toFloat() * s.scaleFactor; break;
-                case SettingType::UINT16: *(uint16_t*)s.value = (uint16_t)valueStr.toInt(); break;
+                case SettingType::FLOAT: {
+                    float val = valueStr.toFloat();
+                    if (valueStr.length() > 0 && val == 0.0f && valueStr != "0" && valueStr != "0.0") {
+                        result = CommunicationManager::SetResult::INVALID_VALUE; expectedValue = "float";
+                    } else {
+                        *(float*)s.value = val * s.scaleFactor;
+                    }
+                    break;
+                }
+                case SettingType::UINT16: {
+                    long val = valueStr.toInt();
+                    if (valueStr.length() > 0 && val == 0 && valueStr != "0") {
+                        result = CommunicationManager::SetResult::INVALID_VALUE; expectedValue = "integer";
+                    } else if (val < 0 || val > 65535) { // uint16_t range
+                        result = CommunicationManager::SetResult::OUT_OF_RANGE; expectedValue = "0-65535";
+                    } else {
+                        *(uint16_t*)s.value = (uint16_t)val;
+                    }
+                    break;
+                }
                 case SettingType::RECEIVER_PROTOCOL: {
                     if (valueStr.equalsIgnoreCase("IBUS")) *(ReceiverProtocol*)s.value = PROTOCOL_IBUS;
                     else if (valueStr.equalsIgnoreCase("PPM")) *(ReceiverProtocol*)s.value = PROTOCOL_PPM;
-                    else success = false;
-                    isString = true;
+                    else { result = CommunicationManager::SetResult::INVALID_VALUE; expectedValue = "IBUS, PPM"; }
                     break;
                 }
                 case SettingType::IMU_PROTOCOL: {
                     if (valueStr.equalsIgnoreCase("MPU6050")) *(ImuProtocol*)s.value = IMU_MPU6050;
-                    else success = false;
-                    isString = true;
+                    else { result = CommunicationManager::SetResult::INVALID_VALUE; expectedValue = "MPU6050"; }
                     break;
                 }
                 case SettingType::DSHOT_MODE: {
@@ -360,31 +468,37 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode) {
                     else if (valueStr.equalsIgnoreCase("DSHOT300")) *(dshot_mode_t*)s.value = DSHOT300;
                     else if (valueStr.equalsIgnoreCase("DSHOT600")) *(dshot_mode_t*)s.value = DSHOT600;
                     else if (valueStr.equalsIgnoreCase("DSHOT1200")) *(dshot_mode_t*)s.value = DSHOT1200;
-                    else success = false;
+                    else { result = CommunicationManager::SetResult::INVALID_VALUE; expectedValue = "DSHOT_OFF, DSHOT150, DSHOT300, DSHOT600, DSHOT1200"; }
                     break;
                 }
             }
-            _printSetResponse(param, valueStr, success, isApiMode, (s.type == SettingType::DSHOT_MODE));
+            _printSetResponse(param, valueStr, result, isApiMode, (s.type == SettingType::DSHOT_MODE || s.type == SettingType::RECEIVER_PROTOCOL || s.type == SettingType::IMU_PROTOCOL), expectedValue);
             return;
         }
     }
     if (param.startsWith("rx.map.")) {
-        String inputName = param.substring(7);
+        String inputName = param.substring(RX_MAP_PREFIX_LENGTH);
         int channelValue = valueStr.toInt();
-        bool mapping_found = false;
-        if (channelValue >= 0 && channelValue < RECEIVER_CHANNEL_COUNT) {
+        CommunicationManager::SetResult result = CommunicationManager::SetResult::UNKNOWN_PARAMETER;
+        String expectedValue = "";
+
+        if (valueStr.length() > 0 && channelValue == 0 && valueStr != "0") {
+            result = CommunicationManager::SetResult::INVALID_VALUE; expectedValue = "integer";
+        } else if (channelValue < 0 || channelValue >= RECEIVER_CHANNEL_COUNT) {
+            result = CommunicationManager::SetResult::OUT_OF_RANGE; expectedValue = "0-" + String(RECEIVER_CHANNEL_COUNT - 1);
+        } else {
             for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i) {
                 if (inputName.equalsIgnoreCase(getFlightControlInputString((FlightControlInput)i))) {
                     settings.channelMapping.channel[i] = channelValue;
-                    mapping_found = true;
+                    result = CommunicationManager::SetResult::SUCCESS;
                     break;
                 }
             }
         }
-        _printSetResponse(param, valueStr, mapping_found, isApiMode, false);
+        _printSetResponse(param, valueStr, result, isApiMode, false, expectedValue);
         return;
     }
-    _printSetResponse(param, valueStr, false, isApiMode, false);
+    _printSetResponse(param, valueStr, CommunicationManager::SetResult::UNKNOWN_PARAMETER, isApiMode);
 }
 
 
@@ -433,29 +547,40 @@ void CommunicationManager::_printGetResponse(const String& param, const String& 
     }
 }
 
-void CommunicationManager::_printSetResponse(const String& param, const String& value, bool success, bool isApiMode, bool isString) {
+void CommunicationManager::_printSetResponse(const String& param, const String& value, SetResult result, bool isApiMode, bool isString, const String& expected) {
     if (isApiMode) {
-        if (success) {
-            Serial.print("{\"set\":{\"");
-            Serial.print(param);
-            Serial.print("\":");
-            if (isString) Serial.print("\"");
-            Serial.print(value);
-            if (isString) Serial.print("\"");
-            Serial.println(",\"status\":\"success\"}}");
-        } else {
-            Serial.print("{\"error\":\"Invalid value for parameter: ");
-            Serial.print(param);
-            Serial.println("\"}");
+        Serial.print("{\"set\":{\"");
+        Serial.print(param);
+        Serial.print("\":");
+        if (isString) Serial.print("\"");
+        Serial.print(value);
+        if (isString) Serial.print("\"");
+        Serial.print(",\"status\":\"");
+        switch (result) {
+            case SetResult::SUCCESS: Serial.print("success"); break;
+            case SetResult::INVALID_FORMAT: Serial.print("error"); Serial.print(",\"message\":\"Invalid 'set' command format. Use: set <parameter> <value>\""); break;
+            case SetResult::UNKNOWN_PARAMETER: Serial.print("error"); Serial.print(",\"message\":\"Unknown parameter\""); break;
+            case SetResult::INVALID_VALUE: Serial.print("error"); Serial.print(",\"message\":\"Invalid value. Expected: "); Serial.print(expected); Serial.print("\""); break;
+            case SetResult::OUT_OF_RANGE: Serial.print("error"); Serial.print(",\"message\":\"Value out of range. Expected: "); Serial.print(expected); Serial.print("\""); break;
         }
+        Serial.println("}}");
     } else {
-        if (success) {
-            Serial.print("Set ");
-            Serial.print(param);
-            Serial.print(" to ");
-            Serial.println(value);
-        } else {
-            Serial.println("Invalid value or parameter for 'set'.");
+        switch (result) {
+            case SetResult::SUCCESS:
+                Serial.print("Set "); Serial.print(param); Serial.print(" to "); Serial.println(value);
+                break;
+            case SetResult::INVALID_FORMAT:
+                Serial.println("Invalid 'set' format. Use: set <parameter> <value>");
+                break;
+            case SetResult::UNKNOWN_PARAMETER:
+                Serial.print("Unknown parameter: "); Serial.println(param);
+                break;
+            case SetResult::INVALID_VALUE:
+                Serial.print("Invalid value '" ); Serial.print(value); Serial.print("' for parameter '" ); Serial.print(param); Serial.print("'. Expected: "); Serial.println(expected);
+                break;
+            case SetResult::OUT_OF_RANGE:
+                Serial.print("Value '" ); Serial.print(value); Serial.print("' for parameter '" ); Serial.print(param); Serial.print("' is out of range. Expected: "); Serial.println(expected);
+                break;
         }
     }
 }

@@ -1,9 +1,18 @@
-#include "src/hardware/receiver/IbusReceiver.h"
+// IbusReceiver.cpp
+//
+// This file implements the IbusReceiver class, providing the concrete functionality
+// for interacting with the Flysky i-BUS receiver protocol. It uses the FlyskyIBUS
+// library to read channel data and determine failsafe status.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
 
+#include "src/hardware/receiver/IbusReceiver.h"
 
 // Constructor for the IbusReceiver.
 IbusReceiver::IbusReceiver(HardwareSerial &serialPort, gpio_num_t rxPin)
-    : _ibus(serialPort, rxPin), _lastReceiveTime(0) // Initialize _lastReceiveTime
+    : _ibus(serialPort, rxPin), _lastReceiveTime(0)
 {
 }
 
@@ -11,30 +20,26 @@ IbusReceiver::IbusReceiver(HardwareSerial &serialPort, gpio_num_t rxPin)
 void IbusReceiver::begin()
 {
     _ibus.begin();
-    _lastReceiveTime = millis(); // Assume signal is present at startup
+    _lastReceiveTime = millis(); // Initialize last receive time, assuming signal is present at startup
 }
 
-// Reads the latest data from the iBUS receiver.
-// The FlyskyIBUS library handles this internally when getChannel is called,
-// but we can call loop() here for good practice if the library supports it.
-// The current FlyskyIBUS library reads in getChannel, so this can be empty
-// or call a non-blocking read method if available. For now, we'll leave it empty
-// as getChannel fetches the latest data.
+// The FlyskyIBUS library handles data reception in its internal loop or when getChannel() is called.
+// This update method can be left empty or used for any periodic checks if needed.
 void IbusReceiver::update()
 {
-    // The FlyskyIBUS library reads data on demand when getChannel() is called.
-    // We will update _lastReceiveTime when getChannel() is called to indicate activity.
+    // All work is done by the underlying FlyskyIBUS library or on demand by getChannel().
+    // No-op for this implementation.
 }
 
 // Gets the value of a specific iBUS channel.
 uint16_t IbusReceiver::getChannel(int channel) const
 {
     // The const_cast is necessary because the underlying library's getChannel
-    // is not marked as const, but our interface requires it to be.
-    // This is safe as getChannel in the library only reads data.
+    // is not marked as const, but our interface requires it to be. This is safe
+    // as the library's getChannel method only reads data and does not modify state.
     uint16_t value = const_cast<FlyskyIBUS &>(_ibus).getChannel(channel);
-    // Update last receive time if a valid channel value is received
-    if (value > 0) { // Assuming 0 is an invalid/unreceived value
+    // Update last receive time if a valid channel value is received.
+    if (value > IBUS_INVALID_CHANNEL_VALUE) {
         const_cast<IbusReceiver*>(this)->_lastReceiveTime = millis();
     }
     return value;

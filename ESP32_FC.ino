@@ -1,10 +1,20 @@
+// ESP32_FC.ino
+//
+// Main entry point for the ESP32 Flight Controller firmware.
+// This file orchestrates the creation and execution of the FlightController
+// and CommunicationManager, setting up the core loop for drone operation.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #include "src/main/flight_controller.h"
-#include "src/main/CommunicationManager.h" // New include
+#include "src/main/CommunicationManager.h"
 #include "src/config/config.h"
 
 // Global instances of the core components
-FlightController* fc; // Change to pointer
-CommunicationManager* comms; // New global pointer
+FlightController* fc;
+CommunicationManager* comms;
 
 void setup()
 {
@@ -12,15 +22,17 @@ void setup()
 
     // Instantiate after Serial.begin()
     fc = new FlightController();
-    comms = new CommunicationManager(fc); // Pass fc to comms constructor
+    comms = new CommunicationManager(fc);
 
-    fc->setCommunicationManager(comms); // New setter in FlightController to set _comms
+    fc->setCommunicationManager(comms);
 
     fc->initialize();
-    comms->begin(); // Initialize comms
+    comms->begin();
 
-    Serial.println(" ");
-    Serial.println("\n--- ESP32 Flight Controller Ready ---");
+    Serial.println(); // Print a blank line for readability
+    Serial.print("--- ESP32 Flight Controller Ready (v");
+    Serial.print(FIRMWARE_VERSION);
+    Serial.println(") ---");
 }
 
 void loop()

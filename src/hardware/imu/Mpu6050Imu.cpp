@@ -1,18 +1,27 @@
+// Mpu6050Imu.cpp
+//
+// This file implements the Mpu6050Imu class, providing the concrete functionality
+// for interacting with the MPU6050 IMU sensor. It uses the ESP32_MPU6050 library
+// to read accelerometer, gyroscope, and temperature data.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #include "src/hardware/imu/Mpu6050Imu.h"
 
-// Constructor: Initializes the MPU6050 object with the given Wire port.
+// Constructor: Initializes the MPU6050 object.
 Mpu6050Imu::Mpu6050Imu()
-    : _mpu() // Initialize _mpu with default constructor
+    : _mpu() // Default constructor for the underlying MPU6050 library object
 {
 }
 
 // Initializes the MPU6050 sensor.
 bool Mpu6050Imu::begin()
 {
-    // Pass the wirePort to the MPU6050's begin method
     // Using highest ranges for gyroscope (2000 DPS) and accelerometer (16G)
     // to ensure full measurement capability for a flight controller.
-    return _mpu.begin(GYRO_RANGE_2000DPS, ACCEL_RANGE_16G); // Highest ranges
+    return _mpu.begin(GYRO_RANGE_2000DPS, ACCEL_RANGE_16G);
 }
 
 // Updates the raw sensor data from the MPU6050.
@@ -24,8 +33,8 @@ void Mpu6050Imu::update()
 // Performs MPU6050-specific calibration.
 bool Mpu6050Imu::calibrate(int numReadings)
 {
-    Serial.println("Calibrating MPU6050... Keep the drone still.");
+    Serial.println("INFO: Calibrating MPU6050... Keep the drone still.");
     _mpu.calibrate(numReadings);
-    Serial.println("MPU6050 Calibration complete.");
+    Serial.println("INFO: MPU6050 Calibration complete.");
     return true; // MPU6050 library calibration always returns true if it runs
 }

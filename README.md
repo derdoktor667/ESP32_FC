@@ -1,4 +1,4 @@
-# 🚁 ESP32 Flight Controller v0.2.0
+# 🚁 ESP32 Flight Controller v0.2.5
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/derdoktor667/ESP32_FC/ci.yml?branch=main&style=for-the-badge) ![GitHub](https://img.shields.io/github/license/derdoktor667/ESP32_FC?style=for-the-badge)
 
@@ -8,7 +8,7 @@ An advanced, high-performance flight controller firmware for quadcopters, built 
 
 ## ✨ Key Features
 
-*   **System Status and Versioning**: CLI and API commands to retrieve detailed system status (loop time, memory, CPU load) and firmware version.
+*   **Enhanced CLI/API Error Handling & Documentation**: Implemented a more robust error handling mechanism for `set` commands in both CLI and API modes, providing specific details about invalid formats, unknown parameters, invalid values, and out-of-range inputs. The `README.md` now includes a dedicated API Reference section detailing endpoints, JSON structures, and error responses, significantly improving user feedback and programmatic client integration.
 *   **Maintainable & Extensible API**: The CLI/API command processor has been completely refactored. It now uses a data-driven 'Settings Registry' instead of brittle `if-else` chains. This makes the code cleaner, more robust, and significantly easier to extend with new settings.
 *   **Safety-First API Mode**: The API mode now includes a critical safety timeout. If a client disconnects without warning, the firmware automatically returns to flight mode, ensuring the drone does not remain in a non-responsive state.
 *   **User-Friendly CLI**: The command-line interface has been significantly improved with a detailed, categorized `help` menu, making it easier than ever to configure and debug the flight controller.
@@ -149,6 +149,152 @@ Use the `help` command in the CLI to see a full, up-to-date list of commands and
 
 --- End of Help ---
 ```
+
+---
+
+## 📖 API Reference (for Programmatic Clients)
+
+This section details the JSON-based API for programmatic interaction with the flight controller.
+
+### General API Interaction
+
+*   **Activation**: Send `api` over the serial connection.
+*   **Response**: `{"status":"api_mode_activated"}`
+*   **Keep-Alive**: Send `ping` periodically (e.g., every 1 second) to prevent API mode timeout.
+*   **Timeout**: If no `ping` is received within `API_MODE_TIMEOUT_MS` (2000ms), the device reverts to `FLIGHT` mode and sends `{"status":"api_mode_timeout"}`.
+
+### Live Data Stream
+
+When in API mode, the device streams real-time flight data as JSON objects at `settings.printIntervalMs` intervals.
+
+**Example `live_data` output:**
+```json
+{
+  "live_data": {
+    "attitude": {
+      "roll": 1.23,
+      "pitch": -0.45,
+      "yaw": 87.65
+    },
+    "status": {
+      "armed": true,
+      "failsafe": false,
+      "mode": "ACRO"
+    },
+    "motor_output": [1000, 1020, 980, 1010]
+  }
+}
+```
+
+### Commands
+
+All commands are sent as plain strings over serial. Responses are JSON objects.
+
+#### 1. Get Setting (`get <parameter>`)
+
+*   **Request**: `get pid.roll.kp`
+*   **Success Response**:
+    ```json
+    {
+      "get": {
+        "pid.roll.kp": 800
+      }
+    }
+    ```
+*   **Error Response**:
+    ```json
+    {
+      "error": "Unknown parameter for get"
+    }
+    ```
+
+#### 2. Set Setting (`set <parameter> <value>`)
+
+*   **Request**: `set pid.roll.kp 850`
+*   **Success Response**:
+    ```json
+    {
+      "set": {
+        "pid.roll.kp": 850,
+        "status": "success"
+      }
+    }
+    ```
+*   **Error Responses** (with improved error messages):
+    *   **Invalid Format**:
+        ```json
+        {
+          "set": {
+            "": "",
+            "status": "error",
+            "message": "Invalid 'set' command format. Use: set <parameter> <value>"
+          }
+        }
+        ```
+    *   **Unknown Parameter**:
+        ```json
+        {
+          "set": {
+            "unknown.param": "123",
+            "status": "error",
+            "message": "Unknown parameter"
+          }
+        }
+        ```
+    *   **Invalid Value (Type Mismatch)**:
+        ```json
+        {
+          "set": {
+            "pid.roll.kp": "abc",
+            "status": "error",
+            "message": "Invalid value. Expected: integer"
+          }
+        }
+        ```
+    *   **Value Out of Range**:
+        ```json
+        {
+          "set": {
+            "rx.map.throttle": 99,
+            "status": "error",
+            "message": "Value out of range. Expected: 0-15"
+          }
+        }
+        ```
+
+#### 3. Get All Settings (`get_settings`)
+
+*   **Request**: `get_settings`
+*   **Success Response** (example, truncated):
+    ```json
+    {
+      "settings": {
+        "pid.roll.kp": 800,
+        "pid.roll.ki": 1,
+        "pid.roll.kd": 50,
+        "pid.integral_limit": 400.0000,
+        "rates.angle": 30.0000,
+        "rx.protocol": "IBUS",
+        "imu.protocol": "MPU6050",
+        "motor.dshot_mode": "DSHOT600",
+        "rx.map.throttle": 1,
+        "rx.map.roll": 0,
+        "rx.map.pitch": 2,
+        "rx.map.yaw": 3
+        // ... other settings
+      }
+    }
+    ```
+
+#### 4. Get Firmware Version (`version`)
+
+*   **Request**: `version`
+*   **Success Response**:
+    ```json
+    {
+      "version": "0.2.5"
+    }
+    ```
 
 ---
 
