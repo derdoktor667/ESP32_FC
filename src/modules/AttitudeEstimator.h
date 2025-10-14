@@ -1,5 +1,15 @@
+// AttitudeEstimator.h
+//
+// This file defines the AttitudeEstimator class, responsible for estimating
+// the drone's orientation (roll, pitch, yaw) using sensor fusion from IMU data.
+// It integrates raw IMU readings with a Madgwick filter for robust attitude estimation.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #ifndef ATTITUDE_ESTIMATOR_MODULE_H
-#define ATTITUDE_ESTIMATOR_MODULE_H
+#define ATTITUDE_ESTIMATOR_MODULE_MODULE_H
 
 #include "src/config/FlightState.h"
 #include "src/hardware/imu/ImuInterface.h"
@@ -18,8 +28,6 @@ public:
 
     // Initializes the AttitudeEstimator with required dependencies.
     // This method must be called after settings are loaded and IMU is initialized.
-    // @param imu Reference to the IMU sensor interface.
-    // @param settings Reference to the global flight controller settings.
     void init(ImuInterface &imu, const FlightControllerSettings &settings);
 
     // Performs any necessary setup after initialization.
@@ -29,12 +37,10 @@ public:
     // Updates the drone's attitude based on the latest IMU readings.
     // Reads raw accelerometer and gyroscope data, processes it through the
     // Madgwick filter, and updates the roll, pitch, and yaw angles in the FlightState.
-    // @param state Reference to the current FlightState to be updated.
     void update(FlightState &state);
 
     // Performs a sensor calibration routine for the IMU.
-    // This method averages a number of IMU readings to determine sensor biases.
-    // It is typically triggered via the CLI.
+    // This method delegates the calibration process to the IMU interface.
     void calibrate();
 
 private:

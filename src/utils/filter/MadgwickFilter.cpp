@@ -1,5 +1,15 @@
+// MadgwickFilter.cpp
+//
+// This file implements the MadgwickFilter class, providing the sensor fusion
+// algorithm for attitude estimation. It processes gyroscope and accelerometer
+// data to calculate the drone's orientation in terms of quaternions and Euler angles.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #include "MadgwickFilter.h"
-#include <math.h> // Required for sqrt, atan2, asin
+#include <math.h> // Required for sqrtf, atan2f, asinf, fabsf, copysignf
 
 // Constructor initializes the filter with sample frequency and beta.
 MadgwickFilter::MadgwickFilter(float sampleFreq, float beta) : _sampleFreq(sampleFreq),
@@ -10,10 +20,11 @@ MadgwickFilter::MadgwickFilter(float sampleFreq, float beta) : _sampleFreq(sampl
                                                                _q3(0.0f) {}
 
 // Fast inverse square root implementation.
-// Used to normalize vectors and quaternions.
+// Used to normalize vectors and quaternions. Uses standard sqrtf for precision.
 float MadgwickFilter::_invSqrt(float x)
 {
     // Using standard sqrtf for better precision, critical for flight control.
+    // This is a deliberate choice over faster, less precise inverse square root approximations.
     return 1.0f / sqrtf(x);
 }
 
@@ -104,7 +115,7 @@ float MadgwickFilter::getPitch() const
 {
     // Pitch (y-axis rotation)
     float sinp = 2.0f * (_q0 * _q2 - _q1 * _q3);
-    if (fabs(sinp) >= 1)
+    if (fabsf(sinp) >= 1.0f) // Use fabsf for float and compare with 1.0f
     {
         return copysignf(M_PI / 2.0f, sinp) * (180.0f / M_PI); // Use 90 degrees if out of range
     }

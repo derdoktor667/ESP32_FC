@@ -1,4 +1,4 @@
-# 🚁 ESP32 Flight Controller
+# 🚁 ESP32 Flight Controller v0.2.5
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/derdoktor667/ESP32_FC/ci.yml?branch=main&style=for-the-badge) ![GitHub](https://img.shields.io/github/license/derdoktor667/ESP32_FC?style=for-the-badge)
 
@@ -8,12 +8,11 @@ An advanced, high-performance flight controller firmware for quadcopters, built 
 
 ## ✨ Key Features
 
-*   **Enhanced Web Application (`webapp/index.html`):**
-    *   **Modern UI/UX:** Implemented a modern, clean, and dark design for a significantly enhanced user experience.
-    *   **3D Quadcopter Model:** Features a dynamically generated 3D quadcopter model using Three.js primitives for live attitude visualization.
-    *   **IMU Calibration:** Includes a dedicated "Calibrate IMU" button to send a serial command and reset the 3D model's orientation.
-    *   **Web Serial API Integration:** Robust handling for serial connection/disconnection, automatic fetching and dynamic rendering of ESP32 settings, and the ability to send CLI commands.
-    *   **CDN Module Loading:** Three.js and its addons are loaded via CDN using `importmap` for efficient module resolution.
+*   **Enhanced CLI/API Error Handling & Documentation**: Implemented a more robust error handling mechanism for `set` commands in both CLI and API modes, providing specific details about invalid formats, unknown parameters, invalid values, and out-of-range inputs. The `README.md` now includes a dedicated API Reference section detailing endpoints, JSON structures, and error responses, significantly improving user feedback and programmatic client integration.
+*   **Maintainable & Extensible API**: The CLI/API command processor has been completely refactored. It now uses a data-driven 'Settings Registry' instead of brittle `if-else` chains. This makes the code cleaner, more robust, and significantly easier to extend with new settings.
+*   **Safety-First API Mode**: The API mode now includes a critical safety timeout. If a client disconnects without warning, the firmware automatically returns to flight mode, ensuring the drone does not remain in a non-responsive state.
+*   **User-Friendly CLI**: The command-line interface has been significantly improved with a detailed, categorized `help` menu, making it easier than ever to configure and debug the flight controller.
+*   **Robust & Reliable Configuration**: Settings management has been completely overhauled. The firmware now reliably loads settings from flash and automatically saves a default configuration on the first boot, ensuring predictable behavior.
 *   **Enhanced Code Quality & Reliability**: Significant project-wide cleanup, including removal of unused code, redundant includes, and resolution of a DShot mode persistence bug, leading to a more robust and maintainable codebase.
 *   **Clean Modular Architecture**: The firmware is built on two primary components: a `FlightController` class that handles only real-time flight tasks, and a `CommunicationManager` class that manages all serial I/O, providing a clear separation of concerns.
 *   **Robust Tri-Mode Serial Interface**: The `CommunicationManager` provides three distinct operating modes for maximum flexibility:
@@ -92,52 +91,210 @@ This mode is for manual debugging and configuration via a serial monitor.
 
 ### Available Commands
 
-The CLI provides the following commands, categorized for clarity:
+Use the `help` command in the CLI to see a full, up-to-date list of commands and available settings. The output will look like this:
 
-**General Commands:**
-*   `help`: Display this help message.
-*   `exit`: Deactivate CLI and return to flight mode.
-*   `reboot`: Reboot the ESP32 flight controller.
+```
+--- Flight Controller CLI Help ---
 
-**Settings Management:**
-*   `get <parameter>`: Retrieve a specific setting or category (e.g., `get pid`, `get rx.channels`).
-*   `get_settings`: Retrieves all settings as a single JSON object (API mode only).
-*   `set <parameter> <value>`: Set a new value for a specified setting.
-*   `dump`: Display all current flight controller settings (CLI mode only).
-*   `save`: Save current settings to non-volatile memory.
-*   `reset`: Reset all settings to factory defaults and save.
+[ General Commands ]
+  help                 - Display this help message.
+  exit                 - Deactivate CLI and return to flight mode.
+  reboot               - Reboot the ESP32 flight controller.
+  status               - Display system status and metrics.
+  version              - Display firmware version.
 
-**Calibration Commands:**
-*   `calibrate_imu`: Initiate IMU sensor calibration.
+[ Settings Management ]
+  get <parameter>      - Get a specific setting or a whole category.
+  set <param> <value>  - Set a new value for a parameter.
+  dump                 - Display all current settings.
+  save                 - Save all settings to flash and reboot.
+  reset                - Reset all settings to defaults, save, and reboot.
+
+[ Calibration Commands ]
+  calibrate_imu        - Initiate IMU sensor calibration.
+
+[ Available Settings ]
+  You can 'get' a whole category (e.g., 'get pid') or get/set a specific parameter.
+
+  --- PID Settings ---
+    pid.roll.kp, pid.roll.ki, pid.roll.kd
+    pid.pitch.kp, pid.pitch.ki, pid.pitch.kd
+    pid.yaw.kp, pid.yaw.ki, pid.yaw.kd
+    pid.integral_limit
+
+  --- Rate Settings ---
+    rates.angle       (Max angle in ANGLE mode)
+    rates.yaw         (Max yaw rate in deg/s)
+    rates.acro        (Max roll/pitch rate in deg/s for ACRO mode)
+
+  --- Filter Settings ---
+    madgwick.sample_freq
+    madgwick.beta
+
+  --- Receiver Settings ---
+    rx.min, rx.max
+    rx.arming_threshold, rx.failsafe_threshold
+    rx.protocol (IBUS, PPM)
+    rx.map.throttle, rx.map.roll, rx.map.pitch, rx.map.yaw
+    rx.map.arm_switch, rx.map.failsafe_switch, rx.map.flight_mode_switch
+
+
+  --- IMU Settings ---
+    imu.protocol (MPU6050)
+
+  --- Motor Settings ---
+    motor.idle_speed
+    motor.dshot_mode (DSHOT_OFF, DSHOT150, DSHOT300, DSHOT600, DSHOT1200)
+
+
+--- End of Help ---
+```
 
 ---
 
-## 🌐 Web Application Interface
+## 📖 API Reference (for Programmatic Clients)
 
-For a more user-friendly interaction, a web application is provided in the `webapp/` directory. This application utilizes the Web Serial API to connect directly to your ESP32 from a web browser, allowing you to send CLI commands, view serial output, and dynamically configure settings.
+This section details the JSON-based API for programmatic interaction with the flight controller.
 
-### Key WebApp Features:
-*   **Modern UI/UX:** Features a modern, clean, and dark design with a refreshed blue accent color for an intuitive and aesthetically pleasing user experience.
-*   **Responsive Layout:** Utilizes CSS Grid for a flexible and responsive layout, ensuring optimal viewing across various screen sizes.
-*   **Always-Visible 3D Quadcopter Model:** Displays a dynamically generated 3D quadcopter model using Three.js primitives, providing live visualization of the flight controller's attitude (roll, pitch, yaw). The model is now significantly more realistic, featuring refined body, arms, motors, propellers, and landing gear, along with a clear orientation marker.
-*   **Dedicated Console Tab:** Serial output and CLI command input are now organized within a dedicated "Console" tab for improved usability.
-*   **Dynamic Settings with Save All:** Automatically fetches and renders all current settings from the ESP32 upon connection. A new "Save All Settings" button allows for convenient bulk saving of configuration changes.
-*   **IMU Calibration Button:** A dedicated button to initiate IMU calibration and instantly reset the 3D model's orientation.
-*   **Robust Serial Handling:** Implemented with `AbortController` for reliable connection and disconnection.
-*   **Streamlined Interface:** The "Logging" category has been removed for a cleaner and more focused settings interface.
+### General API Interaction
 
-### How to Use the WebApp
+*   **Activation**: Send `api` over the serial connection.
+*   **Response**: `{"status":"api_mode_activated"}`
+*   **Keep-Alive**: Send `ping` periodically (e.g., every 1 second) to prevent API mode timeout.
+*   **Timeout**: If no `ping` is received within `API_MODE_TIMEOUT_MS` (2000ms), the device reverts to `FLIGHT` mode and sends `{"status":"api_mode_timeout"}`.
 
-1.  **Start a Local HTTP Server:** The Web Serial API requires a secure context (HTTPS) or a local HTTP server. The easiest way to run the web app is by using a simple HTTP server. If you have Node.js and npm installed, you can use `http-server`:
-    ```bash
-    npm install -g http-server
-    cd /home/derdoktor667/Github/ESP32_FC/webapp
-    http-server
+### Live Data Stream
+
+When in API mode, the device streams real-time flight data as JSON objects at `settings.printIntervalMs` intervals.
+
+**Example `live_data` output:**
+```json
+{
+  "live_data": {
+    "attitude": {
+      "roll": 1.23,
+      "pitch": -0.45,
+      "yaw": 87.65
+    },
+    "status": {
+      "armed": true,
+      "failsafe": false,
+      "mode": "ACRO"
+    },
+    "motor_output": [1000, 1020, 980, 1010]
+  }
+}
+```
+
+### Commands
+
+All commands are sent as plain strings over serial. Responses are JSON objects.
+
+#### 1. Get Setting (`get <parameter>`)
+
+*   **Request**: `get pid.roll.kp`
+*   **Success Response**:
+    ```json
+    {
+      "get": {
+        "pid.roll.kp": 800
+      }
+    }
     ```
-    Then, open your web browser and navigate to the address provided by `http-server` (e.g., `http://localhost:8080`).
-2.  **Connect your ESP32** to your computer via USB.
-3.  **In the web app, click "Connect Serial"**. Your browser should prompt you to select a serial port. Choose the ESP32's port.
-4.  **Once connected, the app will automatically enter API mode and fetch all current settings.** You can then use the CLI command input or the dynamically generated settings form to interact with your ESP32.
+*   **Error Response**:
+    ```json
+    {
+      "error": "Unknown parameter for get"
+    }
+    ```
+
+#### 2. Set Setting (`set <parameter> <value>`)
+
+*   **Request**: `set pid.roll.kp 850`
+*   **Success Response**:
+    ```json
+    {
+      "set": {
+        "pid.roll.kp": 850,
+        "status": "success"
+      }
+    }
+    ```
+*   **Error Responses** (with improved error messages):
+    *   **Invalid Format**:
+        ```json
+        {
+          "set": {
+            "": "",
+            "status": "error",
+            "message": "Invalid 'set' command format. Use: set <parameter> <value>"
+          }
+        }
+        ```
+    *   **Unknown Parameter**:
+        ```json
+        {
+          "set": {
+            "unknown.param": "123",
+            "status": "error",
+            "message": "Unknown parameter"
+          }
+        }
+        ```
+    *   **Invalid Value (Type Mismatch)**:
+        ```json
+        {
+          "set": {
+            "pid.roll.kp": "abc",
+            "status": "error",
+            "message": "Invalid value. Expected: integer"
+          }
+        }
+        ```
+    *   **Value Out of Range**:
+        ```json
+        {
+          "set": {
+            "rx.map.throttle": 99,
+            "status": "error",
+            "message": "Value out of range. Expected: 0-15"
+          }
+        }
+        ```
+
+#### 3. Get All Settings (`get_settings`)
+
+*   **Request**: `get_settings`
+*   **Success Response** (example, truncated):
+    ```json
+    {
+      "settings": {
+        "pid.roll.kp": 800,
+        "pid.roll.ki": 1,
+        "pid.roll.kd": 50,
+        "pid.integral_limit": 400.0000,
+        "rates.angle": 30.0000,
+        "rx.protocol": "IBUS",
+        "imu.protocol": "MPU6050",
+        "motor.dshot_mode": "DSHOT600",
+        "rx.map.throttle": 1,
+        "rx.map.roll": 0,
+        "rx.map.pitch": 2,
+        "rx.map.yaw": 3
+        // ... other settings
+      }
+    }
+    ```
+
+#### 4. Get Firmware Version (`version`)
+
+*   **Request**: `version`
+*   **Success Response**:
+    ```json
+    {
+      "version": "0.2.5"
+    }
+    ```
 
 ---
 

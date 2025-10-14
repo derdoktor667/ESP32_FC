@@ -37,24 +37,42 @@ jobs:
         with:
           submodules: 'true'
 
-      - name: Restore Arduino Core & Libraries Cache
-        uses: actions/cache@v4
-        id: cache-arduino
-        with:
-          path: ~/.arduino15/packages\n~/.arduino15/cache\n~/Arduino/libraries\n~/.arduino-cli
-          key: linux-arduino-esp32-v2-${{ hashFiles('**/library.properties') }}
-
       - name: Setup Arduino CLI
         uses: arduino/setup-arduino-cli@v2
 
-      - name: Update Arduino Core Index
-        shell: bash
-        run: arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+      - name: Restore Arduino Core & Libraries Cache
+        id: cache-arduino
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.arduino15/packages
+            ~/.arduino15/cache
+            ~/Arduino/libraries
+            ~/.arduino-cli
+          key: ${{ runner.os }}-arduino-esp32-cli-fixed-cache-v1
+          restore-keys: |
+            ${{ runner.os }}-arduino-esp32-cli-fixed-cache-v1-
 
-      - name: Install Dependencies
+      - name: Install ESP32 Core and Libraries
         if: steps.cache-arduino.outputs.cache-hit != 'true'
         shell: bash
-        run: arduino-cli core install esp32:esp32
+        run: |
+          arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          arduino-cli core install esp32:esp32
+          arduino-cli lib install "DShotRMT"
+          arduino-cli lib install "ESP32_MPU6050"
+          arduino-cli lib install "FlyskyIBUS"
+
+      - name: Save Arduino Core & Libraries Cache
+        uses: actions/cache@v4
+        if: always()
+        with:
+          path: |
+            ~/.arduino15/packages
+            ~/.arduino15/cache
+            ~/Arduino/libraries
+            ~/.arduino-cli
+          key: ${{ runner.os }}-arduino-esp32-cli-${{ hashFiles('.github/workflows/ci.yml') }}-${{ hashFiles('**/library.properties') }}
 
   # ============================================================================
   # Compilation Test
@@ -81,20 +99,17 @@ jobs:
         uses: actions/cache@v4
         id: cache-arduino-compile
         with:
-          path: ~/.arduino15/packages\n~/.arduino15/cache\n~/Arduino/libraries\n~/.arduino-cli
-          key: linux-arduino-esp32-v2-${{ hashFiles('**/library.properties') }}
+          path: |
+            ~/.arduino15/packages
+            ~/.arduino15/cache
+            ~/Arduino/libraries
+            ~/.arduino-cli
+          key: ${{ runner.os }}-arduino-esp32-cli-fixed-cache-v1
+          restore-keys: |
+            ${{ runner.os }}-arduino-esp32-cli-fixed-cache-v1-
 
       - name: Setup Arduino CLI
         uses: arduino/setup-arduino-cli@v2
-
-      - name: Update Arduino Core Index
-        shell: bash
-        run: arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
-
-      - name: Install Dependencies
-        if: steps.cache-arduino-compile.outputs.cache-hit != 'true'
-        shell: bash
-        run: arduino-cli core install esp32:esp32
 
       - name: Compile sketch
         run: arduino-cli compile --fqbn esp32:esp32:esp32 --library ${{ github.workspace }}/libraries/DShotRMT --library ${{ github.workspace }}/libraries/ESP32_MPU6050 --library ${{ github.workspace }}/libraries/FlyskyIBUS ${{ github.workspace }}/${{ matrix.sketch }}

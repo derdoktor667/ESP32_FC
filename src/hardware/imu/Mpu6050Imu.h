@@ -1,3 +1,13 @@
+// Mpu6050Imu.h
+//
+// This file defines the Mpu6050Imu class, a concrete implementation of the
+// ImuInterface for the MPU6050 sensor. It acts as an adapter for the
+// ESP32_MPU6050 library, providing a standardized way to interact with the IMU.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #ifndef MPU6050_IMU_H
 #define MPU6050_IMU_H
 

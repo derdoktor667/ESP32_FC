@@ -1,3 +1,13 @@
+// MadgwickFilter.h
+//
+// This file defines the MadgwickFilter class, an implementation of the
+// Madgwick sensor fusion algorithm for attitude estimation. It combines
+// gyroscope and accelerometer data to provide robust roll, pitch, and yaw angles.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #ifndef MADGWICK_FILTER_H
 #define MADGWICK_FILTER_H
 

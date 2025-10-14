@@ -1,3 +1,14 @@
+// PidProcessor.h
+//
+// This file defines the PidProcessor class, which manages and executes the
+// PID (Proportional-Integral-Derivative) control loops for the drone's
+// roll, pitch, and yaw axes. It takes desired setpoints and current attitude
+// to calculate necessary corrections.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #ifndef PID_PROCESSOR_MODULE_H
 #define PID_PROCESSOR_MODULE_H
 

@@ -1,3 +1,14 @@
+// SetpointManager.cpp
+//
+// This file implements the SetpointManager class, which is responsible for
+// translating raw receiver inputs into desired flight setpoints (roll, pitch, yaw)
+// based on the current flight mode. It scales and maps stick movements to
+// appropriate control targets for the PID controllers.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #include "src/modules/SetpointManager.h"
 
 #include <Arduino.h>
@@ -9,12 +20,13 @@ SetpointManager::SetpointManager(ReceiverInterface &receiver, const FlightContro
 }
 
 // Calculates the target setpoints for roll, pitch, and yaw based on receiver input and flight mode.
+// The calculated setpoints are stored in the provided FlightState object.
 void SetpointManager::update(FlightState &state)
 {
-    // 1. Receiver channel values are assumed to be already updated in FlightController::runLoop().
-    //    Use the values directly from FlightState.
+    // Receiver channel values are assumed to be already updated in FlightController::runLoop().
+    // Use the values directly from FlightState.
 
-    // 2. Determine the current flight mode based on the mapped flight mode switch channel.
+    // Determine the current flight mode based on the mapped flight mode switch channel.
     uint16_t flightModeChannelValue = state.receiverChannels[_settings.channelMapping.channel[FLIGHT_MODE_SWITCH]];
     if (flightModeChannelValue < FLIGHT_MODE_ACRO_THRESHOLD) // Example threshold for ACRO_MODE
     {
@@ -26,12 +38,13 @@ void SetpointManager::update(FlightState &state)
     }
     // Intermediate values could imply other modes or be ignored.
 
-    // 3. Calculate setpoints for Roll, Pitch, Yaw, and Throttle based on flight mode and mapped channels.
+    // Calculate setpoints for Roll, Pitch, Yaw, and Throttle based on flight mode and mapped channels.
     uint16_t rollChannelValue = state.receiverChannels[_settings.channelMapping.channel[ROLL]];
     uint16_t pitchChannelValue = state.receiverChannels[_settings.channelMapping.channel[PITCH]];
     uint16_t yawChannelValue = state.receiverChannels[_settings.channelMapping.channel[YAW]];
     uint16_t throttleChannelValue = state.receiverChannels[_settings.channelMapping.channel[THROTTLE]];
 
+    // Map receiver input to target setpoints. The `map` function is an Arduino utility function.
     if (state.currentFlightMode == ANGLE_MODE)
     {
         // In ANGLE_MODE, stick input directly maps to a target angle (degrees).

@@ -1,3 +1,13 @@
+// ImuInterface.h
+//
+// This file defines the abstract base class for Inertial Measurement Unit (IMU) sensors.
+// It establishes a common interface that all concrete IMU implementations must adhere to,
+// ensuring modularity and interchangeability of different IMU hardware.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #ifndef IMU_INTERFACE_H
 #define IMU_INTERFACE_H
 

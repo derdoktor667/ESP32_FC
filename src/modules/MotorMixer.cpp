@@ -1,3 +1,13 @@
+// MotorMixer.cpp
+//
+// This file implements the MotorMixer class, which is responsible for mixing
+// PID outputs with the main throttle input to calculate individual motor
+// commands. It then sends these commands to the ESCs via the DShotRMT protocol.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #include "src/modules/MotorMixer.h"
 
 #include <Arduino.h>
@@ -15,19 +25,21 @@ void MotorMixer::begin()
     _motor2->begin();
     _motor3->begin();
     _motor4->begin();
-    Serial.println("DShot motors initialized.");
+    Serial.println("INFO: DShot motors initialized.");
 }
 
 // Applies the final calculated throttle values to the motors based on flight state.
+// This method performs motor mixing for an X-quad configuration and constrains
+// the output values to the valid DShot range.
 void MotorMixer::apply(FlightState &state)
 {
     // Safety check: If not armed or if failsafe is active, all motors must be stopped immediately.
     if (!state.isArmed || state.isFailsafeActive)
     {
-        _motor1->sendThrottle(0);
-        _motor2->sendThrottle(0);
-        _motor3->sendThrottle(0);
-        _motor4->sendThrottle(0);
+        _motor1->sendThrottle(DSHOT_OFF);
+        _motor2->sendThrottle(DSHOT_OFF);
+        _motor3->sendThrottle(DSHOT_OFF);
+        _motor4->sendThrottle(DSHOT_OFF);
         return; // Exit early as no further motor commands should be sent.
     }
 

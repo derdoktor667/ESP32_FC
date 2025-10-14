@@ -1,18 +1,39 @@
+// pid_controller.h
+//
+// This file defines the PIDController class, a generic implementation of a
+// Proportional-Integral-Derivative (PID) controller. It is used to calculate
+// control outputs based on an error signal, aiming to minimize the difference
+// between a setpoint and a current value.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #ifndef PID_CONTROLLER_H
 #define PID_CONTROLLER_H
 
 #include <Arduino.h>
 
 
-struct PIDController
+class PIDController
 {
+public:
+  // Proportional, Integral, and Derivative gains
   float Kp, Ki, Kd;
-  float integral_sum;
-  float previous_error;
-  unsigned long last_pid_time;
 
+  // Constructor: Initializes PID gains.
   PIDController(float p, float i, float d);
+
+  // Calculates the PID output.
   float calculate(float setpoint, float current_value, float integral_limit);
+
+private:
+  // Accumulator for the integral term.
+  float _integralSum;
+  // Stores the error from the previous iteration for derivative calculation.
+  float _previousError;
+  // Timestamp of the last PID calculation for delta time calculation.
+  unsigned long _lastPidTime;
 };
 
 #endif

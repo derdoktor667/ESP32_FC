@@ -1,9 +1,18 @@
+// flight_controller.cpp
+//
+// This file implements the FlightController class, which orchestrates the
+// flight control logic, manages hardware interactions, and processes sensor data.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #include "src/main/flight_controller.h"
 #include "src/config/config.h"
 #include "src/config/settings.h"
 #include "src/hardware/receiver/IbusReceiver.h"
 #include "src/hardware/receiver/PpmReceiver.h"
-#include "src/main/CommunicationManager.h" // Include full definition of CommunicationManager
+#include "src/main/CommunicationManager.h"
 #include <Arduino.h>
 
 // Constructor: Initializes hardware drivers and processing modules in a safe order.
@@ -37,27 +46,28 @@ FlightController::~FlightController()
     delete _motor3;
     delete _motor4;
     delete _motorMixer;
-
 }
 
-// Initializes all components of the flight controller in the correct sequence.
+// Sets the CommunicationManager instance. This is used to break a circular dependency.
 void FlightController::setCommunicationManager(CommunicationManager* comms)
 {
     _comms = comms;
 }
 
+// Initializes all components of the flight controller in the correct sequence.
 void FlightController::initialize()
 {
     // 1. Load persistent settings from flash memory first.
     loadSettings();
 
     // 2. Dynamically allocate hardware drivers based on loaded settings.
+    // Motors are initialized with their respective pins and DShot mode.
     _motor1 = new DShotRMT(ESC_PIN_FRONT_RIGHT, settings.dshotMode, false);
     _motor2 = new DShotRMT(ESC_PIN_FRONT_LEFT, settings.dshotMode, false);
     _motor3 = new DShotRMT(ESC_PIN_REAR_RIGHT, settings.dshotMode, false);
     _motor4 = new DShotRMT(ESC_PIN_REAR_LEFT, settings.dshotMode, false);
 
-    Serial.print("Initializing Receiver Protocol: ");
+    Serial.print("INFO: Initializing Receiver Protocol: ");
     switch (settings.receiverProtocol)
     {
     case PROTOCOL_IBUS:
@@ -69,13 +79,13 @@ void FlightController::initialize()
         _receiver = new PpmReceiver(IBUS_RX_PIN);
         break;
     default:
-        Serial.println("Unknown! Halting.");
-        while (INFINITE_LOOP_CONDITION);
+        Serial.println("ERROR: Unknown receiver protocol! Halting.");
+        while (INFINITE_LOOP_CONDITION); // Halt on critical error
     }
     _receiver->begin();
-    Serial.println("Receiver initialized.");
+    Serial.println("INFO: Receiver initialized.");
 
-    Serial.print("Initializing IMU Protocol: ");
+    Serial.print("INFO: Initializing IMU Protocol: ");
     switch (settings.imuProtocol)
     {
     case IMU_MPU6050:
@@ -83,11 +93,11 @@ void FlightController::initialize()
         _imuInterface = new Mpu6050Imu();
         break;
     default:
-        Serial.println("Unknown! Halting.");
-        while (INFINITE_LOOP_CONDITION);
+        Serial.println("ERROR: Unknown IMU protocol! Halting.");
+        while (INFINITE_LOOP_CONDITION); // Halt on critical error
     }
     _imuInterface->begin();
-    Serial.println("IMU initialized.");
+    Serial.println("INFO: IMU initialized.");
 
     // 3. Initialize all processing modules that have dependencies.
     _motorMixer = new MotorMixer(_motor1, _motor2, _motor3, _motor4, settings);
@@ -98,8 +108,6 @@ void FlightController::initialize()
 
     // 4. Start the remaining components.
     _attitudeEstimator.begin();
-
-
 }
 
 // This is the main flight control loop, executed repeatedly.
@@ -112,25 +120,31 @@ void FlightController::runLoop()
     // to prevent stack overflows and ensure stable communication.
     if (!settings.enableLogging)
     {
-        // The flight control process follows a strict sequence (a "pipeline").
+        // Read raw receiver channel values into the flight state.
         for (int i = 0; i < RECEIVER_CHANNEL_COUNT; i++)
         {
             state.receiverChannels[i] = _receiver->getChannel(i);
         }
+        // Update attitude estimation based on IMU data.
         _attitudeEstimator.update(state);
+        // Check and update safety status (arming, failsafe).
         _safetyManager->update(state);
+        // Calculate target setpoints from receiver input.
         _setpointManager->update(state);
+        // Execute PID control loops and get motor corrections.
         _pidProcessor.update(state);
+        // Mix PID outputs and apply to motors.
         _motorMixer->apply(state);
     }
     else
     {
     // Even when not running the full pipeline, we must update the attitude
-    // so a connected client can get live data.
+    // so a connected client can get live data (e.g., for a ground station).
     _attitudeEstimator.update(state);
     }
 }
 
+// Requests IMU calibration from the AttitudeEstimator module.
 void FlightController::requestImuCalibration()
 {
     _attitudeEstimator.calibrate();

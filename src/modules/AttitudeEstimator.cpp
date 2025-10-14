@@ -1,3 +1,14 @@
+// AttitudeEstimator.cpp
+//
+// This file implements the AttitudeEstimator class, which is responsible for
+// processing IMU data and estimating the drone's attitude (roll, pitch, yaw).
+// It utilizes a Madgwick filter for sensor fusion and delegates IMU-specific
+// calibration to the IMU interface.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #include "src/modules/AttitudeEstimator.h"
 #include "src/config/config.h"
 #include <Arduino.h>
@@ -6,11 +17,12 @@
 // Actual initialization happens in init() once settings are available.
 AttitudeEstimator::AttitudeEstimator()
     : _imu(nullptr), _settings(nullptr),
-      _madgwickFilter(0.0f, 0.0f)
+      _madgwickFilter(0.0f, 0.0f) // Initialize with dummy values; will be re-initialized in init()
 {
 }
 
 // Init method: Sets up references to IMU and settings, then properly initializes the Madgwick filter.
+// This method must be called after settings are loaded and the IMU is initialized.
 void AttitudeEstimator::init(ImuInterface &imu, const FlightControllerSettings &settings)
 {
     _imu = &imu;
@@ -19,22 +31,10 @@ void AttitudeEstimator::init(ImuInterface &imu, const FlightControllerSettings &
     _madgwickFilter = MadgwickFilter(_settings->filter.madgwickSampleFreq, _settings->filter.madgwickBeta);
 }
 
-// Initializes the IMU sensor and performs the initial calibration.
+// Performs the initial calibration of the IMU.
 void AttitudeEstimator::begin()
 {
-    Serial.println("Initializing IMU...");
-    // Attempt to initialize the IMU. If it fails, halt the program as it's a critical component.
-    if (!_imu->begin())
-    {
-        Serial.println("Failed to initialize IMU. Halting.");
-        while (1)
-        {
-            delay(IMU_INIT_FAIL_DELAY_MS); // Keep delaying to indicate a halt
-        }
-    }
-    Serial.println("IMU initialized.");
-
-    // Perform initial calibration of the IMU to remove biases.
+    // Delegate initial calibration to the IMU interface.
     calibrate();
 }
 

@@ -1,3 +1,14 @@
+// ReceiverInterface.h
+//
+// This file defines the abstract base class for RC receiver protocols.
+// It establishes a common interface that all concrete receiver implementations
+// must adhere to, ensuring modularity and interchangeability of different
+// receiver hardware and protocols (e.g., iBUS, PPM, SBUS).
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #ifndef RECEIVER_INTERFACE_H
 #define RECEIVER_INTERFACE_H
 

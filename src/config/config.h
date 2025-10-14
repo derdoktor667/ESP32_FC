@@ -1,3 +1,12 @@
+// config.h
+//
+// This file contains global configuration settings, hardware definitions,
+// and default values for the ESP32 Flight Controller project.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #ifndef CONFIG_H
 #define CONFIG_H
 
@@ -13,10 +22,10 @@
 const gpio_num_t IBUS_RX_PIN = GPIO_NUM_16;
 
 // Define ESC pins
-const gpio_num_t ESC_PIN_FRONT_RIGHT = GPIO_NUM_27; // Front-Right
-const gpio_num_t ESC_PIN_FRONT_LEFT = GPIO_NUM_25; // Front-Left
-const gpio_num_t ESC_PIN_REAR_RIGHT = GPIO_NUM_26; // Rear-Right
-const gpio_num_t ESC_PIN_REAR_LEFT = GPIO_NUM_33; // Rear-Left
+const gpio_num_t ESC_PIN_FRONT_RIGHT = GPIO_NUM_27; // Front-Right motor
+const gpio_num_t ESC_PIN_FRONT_LEFT = GPIO_NUM_25;  // Front-Left motor
+const gpio_num_t ESC_PIN_REAR_RIGHT = GPIO_NUM_26; // Rear-Right motor
+const gpio_num_t ESC_PIN_REAR_LEFT = GPIO_NUM_33;  // Rear-Left motor
 
 
 // =================================================================================
@@ -187,15 +196,16 @@ static constexpr unsigned long CLI_REBOOT_DELAY_MS = 100;
 static constexpr unsigned long IMU_INIT_FAIL_DELAY_MS = 10;
 static constexpr unsigned long SERIAL_BAUD_RATE = 115200;
 static constexpr int RX_MAP_PREFIX_LENGTH = 7;
-static constexpr bool INFINITE_LOOP_CONDITION = true;
+static constexpr bool INFINITE_LOOP_CONDITION = true; // Used to halt execution on critical errors, preventing further processing.
 
 static constexpr int FLIGHT_MODE_ACRO_THRESHOLD = 1200;
 static constexpr int FLIGHT_MODE_ANGLE_THRESHOLD = 1800;
 
+// DShot Motor Constants
 static constexpr int DSHOT_MIN_THROTTLE = 48;  // Minimum DShot throttle value (e.g., for motor idle)
 static constexpr int DSHOT_MAX_THROTTLE = 2047; // Maximum DShot throttle value
 
-// Create a single, global instance of the settings
-// extern FlightControllerSettings settings; // Now declared in settings.h
+// Firmware Version
+static constexpr const char* FIRMWARE_VERSION = "0.2.5"; // Updated for release
 
 #endif

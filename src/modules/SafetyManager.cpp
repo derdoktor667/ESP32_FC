@@ -1,3 +1,14 @@
+// SafetyManager.cpp
+//
+// This file implements the SafetyManager class, which is responsible for
+// monitoring receiver input and managing the arming, disarming, and failsafe
+// states of the flight controller. It ensures the drone operates safely based
+// on predefined thresholds and receiver status.
+//
+// Author: Wastl Kraus
+// Date: 14.10.2025
+// License: MIT
+
 #include "src/modules/SafetyManager.h"
 
 #include <Arduino.h>
@@ -25,7 +36,7 @@ void SafetyManager::update(FlightState &state)
         {
             state.isFailsafeActive = true;
             state.isArmed = false; // Crucial: Always disarm when failsafe is active.
-            Serial.println("FAILSAFE ACTIVATED - MOTORS STOPPED");
+            Serial.println("INFO: FAILSAFE ACTIVATED - MOTORS STOPPED");
         }
         // When in failsafe, no further arming/disarming logic should be processed.
         // Motors are commanded to stop by MotorMixer.
@@ -37,7 +48,7 @@ void SafetyManager::update(FlightState &state)
         if (state.isFailsafeActive)
         {
             state.isFailsafeActive = false;
-            Serial.println("Failsafe deactivated");
+            Serial.println("INFO: Failsafe deactivated.");
         }
     }
 
@@ -46,12 +57,12 @@ void SafetyManager::update(FlightState &state)
     if (armingChannelValue > _settings.receiver.armingThreshold && !state.isArmed)
     {
         state.isArmed = true;
-        Serial.println("ARMED");
+        Serial.println("INFO: ARMED");
     }
     // Check if the arming switch is in the "disarmed" position and the drone is currently armed.
     else if (armingChannelValue < _settings.receiver.armingThreshold && state.isArmed)
     {
         state.isArmed = false;
-        Serial.println("DISARMED");
+        Serial.println("INFO: DISARMED");
     }
 }
