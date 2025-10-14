@@ -1,71 +1,60 @@
-#ifndef COMMUNICATION_MANAGER_H
-#define COMMUNICATION_MANAGER_H
-
-#include <Arduino.h>
 #include "src/config/FlightState.h"
+#include "src/config/config.h"
 #include "src/config/settings.h"
+#include <Arduino.h>
 
-// Forward declarations to break circular dependencies
+// Forward declarations for ESP system functions
+extern "C" {
+    uint32_t esp_get_free_heap_size(void);
+    uint32_t esp_get_minimum_free_heap_size(void);
+}
+
+// Forward declaration to break circular dependency
 class FlightController;
 
-// Manages all serial communication for the flight controller.
-// This includes handling CLI commands, API requests, and streaming live data.
+// Manages all serial communication (CLI/API) and logging.
+// This class handles incoming commands from the serial port (both human-readable CLI
+// and machine-readable JSON API) and outputs flight status data.
 class CommunicationManager
 {
 public:
-    // Defines the operating modes of the serial interface.
-    enum class OperatingMode
-    {
-        FLIGHT, // Default mode, silent, no serial interaction
-        CLI,    // Command Line Interface mode for human interaction
-        API     // Machine-readable API mode for programmatic interaction
-    };
-
     // Constructor: Initializes the CommunicationManager with a pointer to the FlightController.
-    // @param fc Pointer to the FlightController instance.
     CommunicationManager(FlightController* fc);
 
     // Initializes serial communication.
     void begin();
 
-    // Updates the communication manager, handling incoming serial data
-    // and streaming live data if in API mode.
-    // @param state The current FlightState to be used for live data streaming.
+    // Updates the communication manager, handling serial input and output.
+    // @param state The current FlightState, used for logging and command processing.
     void update(const FlightState &state);
 
 private:
-    FlightController* _fc;                     // Pointer to the FlightController instance
+    // Defines the operating mode of the serial interface.
+    enum class OperatingMode
+    {
+        FLIGHT, // Default mode, no CLI/API active, main flight loop runs.
+        CLI,    // Command Line Interface mode.
+        API     // Machine-readable JSON API mode.
+    };
+
+    FlightController* _fc; // Pointer to the FlightController instance
     OperatingMode _currentMode = OperatingMode::FLIGHT; // Current operating mode
-    unsigned long _lastSerialLogTime = 0;      // Timestamp of the last serial log output
-    unsigned long _lastApiPingTime = 0;        // Timestamp of the last API ping
-    
-    // Timeout for API mode if no ping is received (e.g., 2 seconds)
-    static constexpr unsigned long API_MODE_TIMEOUT_MS = 2000;
+    unsigned long _lastApiPingTime = 0; // Timestamp of the last API ping command
+    unsigned long _lastSerialLogTime = 0; // Timestamp of the last serial log output
 
-    // Streams live flight data as a JSON object to the serial port.
-    // This method is called periodically when in API mode.
-    // @param state The current FlightState containing the data to be streamed.
-    void _printFlightStatus(const FlightState &state);
+    static constexpr unsigned long API_MODE_TIMEOUT_MS = 2000; // API mode timeout in milliseconds
 
-    // Handles incoming serial data, parsing commands and managing mode changes.
-    // @param state The current FlightState, used for command execution.
+    // Private helper methods for command processing
     void _handleSerialInput();
-
-    // Executes a given command based on the current operating mode.
-    // @param command The full command string received.
-    // @param isApiMode True if the command originated from API mode.
     void _executeCommand(String command, bool isApiMode);
-
-    // --- Private Helper Functions for Command Implementations ---
-    void _printCliHelp();
     void _handleGetCommand(String args, bool isApiMode);
     void _handleSetCommand(String args, bool isApiMode);
     void _handleDumpCommand();
     void _handleDumpJsonCommand();
-
-    // --- Response Formatting Helpers ---
-    void _printGetResponse(const String& param, const String& value, bool isApiMode, bool isString = false);
-    void _printSetResponse(const String& param, const String& value, bool success, bool isApiMode, bool isString = false);
+    void _printCliHelp();
+    void _printFlightStatus(const FlightState &state);
+    void _printGetResponse(const String& param, const String& value, bool isApiMode, bool isString);
+    void _printSetResponse(const String& param, const String& value, bool success, bool isApiMode, bool isString);
+    void _handleStatusCommand();
+    void _handleVersionCommand(); // New method for version command
 };
-
-#endif // COMMUNICATION_MANAGER_H

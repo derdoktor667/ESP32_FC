@@ -1,13 +1,13 @@
 #include "src/utils/pid/pid_controller.h"
 
 PIDController::PIDController(float p, float i, float d)
-    : Kp(p), Ki(i), Kd(d), integral_sum(0), previous_error(0), last_pid_time(0) {}
+    : Kp(p), Ki(i), Kd(d), _integralSum(0), _previousError(0), _lastPidTime(0) {}
 
 float PIDController::calculate(float setpoint, float current_value, float integral_limit)
 {
   unsigned long current_time = micros();
-  float dt = (current_time - last_pid_time) / 1000000.0; // Convert to seconds
-  last_pid_time = current_time;
+  float dt = (current_time - _lastPidTime) / 1000000.0; // Convert to seconds
+  _lastPidTime = current_time;
 
   float error = setpoint - current_value;
 
@@ -15,17 +15,17 @@ float PIDController::calculate(float setpoint, float current_value, float integr
   float p_term = Kp * error;
 
   // Integral term
-  integral_sum += error * dt;
+  _integralSum += error * dt;
   // Limit integral sum to prevent wind-up
-  if (integral_sum > integral_limit)
-    integral_sum = integral_limit;
-  else if (integral_sum < -integral_limit)
-    integral_sum = -integral_limit;
-  float i_term = Ki * integral_sum;
+  if (_integralSum > integral_limit)
+    _integralSum = integral_limit;
+  else if (_integralSum < -integral_limit)
+    _integralSum = -integral_limit;
+  float i_term = Ki * _integralSum;
 
   // Derivative term
-  float d_term = Kd * (error - previous_error) / dt;
-  previous_error = error;
+  float d_term = Kd * (error - _previousError) / dt;
+  _previousError = error;
 
   return p_term + i_term + d_term;
 }

@@ -10,6 +10,8 @@ Mpu6050Imu::Mpu6050Imu()
 bool Mpu6050Imu::begin()
 {
     // Pass the wirePort to the MPU6050's begin method
+    // Using highest ranges for gyroscope (2000 DPS) and accelerometer (16G)
+    // to ensure full measurement capability for a flight controller.
     return _mpu.begin(GYRO_RANGE_2000DPS, ACCEL_RANGE_16G); // Highest ranges
 }
 

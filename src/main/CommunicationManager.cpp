@@ -180,6 +180,10 @@ void CommunicationManager::_executeCommand(String command, bool isApiMode) {
     } else if (commandName.equals("calibrate_imu")) {
         if (!isApiMode) Serial.println("INFO: IMU calibration requested.");
         _fc->requestImuCalibration();
+    } else if (commandName.equals("status") && !isApiMode) {
+        _handleStatusCommand();
+    } else if (commandName.equals("version")) {
+        _handleVersionCommand();
     } else if (commandName.equals("ping") && isApiMode) {
         _lastApiPingTime = millis();
     } else if (commandName.equals("help") && !isApiMode) {
@@ -193,28 +197,95 @@ void CommunicationManager::_executeCommand(String command, bool isApiMode) {
 // --- Refactored Command Implementations ---
 
 void CommunicationManager::_printCliHelp() {
-    // This can also be refactored to use the registry
-    Serial.println("Help not implemented yet.");
+    Serial.println("Available Commands:");
+    Serial.println("  get <parameter>    - Get the current value of a setting.");
+    Serial.println("  set <parameter> <value> - Set a new value for a setting.");
+    Serial.println("  dump             - Display all current settings and their values.");
+    Serial.println("  get_settings       - (API only) Get all settings as JSON.");
+    Serial.println("  save             - Save current settings to flash and reboot.");
+    Serial.println("  reset            - Reset all settings to default and reboot.");
+    Serial.println("  reboot           - Reboot the ESP32.");
+    Serial.println("  calibrate_imu    - Request IMU calibration.");
+    Serial.println("  status           - Display system status and metrics.");
+    Serial.println("  version          - Display firmware version."); // New command
+    Serial.println("  help             - Display this help message.");
+    Serial.println("  exit             - Exit CLI mode.");
+    Serial.println("");
+    Serial.println("Available Settings (parameter names for 'get' and 'set'):");
+
+    // Group settings by category for better readability
+    Serial.println("  PID Gains:");
+    Serial.println("    pid.roll.kp, pid.roll.ki, pid.roll.kd");
+    Serial.println("    pid.pitch.kp, pid.pitch.ki, pid.pitch.kd");
+    Serial.println("    pid.yaw.kp, pid.yaw.ki, pid.yaw.kd");
+    Serial.println("    pid.integral_limit");
+
+    Serial.println("  Rates & Angles:");
+    Serial.println("    rates.angle (Max Roll/Pitch Angle in Angle Mode)");
+    Serial.println("    rates.yaw (Max Yaw Rate)");
+    Serial.println("    rates.acro (Max Roll/Pitch Rate in Acro Mode)");
+
+    Serial.println("  Madgwick Filter:");
+    Serial.println("    madgwick.sample_freq");
+    Serial.println("    madgwick.beta");
+
+    Serial.println("  Receiver:");
+    Serial.println("    rx.min, rx.max (Min/Max raw receiver values)");
+    Serial.println("    rx.arming_threshold, rx.failsafe_threshold");
+    Serial.println("    rx.protocol (IBUS, PPM)");
+    Serial.println("    rx.map.<input> <channel> (e.g., rx.map.throttle 1)");
+
+    Serial.println("  IMU:");
+    Serial.println("    imu.protocol (MPU6050)");
+
+    Serial.println("  Motor:");
+    Serial.println("    motor.idle_speed (Percent)");
+    Serial.println("    motor.dshot_mode (DSHOT_OFF, DSHOT150, DSHOT300, DSHOT600, DSHOT1200)");
+
+    Serial.println("  Logging:");
+    Serial.println("    printIntervalMs (Interval for serial logging in ms)");
+    Serial.println("    enableLogging (true/false)");
 }
 
 void CommunicationManager::_handleDumpCommand() {
-    // This can also be refactored to use the registry
-    Serial.println("Dump not implemented yet.");
+    Serial.println("--- Current Flight Controller Settings ---");
+    for (int i = 0; i < numSettings; ++i) {
+        const Setting& s = settingsRegistry[i];
+        Serial.print(s.name);
+        Serial.print(": ");
+        switch (s.type) {
+            case SettingType::FLOAT: Serial.println(*(float*)s.value / s.scaleFactor, 4); break;
+            case SettingType::UINT16: Serial.println(*(uint16_t*)s.value); break;
+            case SettingType::RECEIVER_PROTOCOL: Serial.println(getReceiverProtocolString(*(ReceiverProtocol*)s.value)); break;
+            case SettingType::IMU_PROTOCOL: Serial.println(getImuProtocolString(*(ImuProtocol*)s.value)); break;
+            case SettingType::DSHOT_MODE: Serial.println(getDShotModeString(*(dshot_mode_t*)s.value)); break;
+        }
+    }
+    Serial.println("\n--- Receiver Channel Mapping ---");
+    for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i) {
+        Serial.print("  ");
+        Serial.print(getFlightControlInputString((FlightControlInput)i));
+        Serial.print(": ");
+        Serial.println(settings.channelMapping.channel[i]);
+    }
+    Serial.println("----------------------------------------");
 }
 
 void CommunicationManager::_handleDumpJsonCommand() {
     _lastApiPingTime = millis();
-    String json = "{\"settings\":{";
+    Serial.print("{\"settings\":{");
     for (int i = 0; i < numSettings; ++i) {
         const Setting& s = settingsRegistry[i];
-        if (i > 0) json += ",";
-        json += "\"" + String(s.name) + "\":" ;
+        if (i > 0) Serial.print(",");
+        Serial.print("\"");
+        Serial.print(s.name);
+        Serial.print("\":");
         switch (s.type) {
-            case SettingType::FLOAT: json += String(*(float*)s.value / s.scaleFactor, 4); break;
-            case SettingType::UINT16: json += String(*(uint16_t*)s.value); break;
-            case SettingType::RECEIVER_PROTOCOL: json += String(*(uint8_t*)s.value); break;
-            case SettingType::IMU_PROTOCOL: json += String(*(uint8_t*)s.value); break;
-            case SettingType::DSHOT_MODE: json += "\"" + getDShotModeString(*(dshot_mode_t*)s.value) + "\""; break;
+            case SettingType::FLOAT: Serial.print(*(float*)s.value / s.scaleFactor, 4); break;
+            case SettingType::UINT16: Serial.print(*(uint16_t*)s.value); break;
+            case SettingType::RECEIVER_PROTOCOL: Serial.print(*(uint8_t*)s.value); break;
+            case SettingType::IMU_PROTOCOL: Serial.print(*(uint8_t*)s.value); break;
+            case SettingType::DSHOT_MODE: Serial.print("\""); Serial.print(getDShotModeString(*(dshot_mode_t*)s.value)); Serial.print("\""); break;
         }
     }
     for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i) {
@@ -222,10 +293,12 @@ void CommunicationManager::_handleDumpJsonCommand() {
         String inputName = getFlightControlInputString((FlightControlInput)i);
         inputName.toLowerCase();
         key += inputName;
-        json += ",\"" + key + "\":" + String(settings.channelMapping.channel[i]);
+        Serial.print(",\"");
+        Serial.print(key);
+        Serial.print("\":");
+        Serial.print(settings.channelMapping.channel[i]);
     }
-    json += "}}";
-    Serial.println(json);
+    Serial.println("}}");
 }
 
 void CommunicationManager::_handleGetCommand(String args, bool isApiMode) {
@@ -259,6 +332,8 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode) {
     String param = args.substring(0, lastSpace);
     String valueStr = args.substring(lastSpace + 1);
 
+    bool isString = false; // Deklaration hinzugefügt
+
     for (int i = 0; i < numSettings; ++i) {
         const Setting& s = settingsRegistry[i];
         if (param.equalsIgnoreCase(s.name)) {
@@ -267,13 +342,16 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode) {
                 case SettingType::FLOAT: *(float*)s.value = valueStr.toFloat() * s.scaleFactor; break;
                 case SettingType::UINT16: *(uint16_t*)s.value = (uint16_t)valueStr.toInt(); break;
                 case SettingType::RECEIVER_PROTOCOL: {
-                    int p = valueStr.toInt();
-                    if (p >= 0 && p < RECEIVER_PROTOCOL_COUNT) *(ReceiverProtocol*)s.value = (ReceiverProtocol)p; else success = false;
+                    if (valueStr.equalsIgnoreCase("IBUS")) *(ReceiverProtocol*)s.value = PROTOCOL_IBUS;
+                    else if (valueStr.equalsIgnoreCase("PPM")) *(ReceiverProtocol*)s.value = PROTOCOL_PPM;
+                    else success = false;
+                    isString = true;
                     break;
                 }
                 case SettingType::IMU_PROTOCOL: {
-                    int p = valueStr.toInt();
-                    if (p >= 0 && p < IMU_PROTOCOL_COUNT) *(ImuProtocol*)s.value = (ImuProtocol)p; else success = false;
+                    if (valueStr.equalsIgnoreCase("MPU6050")) *(ImuProtocol*)s.value = IMU_MPU6050;
+                    else success = false;
+                    isString = true;
                     break;
                 }
                 case SettingType::DSHOT_MODE: {
@@ -315,29 +393,28 @@ void CommunicationManager::_printFlightStatus(const FlightState &state) {
         Serial.println("{\"error\":\"Attitude data is NaN. Check IMU connection.\"}");
         return;
     }
-    Serial.print("{\"live_data\":{");
-    Serial.print("\"attitude\":{");
-    Serial.print("\"roll\":"); Serial.print(state.attitude.roll, 2);
-    Serial.print(",\"pitch\":"); Serial.print(state.attitude.pitch, 2);
-    Serial.print(",\"yaw\":"); Serial.print(state.attitude.yaw, 2);
-    Serial.print("}, ");
-    Serial.print("\"status\":{");
-    Serial.print("\"armed\":"); Serial.print(state.isArmed);
-    Serial.print(",\"failsafe\":"); Serial.print(state.isFailsafeActive);
+    Serial.print("{\"live_data\":{\"attitude\":{\"roll\":");
+    Serial.print(state.attitude.roll, 2);
+    Serial.print(",\"pitch\":");
+    Serial.print(state.attitude.pitch, 2);
+    Serial.print(",\"yaw\":");
+    Serial.print(state.attitude.yaw, 2);
+    Serial.print("},\"status\":{\"armed\":");
+    Serial.print(state.isArmed ? "true" : "false");
+    Serial.print(",\"failsafe\":");
+    Serial.print(state.isFailsafeActive ? "true" : "false");
     Serial.print(",\"mode\":\"");
     switch (state.currentFlightMode) {
         case ACRO_MODE: Serial.print("ACRO"); break;
         case ANGLE_MODE: Serial.print("ANGLE"); break;
         default: Serial.print("UNKNOWN"); break;
     }
-    Serial.print("\"}, ");
-    Serial.print("\"motor_output\":[");
+    Serial.print("\"},\"motor_output\":[");
     for (int i = 0; i < NUM_MOTORS; i++) {
         Serial.print(state.motorOutputs[i]);
         if (i < NUM_MOTORS - 1) Serial.print(",");
     }
-    Serial.print("]");
-    Serial.println("}}");
+    Serial.println("]}}");
 }
 
 // --- Command Helpers for Get/Set ---
@@ -380,5 +457,27 @@ void CommunicationManager::_printSetResponse(const String& param, const String& 
         } else {
             Serial.println("Invalid value or parameter for 'set'.");
         }
+    }
+}
+
+void CommunicationManager::_handleStatusCommand() {
+    Serial.println("--- System Status ---");
+    Serial.print("Loop Time (us): "); Serial.println(_fc->state.loopTimeUs);
+    Serial.print("CPU Load (%): "); Serial.println(_fc->state.cpuLoad, 2);
+    Serial.print("Battery Voltage (V): "); Serial.println(_fc->state.voltage, 2);
+    Serial.print("Current Draw (A): "); Serial.println(_fc->state.current, 2);
+    Serial.print("Free Heap (bytes): "); Serial.println(esp_get_free_heap_size());
+    Serial.print("Min Free Heap (bytes): "); Serial.println(esp_get_minimum_free_heap_size());
+    Serial.println("---------------------");
+}
+
+void CommunicationManager::_handleVersionCommand() {
+    if (_currentMode == OperatingMode::API) {
+        Serial.print("{\"version\":\"");
+        Serial.print(FIRMWARE_VERSION);
+        Serial.println("\"}");
+    } else {
+        Serial.print("Firmware Version: ");
+        Serial.println(FIRMWARE_VERSION);
     }
 }

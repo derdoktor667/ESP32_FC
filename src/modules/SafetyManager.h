@@ -12,14 +12,11 @@ class SafetyManager
 {
 public:
     // Constructor: Initializes the SafetyManager with references to the receiver and settings.
-    // @param receiver Reference to the active RC receiver interface.
-    // @param settings Reference to the global flight controller settings.
     SafetyManager(ReceiverInterface &receiver, const FlightControllerSettings &settings);
 
     // Performs one cycle of safety checks.
     // It reads the relevant receiver channels, evaluates arming/disarming conditions,
     // and checks for failsafe activation. The FlightState is updated accordingly.
-    // @param state Reference to the current FlightState to be updated with safety status.
     void update(FlightState &state);
 
 private:

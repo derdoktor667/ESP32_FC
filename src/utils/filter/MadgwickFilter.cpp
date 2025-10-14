@@ -14,6 +14,7 @@ MadgwickFilter::MadgwickFilter(float sampleFreq, float beta) : _sampleFreq(sampl
 float MadgwickFilter::_invSqrt(float x)
 {
     // Using standard sqrtf for better precision, critical for flight control.
+    // This is a deliberate choice over faster, less precise inverse square root approximations.
     return 1.0f / sqrtf(x);
 }
 

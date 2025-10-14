@@ -1,4 +1,4 @@
-# 🚁 ESP32 Flight Controller
+# 🚁 ESP32 Flight Controller v0.2.0
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/derdoktor667/ESP32_FC/ci.yml?branch=main&style=for-the-badge) ![GitHub](https://img.shields.io/github/license/derdoktor667/ESP32_FC?style=for-the-badge)
 
@@ -8,6 +8,7 @@ An advanced, high-performance flight controller firmware for quadcopters, built 
 
 ## ✨ Key Features
 
+*   **System Status and Versioning**: CLI and API commands to retrieve detailed system status (loop time, memory, CPU load) and firmware version.
 *   **Maintainable & Extensible API**: The CLI/API command processor has been completely refactored. It now uses a data-driven 'Settings Registry' instead of brittle `if-else` chains. This makes the code cleaner, more robust, and significantly easier to extend with new settings.
 *   **Safety-First API Mode**: The API mode now includes a critical safety timeout. If a client disconnects without warning, the firmware automatically returns to flight mode, ensuring the drone does not remain in a non-responsive state.
 *   **User-Friendly CLI**: The command-line interface has been significantly improved with a detailed, categorized `help` menu, making it easier than ever to configure and debug the flight controller.
@@ -99,6 +100,8 @@ Use the `help` command in the CLI to see a full, up-to-date list of commands and
   help                 - Display this help message.
   exit                 - Deactivate CLI and return to flight mode.
   reboot               - Reboot the ESP32 flight controller.
+  status               - Display system status and metrics.
+  version              - Display firmware version.
 
 [ Settings Management ]
   get <parameter>      - Get a specific setting or a whole category.
@@ -131,13 +134,13 @@ Use the `help` command in the CLI to see a full, up-to-date list of commands and
   --- Receiver Settings ---
     rx.min, rx.max
     rx.arming_threshold, rx.failsafe_threshold
-    rx.protocol (0=IBUS, 1=PPM)
+    rx.protocol (IBUS, PPM)
     rx.map.throttle, rx.map.roll, rx.map.pitch, rx.map.yaw
     rx.map.arm_switch, rx.map.failsafe_switch, rx.map.flight_mode_switch
 
 
   --- IMU Settings ---
-    imu.protocol (0=MPU6050)
+    imu.protocol (MPU6050)
 
   --- Motor Settings ---
     motor.idle_speed

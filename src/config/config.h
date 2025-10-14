@@ -195,6 +195,9 @@ static constexpr int FLIGHT_MODE_ANGLE_THRESHOLD = 1800;
 static constexpr int DSHOT_MIN_THROTTLE = 48;  // Minimum DShot throttle value (e.g., for motor idle)
 static constexpr int DSHOT_MAX_THROTTLE = 2047; // Maximum DShot throttle value
 
+// Firmware Version
+static constexpr const char* FIRMWARE_VERSION = "0.2.0";
+
 // Create a single, global instance of the settings
 // extern FlightControllerSettings settings; // Now declared in settings.h
 

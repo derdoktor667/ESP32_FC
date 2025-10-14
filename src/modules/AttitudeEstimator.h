@@ -18,8 +18,6 @@ public:
 
     // Initializes the AttitudeEstimator with required dependencies.
     // This method must be called after settings are loaded and IMU is initialized.
-    // @param imu Reference to the IMU sensor interface.
-    // @param settings Reference to the global flight controller settings.
     void init(ImuInterface &imu, const FlightControllerSettings &settings);
 
     // Performs any necessary setup after initialization.
@@ -29,7 +27,6 @@ public:
     // Updates the drone's attitude based on the latest IMU readings.
     // Reads raw accelerometer and gyroscope data, processes it through the
     // Madgwick filter, and updates the roll, pitch, and yaw angles in the FlightState.
-    // @param state Reference to the current FlightState to be updated.
     void update(FlightState &state);
 
     // Performs a sensor calibration routine for the IMU.
