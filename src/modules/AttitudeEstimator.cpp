@@ -19,21 +19,9 @@ void AttitudeEstimator::init(ImuInterface &imu, const FlightControllerSettings &
     _madgwickFilter = MadgwickFilter(_settings->filter.madgwickSampleFreq, _settings->filter.madgwickBeta);
 }
 
-// Initializes the IMU sensor and performs the initial calibration.
+// Performs the initial calibration.
 void AttitudeEstimator::begin()
 {
-    Serial.println("Initializing IMU...");
-    // Attempt to initialize the IMU. If it fails, halt the program as it's a critical component.
-    if (!_imu->begin())
-    {
-        Serial.println("Failed to initialize IMU. Halting.");
-        while (1)
-        {
-            delay(IMU_INIT_FAIL_DELAY_MS); // Keep delaying to indicate a halt
-        }
-    }
-    Serial.println("IMU initialized.");
-
     // Perform initial calibration of the IMU to remove biases.
     calibrate();
 }
