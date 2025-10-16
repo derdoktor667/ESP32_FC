@@ -90,8 +90,12 @@ static constexpr float DEFAULT_MAX_RATE_ROLL_PITCH = 90.0f;
 static constexpr int DEFAULT_MPU_CALIBRATION_READINGS = 1000;
 static constexpr float DEFAULT_ACCEL_Z_GRAVITY = 1.0f;
 
-static constexpr float DEFAULT_MADGWICK_SAMPLE_FREQ = 250.0f;
-static constexpr float DEFAULT_MADGWICK_BETA = 0.3f;
+static constexpr float DEFAULT_COMPLEMENTARY_FILTER_TAU = 0.98f;
+static constexpr float DEFAULT_GYRO_LPF_CUTOFF_FREQ = 20.0f;
+static constexpr float DEFAULT_ACCEL_LPF_CUTOFF_FREQ = 10.0f;
+static constexpr uint8_t DEFAULT_GYRO_LPF_STAGES = 2;
+static constexpr uint8_t DEFAULT_ACCEL_LPF_STAGES = 2;
+static constexpr float DEFAULT_FILTER_SAMPLE_FREQ = 250.0f; // General filter sample frequency in Hz
 
 static constexpr int DEFAULT_IBUS_MIN_VALUE = 1000;
 static constexpr int DEFAULT_IBUS_MAX_VALUE = 2000;
@@ -102,7 +106,7 @@ static constexpr unsigned long DEFAULT_PRINT_INTERVAL_MS = 40;
 
 static constexpr float DEFAULT_MOTOR_IDLE_SPEED_PERCENT = 4.0f;
 static constexpr dshot_mode_t DEFAULT_DSHOT_MODE = DSHOT600;
-static constexpr LpfBandwidth DEFAULT_IMU_LPF_BANDWIDTH = LPF_42HZ_N_5MS;
+static constexpr LpfBandwidth DEFAULT_IMU_LPF_BANDWIDTH = LPF_20HZ_N_10MS;
 
 // iBUS Channel Mappings (0-indexed)
 static constexpr int IBUS_CHANNEL_THROTTLE = 1;
@@ -167,8 +171,12 @@ struct FlightControllerSettings
     // Attitude Estimation
     struct
     {
-        float madgwickSampleFreq = DEFAULT_MADGWICK_SAMPLE_FREQ;
-        float madgwickBeta = DEFAULT_MADGWICK_BETA;
+        float complementaryFilterTau = DEFAULT_COMPLEMENTARY_FILTER_TAU; // Complementary filter time constant (tau)
+        float gyroLpfCutoffFreq = DEFAULT_GYRO_LPF_CUTOFF_FREQ; // Gyroscope low-pass filter cutoff frequency in Hz
+        float accelLpfCutoffFreq = DEFAULT_ACCEL_LPF_CUTOFF_FREQ; // Accelerometer low-pass filter cutoff frequency in Hz
+        uint8_t gyroLpfStages = DEFAULT_GYRO_LPF_STAGES; // Number of biquad filter stages for gyroscope
+        uint8_t accelLpfStages = DEFAULT_ACCEL_LPF_STAGES; // Number of biquad filter stages for accelerometer
+        float filterSampleFreq = DEFAULT_FILTER_SAMPLE_FREQ; // General filter sample frequency in Hz
     } filter;
 
     // Receiver Settings

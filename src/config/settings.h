@@ -34,8 +34,12 @@ namespace NVSKeys {
     static constexpr const char* RATES_MAX_RATE_YAW = "rate.y";
     static constexpr const char* RATES_MAX_RATE_ROLL_PITCH = "rate.acro_rp";
 
-    static constexpr const char* FILTER_MADGWICK_SAMPLE_FREQ = "filter.madgwick.sample_freq";
-    static constexpr const char* FILTER_MADGWICK_BETA = "filter.madgwick.beta";
+    static constexpr const char* FILTER_COMPLEMENTARY_TAU = "filter.comp.tau";
+    static constexpr const char* FILTER_GYRO_LPF_CUTOFF_FREQ = "filter.gyro.lpf";
+    static constexpr const char* FILTER_ACCEL_LPF_CUTOFF_FREQ = "filter.accel.lpf";
+    static constexpr const char* FILTER_GYRO_LPF_STAGES = "filter.gyro.lpf_stages";
+    static constexpr const char* FILTER_ACCEL_LPF_STAGES = "filter.accel.lpf_stages";
+    static constexpr const char* FILTER_SAMPLE_FREQ = "filter.sample_freq";
 
     static constexpr const char* RX_PROTOCOL = "rx.proto";
     static constexpr const char* RX_MIN_VALUE = "rx.min";

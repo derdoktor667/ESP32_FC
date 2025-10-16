@@ -57,6 +57,27 @@ private:
     bool _isSendingSettings = false; // Flag to prevent live_data stream during settings dump
 
 public:
+    enum class SettingType {
+        FLOAT,
+        INT,
+        UINT8, // Added for uint8_t parameters like filter stages
+        UINT16,
+        BOOL,
+        STRING,
+        ENUM_IBUS_PROTOCOL,
+        ENUM_IMU_PROTOCOL,
+        ENUM_DSHOT_MODE,
+        ENUM_LPF_BANDWIDTH,
+        ENUM_RX_CHANNEL_MAP
+    };
+
+    struct Setting {
+        const char* name;
+        SettingType type;
+        void* value;
+        const float scaleFactor;
+    };
+
     enum class SetResult {
         SUCCESS,
         INVALID_FORMAT,
@@ -64,6 +85,11 @@ public:
         INVALID_VALUE,
         OUT_OF_RANGE
     };
+
+    static const Setting settingsRegistry[];
+    static const int numSettings;
+
+    static constexpr float DEFAULT_SCALE_FACTOR = 1.0f;
 
     // Helper functions for parsing and validating setting values
     SetResult _parseAndValidateFloat(const String& valueStr, float& outValue, float scaleFactor, String& expectedValue);

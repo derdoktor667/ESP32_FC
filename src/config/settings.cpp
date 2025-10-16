@@ -21,10 +21,12 @@ const char *PREFERENCES_NAMESPACE = "fc-settings";
 // A key to check if settings have been initialized before
 const char *INIT_KEY = "initialized";
 
+static constexpr bool NVS_READ_WRITE_MODE = false;
+
 void saveSettings()
 {
     Serial.println("INFO: Saving settings to flash...");
-    preferences.begin(PREFERENCES_NAMESPACE, false); // false = read-write mode
+    preferences.begin(PREFERENCES_NAMESPACE, NVS_READ_WRITE_MODE); // false = read-write mode
 
     // Mark settings as initialized
     preferences.putBool(INIT_KEY, true);
@@ -45,8 +47,12 @@ void saveSettings()
     preferences.putFloat(NVSKeys::RATES_MAX_RATE_YAW, settings.rates.maxRateYaw);
     preferences.putFloat(NVSKeys::RATES_MAX_RATE_ROLL_PITCH, settings.rates.maxRateRollPitch);
 
-    preferences.putFloat(NVSKeys::FILTER_MADGWICK_SAMPLE_FREQ, settings.filter.madgwickSampleFreq);
-    preferences.putFloat(NVSKeys::FILTER_MADGWICK_BETA, settings.filter.madgwickBeta);
+    preferences.putFloat(NVSKeys::FILTER_COMPLEMENTARY_TAU, settings.filter.complementaryFilterTau);
+    preferences.putFloat(NVSKeys::FILTER_GYRO_LPF_CUTOFF_FREQ, settings.filter.gyroLpfCutoffFreq);
+    preferences.putFloat(NVSKeys::FILTER_ACCEL_LPF_CUTOFF_FREQ, settings.filter.accelLpfCutoffFreq);
+    preferences.putUChar(NVSKeys::FILTER_GYRO_LPF_STAGES, settings.filter.gyroLpfStages);
+    preferences.putUChar(NVSKeys::FILTER_ACCEL_LPF_STAGES, settings.filter.accelLpfStages);
+    preferences.putFloat(NVSKeys::FILTER_SAMPLE_FREQ, settings.filter.filterSampleFreq);
 
     // Receiver Settings
     preferences.putInt(NVSKeys::RX_PROTOCOL, (int)settings.receiverProtocol);
@@ -77,7 +83,7 @@ void saveSettings()
 
 void loadSettings()
 {
-    preferences.begin(PREFERENCES_NAMESPACE, false); // Open in read-write mode
+    preferences.begin(PREFERENCES_NAMESPACE, NVS_READ_WRITE_MODE); // Open in read-write mode
 
     // Check if settings have been initialized before.
     bool initialized = preferences.getBool(INIT_KEY, false);
@@ -101,8 +107,12 @@ void loadSettings()
         settings.rates.maxRateYaw = preferences.getFloat(NVSKeys::RATES_MAX_RATE_YAW, settings.rates.maxRateYaw);
         settings.rates.maxRateRollPitch = preferences.getFloat(NVSKeys::RATES_MAX_RATE_ROLL_PITCH, settings.rates.maxRateRollPitch);
 
-        settings.filter.madgwickSampleFreq = preferences.getFloat(NVSKeys::FILTER_MADGWICK_SAMPLE_FREQ, settings.filter.madgwickSampleFreq);
-        settings.filter.madgwickBeta = preferences.getFloat(NVSKeys::FILTER_MADGWICK_BETA, settings.filter.madgwickBeta);
+        settings.filter.complementaryFilterTau = preferences.getFloat(NVSKeys::FILTER_COMPLEMENTARY_TAU, settings.filter.complementaryFilterTau);
+        settings.filter.gyroLpfCutoffFreq = preferences.getFloat(NVSKeys::FILTER_GYRO_LPF_CUTOFF_FREQ, settings.filter.gyroLpfCutoffFreq);
+        settings.filter.accelLpfCutoffFreq = preferences.getFloat(NVSKeys::FILTER_ACCEL_LPF_CUTOFF_FREQ, settings.filter.accelLpfCutoffFreq);
+        settings.filter.gyroLpfStages = preferences.getUChar(NVSKeys::FILTER_GYRO_LPF_STAGES, settings.filter.gyroLpfStages);
+        settings.filter.accelLpfStages = preferences.getUChar(NVSKeys::FILTER_ACCEL_LPF_STAGES, settings.filter.accelLpfStages);
+        settings.filter.filterSampleFreq = preferences.getFloat(NVSKeys::FILTER_SAMPLE_FREQ, settings.filter.filterSampleFreq);
 
         // Receiver Settings
         settings.receiverProtocol = (ReceiverProtocol)preferences.getInt(NVSKeys::RX_PROTOCOL, (int)settings.receiverProtocol);

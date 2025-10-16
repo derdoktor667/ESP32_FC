@@ -13,11 +13,12 @@
 
 #include "src/config/FlightState.h"
 #include "src/hardware/imu/ImuInterface.h"
-#include "src/utils/filter/MadgwickFilter.h"
+#include "src/utils/filter/ComplementaryFilter.h"
+#include "src/utils/filter/MultiStageBiquadFilter.h"
 
 // Estimates the drone's attitude (roll, pitch, yaw) using sensor fusion.
 // This module encapsulates the logic for reading raw IMU data, applying a
-// Madgwick filter for robust attitude estimation, and updating the FlightState.
+// filter for robust attitude estimation, and updating the FlightState.
 // It also handles IMU calibration.
 class AttitudeEstimator
 {
@@ -25,18 +26,19 @@ public:
     // Default constructor.
     // Use init() for proper initialization after settings are loaded.
     AttitudeEstimator();
+    ~AttitudeEstimator(); // Destructor to clean up dynamically allocated filters
 
     // Initializes the AttitudeEstimator with required dependencies.
     // This method must be called after settings are loaded and IMU is initialized.
     void init(ImuInterface &imu, const FlightControllerSettings &settings);
 
     // Performs any necessary setup after initialization.
-    // This typically includes starting the Madgwick filter or other internal components.
+    // This typically includes starting the filter or other internal components.
     void begin();
 
     // Updates the drone's attitude based on the latest IMU readings.
     // Reads raw accelerometer and gyroscope data, processes it through the
-    // Madgwick filter, and updates the roll, pitch, and yaw angles in the FlightState.
+    // filter, and updates the roll, pitch, and yaw angles in the FlightState.
     void update(FlightState &state);
 
     // Performs a sensor calibration routine for the IMU.
@@ -47,7 +49,17 @@ private:
     ImuInterface *_imu = nullptr;                        // Pointer to the IMU sensor interface
     const FlightControllerSettings *_settings = nullptr; // Pointer to global flight controller settings
 
-    MadgwickFilter _madgwickFilter; // Instance of the Madgwick filter for sensor fusion
+    ComplementaryFilter *_complementaryFilter = nullptr; // Instance of the Complementary filter for sensor fusion
+
+    // Multi-stage biquad low-pass filters for raw gyroscope data
+    MultiStageBiquadFilter *_gyroRollLpf = nullptr;
+    MultiStageBiquadFilter *_gyroPitchLpf = nullptr;
+    MultiStageBiquadFilter *_gyroYawLpf = nullptr;
+
+    // Multi-stage biquad low-pass filters for raw accelerometer data
+    MultiStageBiquadFilter *_accelRollLpf = nullptr;
+    MultiStageBiquadFilter *_accelPitchLpf = nullptr;
+    MultiStageBiquadFilter *_accelYawLpf = nullptr;
 
 
 };

@@ -75,18 +75,66 @@ function init3D() {
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
 
-    // Quadcopter Model (simple cross)
+    // Quadcopter Model
     quadcopter = new THREE.Group();
-    const arm1 = new THREE.Mesh(
-        new THREE.BoxGeometry(5, 0.2, 0.2),
-        new THREE.MeshStandardMaterial({ color: 0xff0000 })
-    );
-    const arm2 = new THREE.Mesh(
-        new THREE.BoxGeometry(0.2, 0.2, 5),
-        new THREE.MeshStandardMaterial({ color: 0x0000ff })
-    );
+
+    // Central Body (e.g., a larger box)
+    const bodyGeometry = new THREE.BoxGeometry(2, 0.5, 2);
+    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    quadcopter.add(body);
+
+    // Arms (4 arms extending from the body)
+    const armGeometry = new THREE.BoxGeometry(0.2, 0.2, 3);
+    const armMaterial = new THREE.MeshStandardMaterial({ color: 0x666666 });
+
+    const arm1 = new THREE.Mesh(armGeometry, armMaterial); // Front-Right
+    arm1.position.set(1, 0, 1);
+    arm1.rotation.y = Math.PI / 4; // Rotate to align with diagonal
     quadcopter.add(arm1);
+
+    const arm2 = new THREE.Mesh(armGeometry, armMaterial); // Front-Left
+    arm2.position.set(-1, 0, 1);
+    arm2.rotation.y = -Math.PI / 4; // Rotate to align with diagonal
     quadcopter.add(arm2);
+
+    const arm3 = new THREE.Mesh(armGeometry, armMaterial); // Rear-Left
+    arm3.position.set(-1, 0, -1);
+    arm3.rotation.y = Math.PI / 4; // Rotate to align with diagonal
+    quadcopter.add(arm3);
+
+    const arm4 = new THREE.Mesh(armGeometry, armMaterial); // Rear-Right
+    arm4.position.set(1, 0, -1);
+    arm4.rotation.y = -Math.PI / 4; // Rotate to align with diagonal
+    quadcopter.add(arm4);
+
+    // Propellers (simple cylinders at the end of each arm)
+    const propGeometry = new THREE.CylinderGeometry(0.5, 0.5, 0.1, 32);
+    const propMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
+
+    const prop1 = new THREE.Mesh(propGeometry, propMaterial);
+    prop1.position.set(2.5, 0.2, 2.5); // Position relative to arm end
+    quadcopter.add(prop1);
+
+    const prop2 = new THREE.Mesh(propGeometry, propMaterial);
+    prop2.position.set(-2.5, 0.2, 2.5);
+    quadcopter.add(prop2);
+
+    const prop3 = new THREE.Mesh(propGeometry, propMaterial);
+    prop3.position.set(-2.5, 0.2, -2.5);
+    quadcopter.add(prop3);
+
+    const prop4 = new THREE.Mesh(propGeometry, propMaterial);
+    prop4.position.set(2.5, 0.2, -2.5);
+    quadcopter.add(prop4);
+
+    // Flight Direction Marker (a small red box on the front of the body)
+    const markerGeometry = new THREE.BoxGeometry(0.5, 0.2, 0.2);
+    const markerMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+    marker.position.set(0, 0.25, 1.1); // Position on the front of the central body
+    quadcopter.add(marker);
+
     scene.add(quadcopter);
 
     animate();

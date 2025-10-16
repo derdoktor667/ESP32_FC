@@ -15,25 +15,9 @@
 #include "../config/settings.h"
 #include "../config/FlightState.h"
 #include <Arduino.h>
+#include <ArduinoJson.h>
 
 // --- Refactoring: Settings Registry ---
-
-enum class SettingType {
-    FLOAT,
-    UINT16,
-    DSHOT_MODE,
-    RECEIVER_PROTOCOL,
-    IMU_PROTOCOL,
-    LPF_BANDWIDTH,
-    BOOL
-};
-
-struct Setting {
-    const char* name;
-    SettingType type;
-    void* value;
-    const float scaleFactor;
-};
 
 // --- Helper Functions for String Conversion ---
 static String getReceiverProtocolString(ReceiverProtocol protocol) {
@@ -86,34 +70,45 @@ static String getBoolString(bool value) {
     return value ? "true" : "false";
 }
 
-static const Setting settingsRegistry[] = {
-    { "pid.roll.kp", SettingType::UINT16, &settings.pidRoll.kp, PID_SCALE_FACTOR },
-    { "pid.roll.ki", SettingType::UINT16, &settings.pidRoll.ki, PID_SCALE_FACTOR },
-    { "pid.roll.kd", SettingType::UINT16, &settings.pidRoll.kd, PID_SCALE_FACTOR },
-    { "pid.pitch.kp", SettingType::UINT16, &settings.pidPitch.kp, PID_SCALE_FACTOR },
-    { "pid.pitch.ki", SettingType::UINT16, &settings.pidPitch.ki, PID_SCALE_FACTOR },
-    { "pid.pitch.kd", SettingType::UINT16, &settings.pidPitch.kd, PID_SCALE_FACTOR },
-    { "pid.yaw.kp", SettingType::UINT16, &settings.pidYaw.kp, PID_SCALE_FACTOR },
-    { "pid.yaw.ki", SettingType::UINT16, &settings.pidYaw.ki, PID_SCALE_FACTOR },
-    { "pid.yaw.kd", SettingType::UINT16, &settings.pidYaw.kd, PID_SCALE_FACTOR },
-    { "pid.integral_limit", SettingType::FLOAT, &settings.pidIntegralLimit, 1.0f },
-    { "rates.angle", SettingType::FLOAT, &settings.rates.maxAngleRollPitch, 1.0f },
-    { "rates.yaw", SettingType::FLOAT, &settings.rates.maxRateYaw, 1.0f },
-    { "rates.acro", SettingType::FLOAT, &settings.rates.maxRateRollPitch, 1.0f },
-    { "madgwick.sample_freq", SettingType::FLOAT, &settings.filter.madgwickSampleFreq, 1.0f },
-    { "madgwick.beta", SettingType::FLOAT, &settings.filter.madgwickBeta, 1.0f },
-    { "rx.min", SettingType::UINT16, &settings.receiver.ibusMinValue, 1.0f },
-    { "rx.max", SettingType::UINT16, &settings.receiver.ibusMaxValue, 1.0f },
-    { "rx.arming_threshold", SettingType::UINT16, &settings.receiver.armingThreshold, 1.0f },
-    { "rx.failsafe_threshold", SettingType::UINT16, &settings.receiver.failsafeThreshold, 1.0f },
-    { "rx.protocol", SettingType::RECEIVER_PROTOCOL, &settings.receiverProtocol, 1.0f },
-    { "imu.protocol", SettingType::IMU_PROTOCOL, &settings.imuProtocol, 1.0f },
-    { "imu.lpf", SettingType::LPF_BANDWIDTH, &settings.imuLpfBandwidth, 1.0f },
-    { "motor.idle_speed", SettingType::FLOAT, &settings.motorIdleSpeedPercent, 1.0f },
-    { "motor.dshot_mode", SettingType::DSHOT_MODE, &settings.dshotMode, 1.0f },
-    { "enforce_loop_time", SettingType::BOOL, &settings.enforceLoopTime, 1.0f },
+static String getUint8String(uint8_t value)
+{
+    return String(value);
+}
+
+// --- Refactoring: Settings Registry ---
+
+const CommunicationManager::Setting CommunicationManager::settingsRegistry[] = {
+    { "pid.roll.kp", CommunicationManager::SettingType::UINT16, &settings.pidRoll.kp, PID_SCALE_FACTOR },
+    { "pid.roll.ki", CommunicationManager::SettingType::UINT16, &settings.pidRoll.ki, PID_SCALE_FACTOR },
+    { "pid.roll.kd", CommunicationManager::SettingType::UINT16, &settings.pidRoll.kd, PID_SCALE_FACTOR },
+    { "pid.pitch.kp", CommunicationManager::SettingType::UINT16, &settings.pidPitch.kp, PID_SCALE_FACTOR },
+    { "pid.pitch.ki", CommunicationManager::SettingType::UINT16, &settings.pidPitch.ki, PID_SCALE_FACTOR },
+    { "pid.pitch.kd", CommunicationManager::SettingType::UINT16, &settings.pidPitch.kd, PID_SCALE_FACTOR },
+    { "pid.yaw.kp", CommunicationManager::SettingType::UINT16, &settings.pidYaw.kp, PID_SCALE_FACTOR },
+    { "pid.yaw.ki", CommunicationManager::SettingType::UINT16, &settings.pidYaw.ki, PID_SCALE_FACTOR },
+    { "pid.yaw.kd", CommunicationManager::SettingType::UINT16, &settings.pidYaw.kd, PID_SCALE_FACTOR },
+    { "pid.integral_limit", CommunicationManager::SettingType::FLOAT, &settings.pidIntegralLimit, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "rates.angle", CommunicationManager::SettingType::FLOAT, &settings.rates.maxAngleRollPitch, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "rates.yaw", CommunicationManager::SettingType::FLOAT, &settings.rates.maxRateYaw, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "rates.acro", CommunicationManager::SettingType::FLOAT, &settings.rates.maxRateRollPitch, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "filter.comp_tau", CommunicationManager::SettingType::FLOAT, &settings.filter.complementaryFilterTau, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "gyro.lpf_cutoff_freq", CommunicationManager::SettingType::FLOAT, &settings.filter.gyroLpfCutoffFreq, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "accel.lpf_cutoff_freq", CommunicationManager::SettingType::FLOAT, &settings.filter.accelLpfCutoffFreq, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "gyro.lpf_stages", CommunicationManager::SettingType::UINT8, &settings.filter.gyroLpfStages, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "accel.lpf_stages", CommunicationManager::SettingType::UINT8, &settings.filter.accelLpfStages, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "filter.sample_freq", CommunicationManager::SettingType::FLOAT, &settings.filter.filterSampleFreq, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "rx.min", CommunicationManager::SettingType::UINT16, &settings.receiver.ibusMinValue, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "rx.max", CommunicationManager::SettingType::UINT16, &settings.receiver.ibusMaxValue, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "rx.arming_threshold", CommunicationManager::SettingType::UINT16, &settings.receiver.armingThreshold, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "rx.failsafe_threshold", CommunicationManager::SettingType::UINT16, &settings.receiver.failsafeThreshold, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "rx.protocol", CommunicationManager::SettingType::ENUM_IBUS_PROTOCOL, &settings.receiverProtocol, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "imu.protocol", CommunicationManager::SettingType::ENUM_IMU_PROTOCOL, &settings.imuProtocol, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "imu.lpf", CommunicationManager::SettingType::ENUM_LPF_BANDWIDTH, &settings.imuLpfBandwidth, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "motor.idle_speed", CommunicationManager::SettingType::FLOAT, &settings.motorIdleSpeedPercent, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "motor.dshot_mode", CommunicationManager::SettingType::ENUM_DSHOT_MODE, &settings.dshotMode, CommunicationManager::DEFAULT_SCALE_FACTOR },
+    { "enforce_loop_time", CommunicationManager::SettingType::BOOL, &settings.enforceLoopTime, CommunicationManager::DEFAULT_SCALE_FACTOR },
 };
-const int numSettings = sizeof(settingsRegistry) / sizeof(Setting);
+const int CommunicationManager::numSettings = sizeof(CommunicationManager::settingsRegistry) / sizeof(CommunicationManager::Setting);
 
 // --- Helper Functions for Parsing and Validation ---
 
@@ -430,9 +425,13 @@ void CommunicationManager::_printCliHelp() {
     Serial.println("    rates.yaw (Max Yaw Rate)");
     Serial.println("    rates.acro (Max Roll/Pitch Rate in Acro Mode)");
 
-    Serial.println("  Madgwick Filter:");
-    Serial.println("    madgwick.sample_freq");
-    Serial.println("    madgwick.beta");
+    Serial.println("  Complementary Filter:");
+    Serial.println("    filter.comp_tau (Complementary Filter Time Constant)");
+    Serial.println("    gyro.lpf_cutoff_freq (Gyroscope Low-Pass Filter Cutoff Frequency in Hz)");
+    Serial.println("    accel.lpf_cutoff_freq (Accelerometer Low-Pass Filter Cutoff Frequency in Hz)");
+    Serial.println("    gyro.lpf_stages (Number of Gyroscope LPF Stages, 1-5)");
+    Serial.println("    accel.lpf_stages (Number of Accelerometer LPF Stages, 1-5)");
+    Serial.println("    filter.sample_freq (Filter Sample Frequency in Hz)");
 
     Serial.println("  Receiver:");
     Serial.println("    rx.min, rx.max (Min/Max raw receiver values)");
@@ -462,12 +461,17 @@ void CommunicationManager::_handleDumpCommand() {
         Serial.print(": ");
         switch (s.type) {
             case SettingType::FLOAT: Serial.println(*(float*)s.value / s.scaleFactor, 4); break;
-            case SettingType::UINT16: Serial.println(*(uint16_t*)s.value); break;
-            case SettingType::RECEIVER_PROTOCOL: Serial.println(getReceiverProtocolString(*(ReceiverProtocol*)s.value)); break;
-            case SettingType::IMU_PROTOCOL: Serial.println(getImuProtocolString(*(ImuProtocol*)s.value)); break;
-            case SettingType::LPF_BANDWIDTH: Serial.println(getLpfBandwidthString(*(LpfBandwidth*)s.value)); break;
+        case SettingType::INT:
+            Serial.print(*static_cast<int*>(s.value));
+            break;
+        case SettingType::UINT8:
+            Serial.print(*static_cast<uint8_t*>(s.value));
+            break;
+            case SettingType::ENUM_IBUS_PROTOCOL: Serial.println(getReceiverProtocolString(*(ReceiverProtocol*)s.value)); break;
+            case SettingType::ENUM_IMU_PROTOCOL: Serial.println(getImuProtocolString(*(ImuProtocol*)s.value)); break;
+            case SettingType::ENUM_LPF_BANDWIDTH: Serial.println(getLpfBandwidthString(*(LpfBandwidth*)s.value)); break;
             case SettingType::BOOL: Serial.println(getBoolString(*(bool*)s.value)); break;
-            case SettingType::DSHOT_MODE: Serial.println(getDShotModeString(*(dshot_mode_t*)s.value)); break;
+            case SettingType::ENUM_DSHOT_MODE: Serial.println(getDShotModeString(*(dshot_mode_t*)s.value)); break;
         }
     }
     Serial.println("\n--- Receiver Channel Mapping ---");
@@ -482,65 +486,33 @@ void CommunicationManager::_handleDumpCommand() {
 
 void CommunicationManager::_handleDumpJsonCommand() {
     _isSendingSettings = true;
-    Serial.print("{\"settings\":{");
-    delay(1);
+    StaticJsonDocument<2048> jsonDoc; // Use a suitable size for your settings
+
     for (int i = 0; i < numSettings; ++i) {
         const Setting& s = settingsRegistry[i];
-        if (i > 0) {
-            Serial.print(",");
-            delay(1);
-        }
-        Serial.print("\"");
-        Serial.print(s.name);
-        Serial.print("\":");
-        delay(1);
         switch (s.type) {
-            case SettingType::FLOAT:
-                Serial.print(*(float*)s.value / s.scaleFactor, 4);
-                break;
-            case SettingType::UINT16:
-                Serial.print(*(uint16_t*)s.value);
-                break;
-            case SettingType::RECEIVER_PROTOCOL:
-                Serial.print("\"");
-                Serial.print(getReceiverProtocolString(*(ReceiverProtocol*)s.value));
-                Serial.print("\"");
-                break;
-            case SettingType::IMU_PROTOCOL:
-                Serial.print("\"");
-                Serial.print(getImuProtocolString(*(ImuProtocol*)s.value));
-                Serial.print("\"");
-                break;
-            case SettingType::LPF_BANDWIDTH:
-                Serial.print("\"");
-                Serial.print(getLpfBandwidthString(*(LpfBandwidth*)s.value));
-                Serial.print("\"");
-                break;
-            case SettingType::BOOL:
-                Serial.print("\"");
-                Serial.print(getBoolString(*(bool*)s.value));
-                Serial.print("\"");
-                break;
-            case SettingType::DSHOT_MODE:
-                Serial.print("\"");
-                Serial.print(getDShotModeString(*(dshot_mode_t*)s.value));
-                Serial.print("\"");
-                break;
+        case CommunicationManager::SettingType::FLOAT: jsonDoc[s.name] = *(float*)s.value / s.scaleFactor; break;
+        case CommunicationManager::SettingType::INT: jsonDoc[s.name] = *(int*)s.value; break;
+        case CommunicationManager::SettingType::UINT8: jsonDoc[s.name] = *(uint8_t*)s.value; break;
+        case CommunicationManager::SettingType::UINT16: jsonDoc[s.name] = *(uint16_t*)s.value; break;
+        case CommunicationManager::SettingType::BOOL: jsonDoc[s.name] = *(bool*)s.value; break;
+        case CommunicationManager::SettingType::ENUM_IBUS_PROTOCOL: jsonDoc[s.name] = getReceiverProtocolString(*(ReceiverProtocol*)s.value); break;
+        case CommunicationManager::SettingType::ENUM_IMU_PROTOCOL: jsonDoc[s.name] = getImuProtocolString(*(ImuProtocol*)s.value); break;
+        case CommunicationManager::SettingType::ENUM_LPF_BANDWIDTH: jsonDoc[s.name] = getLpfBandwidthString(*(LpfBandwidth*)s.value); break;
+        case CommunicationManager::SettingType::ENUM_DSHOT_MODE: jsonDoc[s.name] = getDShotModeString(*(dshot_mode_t*)s.value); break;
         }
-        delay(1);
     }
     for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i) {
         String key = "rx.map.";
         String inputName = getFlightControlInputString((FlightControlInput)i);
         inputName.toLowerCase();
         key += inputName;
-        Serial.print(",\"");
-        Serial.print(key);
-        Serial.print("\":");
-        Serial.print(settings.channelMapping.channel[i]);
-        delay(1);
+        jsonDoc[key] = settings.channelMapping.channel[i];
     }
-    Serial.println("}}");
+    StaticJsonDocument<2048> outputDoc;
+    outputDoc["settings"] = jsonDoc;
+    serializeJson(outputDoc, Serial);
+    Serial.println();
     _isSendingSettings = false;
 }
 
@@ -551,13 +523,14 @@ void CommunicationManager::_handleGetCommand(String args, bool isApiMode) {
             String valueStr;
             bool isString = false;
             switch (s.type) {
-                case SettingType::FLOAT: valueStr = String(*(float*)s.value / s.scaleFactor, 4); break;
-                case SettingType::UINT16: valueStr = String(*(uint16_t*)s.value); break;
-                case SettingType::RECEIVER_PROTOCOL: valueStr = getReceiverProtocolString(*(ReceiverProtocol*)s.value); isString = true; break;
-                case SettingType::IMU_PROTOCOL: valueStr = getImuProtocolString(*(ImuProtocol*)s.value); isString = true; break;
-                case SettingType::LPF_BANDWIDTH: valueStr = getLpfBandwidthString(*(LpfBandwidth*)s.value); isString = true; break;
+                case CommunicationManager::SettingType::FLOAT: valueStr = String(*(float*)s.value / s.scaleFactor, 4); break;
+                case CommunicationManager::SettingType::UINT16: valueStr = String(*(uint16_t*)s.value); break;
+                case CommunicationManager::SettingType::UINT8: valueStr = getUint8String(*(uint8_t*)s.value); break;
+                case SettingType::ENUM_IBUS_PROTOCOL: valueStr = getReceiverProtocolString(*(ReceiverProtocol*)s.value); isString = true; break;
+                case SettingType::ENUM_IMU_PROTOCOL: valueStr = getImuProtocolString(*(ImuProtocol*)s.value); isString = true; break;
+                case SettingType::ENUM_LPF_BANDWIDTH: valueStr = getLpfBandwidthString(*(LpfBandwidth*)s.value); isString = true; break;
                 case SettingType::BOOL: valueStr = getBoolString(*(bool*)s.value); isString = true; break;
-                case SettingType::DSHOT_MODE: valueStr = getDShotModeString(*(dshot_mode_t*)s.value); isString = true; break;
+                case SettingType::ENUM_DSHOT_MODE: valueStr = getDShotModeString(*(dshot_mode_t*)s.value); isString = true; break;
             }
             _printGetResponse(args, valueStr, isApiMode, isString);
             return;
@@ -583,44 +556,44 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode) {
             String expectedValue = "";
 
             switch (s.type) {
-                case SettingType::FLOAT: {
+                case CommunicationManager::SettingType::FLOAT: {
                     float val;
                     result = _parseAndValidateFloat(valueStr, val, s.scaleFactor, expectedValue);
                     if (result == SetResult::SUCCESS) *(float*)s.value = val;
                     break;
                 }
-                case SettingType::UINT16: {
+                case CommunicationManager::SettingType::UINT16: {
                     uint16_t val;
                     result = _parseAndValidateUint16(valueStr, val, expectedValue);
                     if (result == SetResult::SUCCESS) *(uint16_t*)s.value = val;
                     break;
                 }
-                case SettingType::RECEIVER_PROTOCOL: {
+                case CommunicationManager::SettingType::ENUM_IBUS_PROTOCOL: {
                     ReceiverProtocol val;
                     result = _parseAndValidateReceiverProtocol(valueStr, val, expectedValue);
                     if (result == SetResult::SUCCESS) *(ReceiverProtocol*)s.value = val;
                     break;
                 }
-                case SettingType::IMU_PROTOCOL: {
+                case CommunicationManager::SettingType::ENUM_IMU_PROTOCOL: {
                     ImuProtocol val;
                     result = _parseAndValidateImuProtocol(valueStr, val, expectedValue);
                     if (result == SetResult::SUCCESS) *(ImuProtocol*)s.value = val;
                     break;
                 }
-                case SettingType::LPF_BANDWIDTH: {
+                case CommunicationManager::SettingType::ENUM_LPF_BANDWIDTH: {
                     LpfBandwidth val;
                     result = _parseAndValidateLpfBandwidth(valueStr, val, expectedValue);
                     if (result == SetResult::SUCCESS) *(LpfBandwidth*)s.value = val;
                     break;
                 }
-                case SettingType::DSHOT_MODE: {
+                case CommunicationManager::SettingType::ENUM_DSHOT_MODE: {
                     dshot_mode_t val;
                     result = _parseAndValidateDShotMode(valueStr, val, expectedValue);
                     if (result == SetResult::SUCCESS) *(dshot_mode_t*)s.value = val;
                     break;
                 }
             }
-            _printSetResponse(param, valueStr, result, isApiMode, (s.type == SettingType::DSHOT_MODE || s.type == SettingType::RECEIVER_PROTOCOL || s.type == SettingType::IMU_PROTOCOL || s.type == SettingType::LPF_BANDWIDTH || s.type == SettingType::BOOL), expectedValue);
+            _printSetResponse(param, valueStr, result, isApiMode, (s.type == CommunicationManager::SettingType::ENUM_DSHOT_MODE || s.type == CommunicationManager::SettingType::ENUM_IBUS_PROTOCOL || s.type == CommunicationManager::SettingType::ENUM_IMU_PROTOCOL || s.type == CommunicationManager::SettingType::ENUM_LPF_BANDWIDTH || s.type == CommunicationManager::SettingType::BOOL), expectedValue);
             return;
         }
     }
