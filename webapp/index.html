@@ -10,32 +10,50 @@
     <header>
         <h1>ESP32 Flight Controller</h1>
         <div id="controls">
-            <button id="connectButton">Connect</button>
-            <button id="disconnectButton" disabled>Disconnect</button>
+            <button id="toggleConnectButton">Connect</button>
         </div>
     </header>
     <main>
         <div class="tab">
-            <button class="tablinks" onclick="openTab(event, 'rawLogTab')">Raw Log</button>
-            <button class="tablinks" onclick="openTab(event, 'settingsTab')">Settings</button>
-            <button class="tablinks" onclick="openTab(event, '3dViewTab')">3D View</button>
+            <button class="tablinks" onclick="openTab(event, 'infoTab')">Info</button>
+            <button class="tablinks" onclick="openTab(event, '3dViewTab')" disabled>3D View</button>
+            <button class="tablinks" onclick="openTab(event, 'motorSettingsTab')" disabled>Motor Settings</button>
+            <button class="tablinks" onclick="openTab(event, 'pidSettingsTab')" disabled>PID Settings</button>
+            <button class="tablinks" onclick="openTab(event, 'receiverSettingsTab')" disabled>Receiver Settings</button>
+            <button class="tablinks" onclick="openTab(event, 'rawLogTab')" disabled>Raw Log</button>
+        </div>
+
+        <div id="infoTab" class="tabcontent">
+            <h2>Info</h2>
+            <div id="infoContainer"></div>
+        </div>
+
+        <div id="3dViewTab" class="tabcontent">
+            <h2>3D View</h2>
+            <button id="calibrateImuButton">Calibrate IMU</button>
+            <div id="3d-container"></div>
+            <div id="attitude-display"></div>
+        </div>
+
+        <div id="motorSettingsTab" class="tabcontent">
+            <h2>Motor Settings</h2>
+            <div id="motorSettingsContainer"></div>
+        </div>
+
+        <div id="pidSettingsTab" class="tabcontent">
+            <h2>PID Settings</h2>
+            <div id="pidSettingsContainer"></div>
+        </div>
+
+        <div id="receiverSettingsTab" class="tabcontent">
+            <h2>Receiver Settings</h2>
+            <div id="receiverSettingsContainer"></div>
         </div>
 
         <div id="rawLogTab" class="tabcontent">
             <div id="output">
                 <pre id="log"></pre>
             </div>
-        </div>
-
-        <div id="settingsTab" class="tabcontent">
-            <h2>Settings</h2>
-            <p>Settings will be displayed here.</p>
-        </div>
-
-        <div id="3dViewTab" class="tabcontent">
-            <h2>3D View</h2>
-            <div id="3d-container"></div>
-            <div id="attitude-display"></div>
         </div>
     </main>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
