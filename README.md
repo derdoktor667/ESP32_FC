@@ -1,4 +1,4 @@
-# 🚁 ESP32 Flight Controller v0.2.5
+# 🚁 ESP32 Flight Controller v0.2.6
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/derdoktor667/ESP32_FC/ci.yml?branch=main&style=for-the-badge) ![GitHub](https://img.shields.io/github/license/derdoktor667/ESP32_FC?style=for-the-badge)
 
@@ -80,10 +80,11 @@ This project includes a powerful web-based configurator that runs locally and co
 *   **Live Settings Editor**: Modify flight controller settings in real-time. All available settings are automatically populated from the device.
 *   **3D Attitude Visualization**: A live 3D model of a quadcopter visualizes the drone's roll, pitch, and yaw based on the `live_data` stream.
 *   **Raw Serial Log**: A dedicated tab shows the raw, unfiltered serial communication with the flight controller for in-depth debugging.
+*   **Robust API Data Parsing**: The web app now includes explicit documentation of expected JSON structures and robust runtime checks to ensure reliable parsing of data received from the flight controller, improving stability and user experience.
 
 ### Running the Web App
 
-The web app requires a secure context (HTTPS) to use the Web Serial API. The repository includes a simple Python script to serve the application over HTTPS using a self-signed certificate.
+The web app requires a **secure context (HTTPS)** to use the Web Serial API. Standard HTTP servers (like `python3 -m http.server` without SSL) are not sufficient. The repository includes a simple Python script to serve the application over HTTPS using a self-signed certificate.
 
 1.  **Generate a Self-Signed Certificate**:
     If you don't have `key.pem` and `cert.pem` files, generate them using OpenSSL. Run this command in the root of the project directory:

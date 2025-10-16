@@ -205,7 +205,10 @@ static constexpr int FLIGHT_MODE_ANGLE_THRESHOLD = 1800;
 static constexpr int DSHOT_MIN_THROTTLE = 48;  // Minimum DShot throttle value (e.g., for motor idle)
 static constexpr int DSHOT_MAX_THROTTLE = 2047; // Maximum DShot throttle value
 
+// Flight Loop Timing
+static constexpr unsigned long TARGET_LOOP_TIME_US = 500; // Target loop time in microseconds (2 kHz)
+
 // Firmware Version
-static constexpr const char* FIRMWARE_VERSION = "0.2.5"; // Updated for release
+static constexpr const char* FIRMWARE_VERSION = "0.2.6"; // Updated for release
 
 #endif

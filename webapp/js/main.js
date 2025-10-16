@@ -1,3 +1,52 @@
+/**
+ * Expected JSON structures from ESP32 Flight Controller API:
+ *
+ * 1. API Mode Activation:
+ *    {"status":"api_mode_activated"}
+ *
+ * 2. Get Setting Response:
+ *    {"get":{"<parameter_name>":<value>}}
+ *    Example: {"get":{"pid.roll.kp":800}}
+ *    Example: {"get":{"rx.protocol":"IBUS"}}
+ *
+ * 3. Set Setting Response:
+ *    {"set":{"<parameter_name>":<value>,"status":"success|error", "message":"<error_description>"}}
+ *    Example: {"set":{"pid.roll.kp":850,"status":"success"}}
+ *    Example: {"set":{"rx.protocol":"UNKNOWN","status":"error","message":"Invalid value. Expected: IBUS, PPM"}}
+ *
+ * 4. All Settings Dump (from 'get_settings' command):
+ *    {"settings":{
+ *        "pid.roll.kp":800,
+ *        "pid.roll.ki":1,
+ *        // ... other settings ...
+ *        "rx.map.throttle":1,
+ *        // ... other channel mappings ...
+ *    }}
+ *
+ * 5. Firmware Version:
+ *    {"version":"0.2.5"}
+ *
+ * 6. System Status (from 'status' command):
+ *    {"status":{
+ *        "Loop Time (us)":1234,
+ *        "CPU Load (%)":5.67,
+ *        "Battery Voltage (V)":12.34,
+ *        "Current Draw (A)":1.23,
+ *        "Free Heap (bytes)":123456,
+ *        "Min Free Heap (bytes)":65432
+ *    }}
+ *
+ * 7. Live Data Stream (when in API mode and logging enabled):
+ *    {"live_data":{
+ *        "attitude":{"roll":X.XX,"pitch":Y.YY,"yaw":Z.ZZ},
+ *        "status":{"armed":true|false,"failsafe":true|false,"mode":"ACRO|ANGLE|UNKNOWN"},
+ *        "motor_output":[M1,M2,M3,M4]
+ *    }}
+ *
+ * 8. Error Response:
+ *    {"error":"<error_message>"}
+ */
+
 const toggleConnectButton = document.getElementById('toggleConnectButton');
 const log = document.getElementById('log');
 const calibrateImuButton = document.getElementById('calibrateImuButton');
@@ -49,8 +98,6 @@ function animate() {
     }
 }
 
-
-// --- Tab Handling ---
 
 // --- Tab Handling ---
 function openTab(evt, tabName) {
@@ -218,51 +265,57 @@ async function readLoop() {
 }
 
 function handleIncomingData(data) {
-    if (data.settings) {
-        populateSettings(data.settings);
-        enableTabs(); // Enable tabs once settings are received
-    }
-
-    if (data.version) {
-        const infoContainer = document.getElementById('infoContainer');
-        let versionDiv = document.getElementById('firmwareVersion');
-        if (!versionDiv) {
-            versionDiv = document.createElement('div');
-            versionDiv.id = 'firmwareVersion';
-            infoContainer.appendChild(versionDiv);
+    if (data && typeof data === 'object') {
+        if (data.settings) {
+            populateSettings(data.settings);
+            enableTabs(); // Enable tabs once settings are received
         }
-        versionDiv.innerHTML = `<h3>Firmware Version: ${data.version}</h3>`;
-    }
 
-    if (data.status) {
-        const infoContainer = document.getElementById('infoContainer');
-        let statusDiv = document.getElementById('systemStatus');
-        if (!statusDiv) {
-            statusDiv = document.createElement('div');
-            statusDiv.id = 'systemStatus';
-            infoContainer.appendChild(statusDiv);
+        if (data.version) {
+            const infoContainer = document.getElementById('infoContainer');
+            let versionDiv = document.getElementById('firmwareVersion');
+            if (!versionDiv) {
+                versionDiv = document.createElement('div');
+                versionDiv.id = 'firmwareVersion';
+                infoContainer.appendChild(versionDiv);
+            }
+            versionDiv.innerHTML = `<h3>Firmware Version: ${data.version}</h3>`;
         }
-        let statusHtml = '<h3>System Status:</h3>';
-        statusHtml += `<ul>`;
-        for (const key in data.status) {
-            statusHtml += `<li>${key}: ${data.status[key]}</li>`;
+
+        if (data.status) {
+            const infoContainer = document.getElementById('infoContainer');
+            let statusDiv = document.getElementById('systemStatus');
+            if (!statusDiv) {
+                statusDiv = document.createElement('div');
+                statusDiv.id = 'systemStatus';
+                infoContainer.appendChild(statusDiv);
+            }
+            let statusHtml = '<h3>System Status:</h3>';
+            statusHtml += `<ul>`;
+            for (const key in data.status) {
+                statusHtml += `<li>${key}: ${data.status[key]}</li>`;
+            }
+            statusHtml += `</ul>`;
+            statusDiv.innerHTML = statusHtml;
         }
-        statusHtml += `</ul>`;
-        statusDiv.innerHTML = statusHtml;
-    }
 
-    const threeDViewTab = document.getElementById('3dViewTab');
-    if (threeDViewTab.style.display === 'block' && data.live_data && quadcopter) {
-        const attitude = data.live_data.attitude;
-        
-        // Update 3D model
-        quadcopter.rotation.x = THREE.MathUtils.degToRad(attitude.pitch);
-        quadcopter.rotation.y = THREE.MathUtils.degToRad(attitude.yaw);
-        quadcopter.rotation.z = THREE.MathUtils.degToRad(attitude.roll);
+        const threeDViewTab = document.getElementById('3dViewTab');
+        if (threeDViewTab && threeDViewTab.style.display === 'block' && data.live_data && data.live_data.attitude && quadcopter) {
+            const attitude = data.live_data.attitude;
+            
+            // Update 3D model
+            if (typeof attitude.pitch === 'number') quadcopter.rotation.x = THREE.MathUtils.degToRad(attitude.pitch);
+            if (typeof attitude.yaw === 'number') quadcopter.rotation.y = THREE.MathUtils.degToRad(attitude.yaw);
+            if (typeof attitude.roll === 'number') quadcopter.rotation.z = THREE.MathUtils.degToRad(attitude.roll);
 
-        // Update numerical display
-        const attitudeDisplay = document.getElementById('attitude-display');
-        attitudeDisplay.innerHTML = `Roll: ${attitude.roll.toFixed(2)}&deg; | Pitch: ${attitude.pitch.toFixed(2)}&deg; | Yaw: ${attitude.yaw.toFixed(2)}&deg;`;
+            // Update numerical display
+            const attitudeDisplay = document.getElementById('attitude-display');
+            if (attitudeDisplay) {
+                attitudeDisplay.innerHTML = `Roll: ${attitude.roll !== undefined ? attitude.roll.toFixed(2) : 'N/A'}&deg; | Pitch: ${attitude.pitch !== undefined ? attitude.pitch.toFixed(2) : 'N/A'}&deg; | Yaw: ${attitude.yaw !== undefined ? attitude.yaw.toFixed(2) : 'N/A'}&deg;`;
+            }
+        }
+    } else {
+        console.warn("Received non-object data or empty data:", data);
     }
 }
 

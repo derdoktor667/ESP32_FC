@@ -436,7 +436,7 @@ void CommunicationManager::_handleGetCommand(String args, bool isApiMode) {
 void CommunicationManager::_handleSetCommand(String args, bool isApiMode) {
     int lastSpace = args.lastIndexOf(' ');
     if (lastSpace == -1) {
-        _printSetResponse("", "", CommunicationManager::SetResult::INVALID_FORMAT, isApiMode);
+        _printSetResponse("", "", CommunicationManager::SetResult::INVALID_FORMAT, isApiMode, false, "");
         return;
     }
     String param = args.substring(0, lastSpace);
@@ -515,96 +515,16 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode) {
         _printSetResponse(param, valueStr, result, isApiMode, false, expectedValue);
         return;
     }
-    _printSetResponse(param, valueStr, CommunicationManager::SetResult::UNKNOWN_PARAMETER, isApiMode);
+    _printSetResponse(param, valueStr, CommunicationManager::SetResult::UNKNOWN_PARAMETER, isApiMode, false, "");
 }
 
 
-void CommunicationManager::_printFlightStatus(const FlightState &state) {
-    if (isnan(state.attitude.roll) || isnan(state.attitude.pitch) || isnan(state.attitude.yaw)) {
-        Serial.println("{\"error\":\"Attitude data is NaN. Check IMU connection.\"}");
-        return;
-    }
-    Serial.print("{\"live_data\":{\"attitude\":{\"roll\":");
-    Serial.print(state.attitude.roll, 2);
-    Serial.print(",\"pitch\":");
-    Serial.print(state.attitude.pitch, 2);
-    Serial.print(",\"yaw\":");
-    Serial.print(state.attitude.yaw, 2);
-    Serial.print("},\"status\":{\"armed\":");
-    Serial.print(state.isArmed ? "true" : "false");
-    Serial.print(",\"failsafe\":");
-    Serial.print(state.isFailsafeActive ? "true" : "false");
-    Serial.print(",\"mode\":\"");
-    switch (state.currentFlightMode) {
-        case ACRO_MODE: Serial.print("ACRO"); break;
-        case ANGLE_MODE: Serial.print("ANGLE"); break;
-        default: Serial.print("UNKNOWN"); break;
-    }
-    Serial.print("\"},\"motor_output\":[");
-    for (int i = 0; i < NUM_MOTORS; i++) {
-        Serial.print(state.motorOutputs[i]);
-        if (i < NUM_MOTORS - 1) Serial.print(",");
-    }
-    Serial.println("]}}");
-}
 
-// --- Command Helpers for Get/Set ---
-
-void CommunicationManager::_printGetResponse(const String& param, const String& value, bool isApiMode, bool isString) {
-    if (isApiMode) {
-        Serial.print("{\"get\":{\"");
-        Serial.print(param);
-        Serial.print("\":");
-        if (isString) Serial.print("\"");
-        Serial.print(value);
-        if (isString) Serial.print("\"");
-        Serial.println("}}");
-    } else {
-        Serial.println(value);
-    }
-}
-
-void CommunicationManager::_printSetResponse(const String& param, const String& value, SetResult result, bool isApiMode, bool isString, const String& expected) {
-    if (isApiMode) {
-        Serial.print("{\"set\":{\"");
-        Serial.print(param);
-        Serial.print("\":");
-        if (isString) Serial.print("\"");
-        Serial.print(value);
-        if (isString) Serial.print("\"");
-        Serial.print(",\"status\":\"");
-        switch (result) {
-            case SetResult::SUCCESS: Serial.print("success"); break;
-            case SetResult::INVALID_FORMAT: Serial.print("error"); Serial.print(",\"message\":\"Invalid 'set' command format. Use: set <parameter> <value>\""); break;
-            case SetResult::UNKNOWN_PARAMETER: Serial.print("error"); Serial.print(",\"message\":\"Unknown parameter\""); break;
-            case SetResult::INVALID_VALUE: Serial.print("error"); Serial.print(",\"message\":\"Invalid value. Expected: "); Serial.print(expected); Serial.print("\""); break;
-            case SetResult::OUT_OF_RANGE: Serial.print("error"); Serial.print(",\"message\":\"Value out of range. Expected: "); Serial.print(expected); Serial.print("\""); break;
-        }
-        Serial.println("}}");
-    } else {
-        switch (result) {
-            case SetResult::SUCCESS:
-                Serial.print("Set "); Serial.print(param); Serial.print(" to "); Serial.println(value);
-                break;
-            case SetResult::INVALID_FORMAT:
-                Serial.println("Invalid 'set' format. Use: set <parameter> <value>");
-                break;
-            case SetResult::UNKNOWN_PARAMETER:
-                Serial.print("Unknown parameter: "); Serial.println(param);
-                break;
-            case SetResult::INVALID_VALUE:
-                Serial.print("Invalid value '" ); Serial.print(value); Serial.print("' for parameter '" ); Serial.print(param); Serial.print("'. Expected: "); Serial.println(expected);
-                break;
-            case SetResult::OUT_OF_RANGE:
-                Serial.print("Value '" ); Serial.print(value); Serial.print("' for parameter '" ); Serial.print(param); Serial.print("' is out of range. Expected: "); Serial.println(expected);
-                break;
-        }
-    }
-}
 
 void CommunicationManager::_handleStatusCommand() {
     Serial.println("--- System Status ---");
-    Serial.print("Loop Time (us): "); Serial.println(_fc->state.loopTimeUs);
+    Serial.print("Target Loop Time (us): "); Serial.println(TARGET_LOOP_TIME_US);
+    Serial.print("Actual Loop Time (us): "); Serial.println(_fc->state.loopTimeUs);
     Serial.print("CPU Load (%): "); Serial.println(_fc->state.cpuLoad, 2);
     Serial.print("Battery Voltage (V): "); Serial.println(_fc->state.voltage, 2);
     Serial.print("Current Draw (A): "); Serial.println(_fc->state.current, 2);

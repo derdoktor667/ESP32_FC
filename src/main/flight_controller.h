@@ -65,6 +65,10 @@ private:
 
     // --- Communication Manager ---
     CommunicationManager* _comms = nullptr; // Communication Manager instance (now a pointer)
+
+    // --- Loop Timing ---
+    unsigned long _lastLoopTimeUs = 0; // Timestamp of the last loop iteration in microseconds
+    unsigned long _loopTimer = 0;      // Timer for measuring loop duration
 };
 
 #endif // FLIGHT_CONTROLLER_H

@@ -113,6 +113,9 @@ void FlightController::initialize()
 // This is the main flight control loop, executed repeatedly.
 void FlightController::runLoop()
 {
+    // Start loop timer
+    _loopTimer = micros();
+
     // Update CommunicationManager first to handle any incoming commands
     _comms->update(state);
 
@@ -141,6 +144,15 @@ void FlightController::runLoop()
     // Even when not running the full pipeline, we must update the attitude
     // so a connected client can get live data (e.g., for a ground station).
     _attitudeEstimator.update(state);
+    }
+
+    // Calculate actual loop time
+    unsigned long currentLoopTimeUs = micros() - _loopTimer;
+    state.loopTimeUs = currentLoopTimeUs; // Store actual loop time in state
+
+    // Enforce target loop time
+    if (currentLoopTimeUs < TARGET_LOOP_TIME_US) {
+        delayMicroseconds(TARGET_LOOP_TIME_US - currentLoopTimeUs);
     }
 }
 

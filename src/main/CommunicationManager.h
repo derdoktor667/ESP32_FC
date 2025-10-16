@@ -73,9 +73,7 @@ public:
     void _handleDumpCommand();
     void _handleDumpJsonCommand();
     void _printCliHelp();
-    void _printFlightStatus(const FlightState &state);
-    void _printGetResponse(const String& param, const String& value, bool isApiMode, bool isString);
-    void _printSetResponse(const String& param, const String& value, SetResult result, bool isApiMode, bool isString = false, const String& expected = "");
+
     void _handleStatusCommand();
     void _handleVersionCommand(); // New method for version command
 };
