@@ -45,6 +45,7 @@ namespace NVSKeys {
     static constexpr const char* RX_CHANNEL_MAP_PREFIX = "rx.map."; // Prefix for channel mapping keys
 
     static constexpr const char* IMU_PROTOCOL = "imu.proto";
+    static constexpr const char* IMU_LPF_BANDWIDTH = "imu.lpf";
 
     static constexpr const char* MOTOR_IDLE_SPEED = "motor.idle";
     static constexpr const char* DSHOT_MODE_VAL = "dshot_mode_val";

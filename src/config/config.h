@@ -12,6 +12,7 @@
 
 #include <Arduino.h>
 #include <DShotRMT.h>
+#include <ESP32_MPU6050.h>
 
 // =================================================================================
 // Hardware Configuration (do not change unless you modify the hardware)
@@ -101,6 +102,7 @@ static constexpr unsigned long DEFAULT_PRINT_INTERVAL_MS = 40;
 
 static constexpr float DEFAULT_MOTOR_IDLE_SPEED_PERCENT = 4.0f;
 static constexpr dshot_mode_t DEFAULT_DSHOT_MODE = DSHOT600;
+static constexpr LpfBandwidth DEFAULT_IMU_LPF_BANDWIDTH = LPF_42HZ_N_5MS;
 
 // iBUS Channel Mappings (0-indexed)
 static constexpr int IBUS_CHANNEL_THROTTLE = 1;
@@ -118,6 +120,7 @@ struct FlightControllerSettings
 
     // IMU Protocol Selection
     ImuProtocol imuProtocol = IMU_MPU6050;
+    LpfBandwidth imuLpfBandwidth = DEFAULT_IMU_LPF_BANDWIDTH;
 
     // Receiver Channel Mapping
     struct

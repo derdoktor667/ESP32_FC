@@ -18,7 +18,7 @@
 class Mpu6050Imu : public ImuInterface
 {
 public:
-    Mpu6050Imu();
+    Mpu6050Imu(LpfBandwidth lpfBandwidth);
 
     bool begin() override;
     void update() override;
@@ -36,6 +36,7 @@ public:
 
 private:
     ESP32_MPU6050 _mpu;
+    LpfBandwidth _lpfBandwidth;
 };
 
 #endif // MPU6050_IMU_H

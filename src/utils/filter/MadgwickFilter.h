@@ -47,6 +47,9 @@ public:
     // @param q3 Reference to store the z component of the quaternion.
     void getQuaternion(float &q0, float &q1, float &q2, float &q3) const;
 
+    // Resets the filter's internal quaternion to represent no rotation.
+    void reset();
+
 private:
     float _sampleFreq; // Sample frequency in Hz
     float _beta;       // Madgwick filter gain

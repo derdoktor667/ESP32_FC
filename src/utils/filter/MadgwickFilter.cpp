@@ -100,6 +100,15 @@ void MadgwickFilter::update(float gx, float gy, float gz, float ax, float ay, fl
     _q3 *= recipNorm;
 }
 
+// Resets the filter's internal quaternion to represent no rotation.
+void MadgwickFilter::reset()
+{
+    _q0 = 1.0f;
+    _q1 = 0.0f;
+    _q2 = 0.0f;
+    _q3 = 0.0f;
+}
+
 // Returns the estimated roll angle in degrees.
 // Roll is rotation around the X-axis.
 float MadgwickFilter::getRoll() const

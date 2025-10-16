@@ -23,7 +23,8 @@ enum class SettingType {
     UINT16,
     DSHOT_MODE,
     RECEIVER_PROTOCOL,
-    IMU_PROTOCOL
+    IMU_PROTOCOL,
+    LPF_BANDWIDTH
 };
 
 struct Setting {
@@ -43,6 +44,19 @@ static String getReceiverProtocolString(ReceiverProtocol protocol) {
 static String getImuProtocolString(ImuProtocol protocol) {
     if (protocol == IMU_MPU6050) return "MPU6050";
     return "UNKNOWN";
+}
+
+static String getLpfBandwidthString(LpfBandwidth bandwidth) {
+    switch (bandwidth) {
+        case LPF_256HZ_N_0MS: return "LPF_256HZ_N_0MS";
+        case LPF_188HZ_N_2MS: return "LPF_188HZ_N_2MS";
+        case LPF_98HZ_N_3MS: return "LPF_98HZ_N_3MS";
+        case LPF_42HZ_N_5MS: return "LPF_42HZ_N_5MS";
+        case LPF_20HZ_N_10MS: return "LPF_20HZ_N_10MS";
+        case LPF_10HZ_N_13MS: return "LPF_10HZ_N_13MS";
+        case LPF_5HZ_N_18MS: return "LPF_5HZ_N_18MS";
+        default: return "UNKNOWN";
+    }
 }
 
 static String getFlightControlInputString(FlightControlInput input) {
@@ -89,6 +103,7 @@ static const Setting settingsRegistry[] = {
     { "rx.failsafe_threshold", SettingType::UINT16, &settings.receiver.failsafeThreshold, 1.0f },
     { "rx.protocol", SettingType::RECEIVER_PROTOCOL, &settings.receiverProtocol, 1.0f },
     { "imu.protocol", SettingType::IMU_PROTOCOL, &settings.imuProtocol, 1.0f },
+    { "imu.lpf", SettingType::LPF_BANDWIDTH, &settings.imuLpfBandwidth, 1.0f },
     { "motor.idle_speed", SettingType::FLOAT, &settings.motorIdleSpeedPercent, 1.0f },
     { "motor.dshot_mode", SettingType::DSHOT_MODE, &settings.dshotMode, 1.0f },
 };
@@ -324,6 +339,7 @@ void CommunicationManager::_printCliHelp() {
 
     Serial.println("  IMU:");
     Serial.println("    imu.protocol (MPU6050)");
+    Serial.println("    imu.lpf (LPF_256HZ_N_0MS, LPF_188HZ_N_2MS, LPF_98HZ_N_3MS, LPF_42HZ_N_5MS, LPF_20HZ_N_10MS, LPF_10HZ_N_13MS, LPF_5HZ_N_18MS)");
 
     Serial.println("  Motor:");
     Serial.println("    motor.idle_speed (Percent)");
@@ -345,6 +361,7 @@ void CommunicationManager::_handleDumpCommand() {
             case SettingType::UINT16: Serial.println(*(uint16_t*)s.value); break;
             case SettingType::RECEIVER_PROTOCOL: Serial.println(getReceiverProtocolString(*(ReceiverProtocol*)s.value)); break;
             case SettingType::IMU_PROTOCOL: Serial.println(getImuProtocolString(*(ImuProtocol*)s.value)); break;
+            case SettingType::LPF_BANDWIDTH: Serial.println(getLpfBandwidthString(*(LpfBandwidth*)s.value)); break;
             case SettingType::DSHOT_MODE: Serial.println(getDShotModeString(*(dshot_mode_t*)s.value)); break;
         }
     }
@@ -389,6 +406,11 @@ void CommunicationManager::_handleDumpJsonCommand() {
                 Serial.print(getImuProtocolString(*(ImuProtocol*)s.value));
                 Serial.print("\"");
                 break;
+            case SettingType::LPF_BANDWIDTH:
+                Serial.print("\"");
+                Serial.print(getLpfBandwidthString(*(LpfBandwidth*)s.value));
+                Serial.print("\"");
+                break;
             case SettingType::DSHOT_MODE:
                 Serial.print("\"");
                 Serial.print(getDShotModeString(*(dshot_mode_t*)s.value));
@@ -423,6 +445,7 @@ void CommunicationManager::_handleGetCommand(String args, bool isApiMode) {
                 case SettingType::UINT16: valueStr = String(*(uint16_t*)s.value); break;
                 case SettingType::RECEIVER_PROTOCOL: valueStr = getReceiverProtocolString(*(ReceiverProtocol*)s.value); isString = true; break;
                 case SettingType::IMU_PROTOCOL: valueStr = getImuProtocolString(*(ImuProtocol*)s.value); isString = true; break;
+                case SettingType::LPF_BANDWIDTH: valueStr = getLpfBandwidthString(*(LpfBandwidth*)s.value); isString = true; break;
                 case SettingType::DSHOT_MODE: valueStr = getDShotModeString(*(dshot_mode_t*)s.value); isString = true; break;
             }
             _printGetResponse(args, valueStr, isApiMode, isString);
@@ -479,6 +502,17 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode) {
                     else { result = CommunicationManager::SetResult::INVALID_VALUE; expectedValue = "MPU6050"; }
                     break;
                 }
+                case SettingType::LPF_BANDWIDTH: {
+                    if (valueStr.equalsIgnoreCase("LPF_256HZ_N_0MS")) *(LpfBandwidth*)s.value = LPF_256HZ_N_0MS;
+                    else if (valueStr.equalsIgnoreCase("LPF_188HZ_N_2MS")) *(LpfBandwidth*)s.value = LPF_188HZ_N_2MS;
+                    else if (valueStr.equalsIgnoreCase("LPF_98HZ_N_3MS")) *(LpfBandwidth*)s.value = LPF_98HZ_N_3MS;
+                    else if (valueStr.equalsIgnoreCase("LPF_42HZ_N_5MS")) *(LpfBandwidth*)s.value = LPF_42HZ_N_5MS;
+                    else if (valueStr.equalsIgnoreCase("LPF_20HZ_N_10MS")) *(LpfBandwidth*)s.value = LPF_20HZ_N_10MS;
+                    else if (valueStr.equalsIgnoreCase("LPF_10HZ_N_13MS")) *(LpfBandwidth*)s.value = LPF_10HZ_N_13MS;
+                    else if (valueStr.equalsIgnoreCase("LPF_5HZ_N_18MS")) *(LpfBandwidth*)s.value = LPF_5HZ_N_18MS;
+                    else { result = CommunicationManager::SetResult::INVALID_VALUE; expectedValue = "LPF_256HZ_N_0MS, LPF_188HZ_N_2MS, LPF_98HZ_N_3MS, LPF_42HZ_N_5MS, LPF_20HZ_N_10MS, LPF_10HZ_N_13MS, LPF_5HZ_N_18MS"; }
+                    break;
+                }
                 case SettingType::DSHOT_MODE: {
                     if (valueStr.equalsIgnoreCase("DSHOT_OFF")) *(dshot_mode_t*)s.value = DSHOT_OFF;
                     else if (valueStr.equalsIgnoreCase("DSHOT150")) *(dshot_mode_t*)s.value = DSHOT150;
@@ -489,7 +523,7 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode) {
                     break;
                 }
             }
-            _printSetResponse(param, valueStr, result, isApiMode, (s.type == SettingType::DSHOT_MODE || s.type == SettingType::RECEIVER_PROTOCOL || s.type == SettingType::IMU_PROTOCOL), expectedValue);
+            _printSetResponse(param, valueStr, result, isApiMode, (s.type == SettingType::DSHOT_MODE || s.type == SettingType::RECEIVER_PROTOCOL || s.type == SettingType::IMU_PROTOCOL || s.type == SettingType::LPF_BANDWIDTH), expectedValue);
             return;
         }
     }

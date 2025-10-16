@@ -90,7 +90,7 @@ void FlightController::initialize()
     {
     case IMU_MPU6050:
         Serial.println("MPU6050");
-        _imuInterface = new Mpu6050Imu();
+        _imuInterface = new Mpu6050Imu(settings.imuLpfBandwidth);
         break;
     default:
         Serial.println("ERROR: Unknown IMU protocol! Halting.");

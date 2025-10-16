@@ -57,6 +57,7 @@ void saveSettings()
 
     // IMU Settings
     preferences.putInt(NVSKeys::IMU_PROTOCOL, (int)settings.imuProtocol);
+    preferences.putInt(NVSKeys::IMU_LPF_BANDWIDTH, (int)settings.imuLpfBandwidth);
 
     // Save channel mapping
     for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)
@@ -111,6 +112,7 @@ void loadSettings()
 
         // IMU Settings
         settings.imuProtocol = (ImuProtocol)preferences.getInt(NVSKeys::IMU_PROTOCOL, (int)settings.imuProtocol);
+        settings.imuLpfBandwidth = (LpfBandwidth)preferences.getInt(NVSKeys::IMU_LPF_BANDWIDTH, (int)settings.imuLpfBandwidth);
 
 
         // Motor Settings

@@ -69,4 +69,7 @@ void AttitudeEstimator::update(FlightState &state)
 void AttitudeEstimator::calibrate()
 {
     _imu->calibrate(_settings->calibration.mpuCalibrationReadings);
+    // After IMU calibration, reset the Madgwick filter to consider the current
+    // orientation as the new horizontal zero position.
+    _madgwickFilter.reset();
 }
