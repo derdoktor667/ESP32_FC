@@ -65,6 +65,16 @@ public:
         OUT_OF_RANGE
     };
 
+    // Helper functions for parsing and validating setting values
+    SetResult _parseAndValidateFloat(const String& valueStr, float& outValue, float scaleFactor, String& expectedValue);
+    SetResult _parseAndValidateUint16(const String& valueStr, uint16_t& outValue, String& expectedValue);
+    SetResult _parseAndValidateReceiverProtocol(const String& valueStr, ReceiverProtocol& outValue, String& expectedValue);
+    SetResult _parseAndValidateImuProtocol(const String& valueStr, ImuProtocol& outValue, String& expectedValue);
+    SetResult _parseAndValidateLpfBandwidth(const String& valueStr, LpfBandwidth& outValue, String& expectedValue);
+    SetResult _parseAndValidateDShotMode(const String& valueStr, dshot_mode_t& outValue, String& expectedValue);
+    SetResult _parseAndValidateBool(const String& valueStr, bool& outValue, String& expectedValue);
+    SetResult _parseAndValidateRxChannelMap(const String& param, const String& valueStr, int& outValue, String& expectedValue);
+
     // Private helper methods for command processing
     void _handleSerialInput();
     void _executeCommand(String command, bool isApiMode);
@@ -75,7 +85,8 @@ public:
     void _printCliHelp();
 
     void _handleStatusCommand();
-    void _handleVersionCommand(); // New method for version command
+    void _handleVersionCommand();
+    void _handleFlightModeInput(const String& input);
 };
 
 #endif // COMMUNICATION_MANAGER_H

@@ -40,7 +40,8 @@
  *    {"live_data":{
  *        "attitude":{"roll":X.XX,"pitch":Y.YY,"yaw":Z.ZZ},
  *        "status":{"armed":true|false,"failsafe":true|false,"mode":"ACRO|ANGLE|UNKNOWN"},
- *        "motor_output":[M1,M2,M3,M4]
+ *        "motor_output":[M1,M2,M3,M4],
+ *        "receiver_channels":[CH0,CH1,CH2,...]
  *    }}
  *
  * 8. Error Response:
@@ -217,7 +218,9 @@ toggleConnectButton.addEventListener('click', async () => {
         if (port) {
             try {
                 await reader.cancel();
+                reader.releaseLock();
                 await writer.close();
+                writer.releaseLock();
                 await port.close();
 
                 toggleConnectButton.textContent = 'Connect';
@@ -297,6 +300,20 @@ function handleIncomingData(data) {
             }
             statusHtml += `</ul>`;
             statusDiv.innerHTML = statusHtml;
+        }
+
+        const receiverSettingsTab = document.getElementById('receiverSettingsTab');
+        if (receiverSettingsTab && receiverSettingsTab.style.display === 'block' && data.live_data && data.live_data.receiver_channels) {
+            const receiverChannels = data.live_data.receiver_channels;
+            const receiverChannelValuesDiv = document.getElementById('receiverChannelValues');
+            if (receiverChannelValuesDiv) {
+                let html = '<h3>Live Receiver Channels:</h3><table>';
+                for (let i = 0; i < receiverChannels.length; i++) {
+                    html += `<tr><td>Channel ${i}:</td><td>${receiverChannels[i]}</td></tr>`;
+                }
+                html += '</table>';
+                receiverChannelValuesDiv.innerHTML = html;
+            }
         }
 
         const threeDViewTab = document.getElementById('3dViewTab');

@@ -151,7 +151,7 @@ void FlightController::runLoop()
     state.loopTimeUs = currentLoopTimeUs; // Store actual loop time in state
 
     // Enforce target loop time
-    if (currentLoopTimeUs < TARGET_LOOP_TIME_US) {
+    if (settings.enforceLoopTime && currentLoopTimeUs < TARGET_LOOP_TIME_US) {
         delayMicroseconds(TARGET_LOOP_TIME_US - currentLoopTimeUs);
     }
 }

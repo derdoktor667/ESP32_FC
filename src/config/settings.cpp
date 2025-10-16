@@ -70,6 +70,7 @@ void saveSettings()
     // Motor Settings
     preferences.putFloat(NVSKeys::MOTOR_IDLE_SPEED, settings.motorIdleSpeedPercent);
     preferences.putInt(NVSKeys::DSHOT_MODE_VAL, (int)settings.dshotMode);
+    preferences.putBool(NVSKeys::ENFORCE_LOOP_TIME, settings.enforceLoopTime);
 
     Serial.println("INFO: Settings saved.");
 }
@@ -118,6 +119,7 @@ void loadSettings()
         // Motor Settings
         settings.motorIdleSpeedPercent = preferences.getFloat(NVSKeys::MOTOR_IDLE_SPEED, settings.motorIdleSpeedPercent);
         settings.dshotMode = (dshot_mode_t)preferences.getInt(NVSKeys::DSHOT_MODE_VAL, (int)settings.dshotMode);
+        settings.enforceLoopTime = preferences.getBool(NVSKeys::ENFORCE_LOOP_TIME, settings.enforceLoopTime);
 
         // Load channel mapping
         for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)

@@ -24,7 +24,8 @@ enum class SettingType {
     DSHOT_MODE,
     RECEIVER_PROTOCOL,
     IMU_PROTOCOL,
-    LPF_BANDWIDTH
+    LPF_BANDWIDTH,
+    BOOL
 };
 
 struct Setting {
@@ -81,6 +82,10 @@ static String getDShotModeString(dshot_mode_t mode) {
     return "UNKNOWN";
 }
 
+static String getBoolString(bool value) {
+    return value ? "true" : "false";
+}
+
 static const Setting settingsRegistry[] = {
     { "pid.roll.kp", SettingType::UINT16, &settings.pidRoll.kp, PID_SCALE_FACTOR },
     { "pid.roll.ki", SettingType::UINT16, &settings.pidRoll.ki, PID_SCALE_FACTOR },
@@ -106,8 +111,97 @@ static const Setting settingsRegistry[] = {
     { "imu.lpf", SettingType::LPF_BANDWIDTH, &settings.imuLpfBandwidth, 1.0f },
     { "motor.idle_speed", SettingType::FLOAT, &settings.motorIdleSpeedPercent, 1.0f },
     { "motor.dshot_mode", SettingType::DSHOT_MODE, &settings.dshotMode, 1.0f },
+    { "enforce_loop_time", SettingType::BOOL, &settings.enforceLoopTime, 1.0f },
 };
 const int numSettings = sizeof(settingsRegistry) / sizeof(Setting);
+
+// --- Helper Functions for Parsing and Validation ---
+
+CommunicationManager::SetResult CommunicationManager::_parseAndValidateFloat(const String& valueStr, float& outValue, float scaleFactor, String& expectedValue) {
+    float val = valueStr.toFloat();
+    if (valueStr.length() > 0 && val == 0.0f && valueStr != "0" && valueStr != "0.0") {
+        expectedValue = "float";
+        return SetResult::INVALID_VALUE;
+    }
+    outValue = val * scaleFactor;
+    return SetResult::SUCCESS;
+}
+
+CommunicationManager::SetResult CommunicationManager::_parseAndValidateUint16(const String& valueStr, uint16_t& outValue, String& expectedValue) {
+    long val = valueStr.toInt();
+    if (valueStr.length() > 0 && val == 0 && valueStr != "0") {
+        expectedValue = "integer";
+        return SetResult::INVALID_VALUE;
+    } else if (val < 0 || val > 65535) { // uint16_t range
+        expectedValue = "0-65535";
+        return SetResult::OUT_OF_RANGE;
+    }
+    outValue = (uint16_t)val;
+    return SetResult::SUCCESS;
+}
+
+CommunicationManager::SetResult CommunicationManager::_parseAndValidateReceiverProtocol(const String& valueStr, ReceiverProtocol& outValue, String& expectedValue) {
+    if (valueStr.equalsIgnoreCase("IBUS")) outValue = PROTOCOL_IBUS;
+    else if (valueStr.equalsIgnoreCase("PPM")) outValue = PROTOCOL_PPM;
+    else { expectedValue = "IBUS, PPM"; return SetResult::INVALID_VALUE; }
+    return SetResult::SUCCESS;
+}
+
+CommunicationManager::SetResult CommunicationManager::_parseAndValidateImuProtocol(const String& valueStr, ImuProtocol& outValue, String& expectedValue) {
+    if (valueStr.equalsIgnoreCase("MPU6050")) outValue = IMU_MPU6050;
+    else { expectedValue = "MPU6050"; return SetResult::INVALID_VALUE; }
+    return SetResult::SUCCESS;
+}
+
+CommunicationManager::SetResult CommunicationManager::_parseAndValidateLpfBandwidth(const String& valueStr, LpfBandwidth& outValue, String& expectedValue) {
+    if (valueStr.equalsIgnoreCase("LPF_256HZ_N_0MS")) outValue = LPF_256HZ_N_0MS;
+    else if (valueStr.equalsIgnoreCase("LPF_188HZ_N_2MS")) outValue = LPF_188HZ_N_2MS;
+    else if (valueStr.equalsIgnoreCase("LPF_98HZ_N_3MS")) outValue = LPF_98HZ_N_3MS;
+    else if (valueStr.equalsIgnoreCase("LPF_42HZ_N_5MS")) outValue = LPF_42HZ_N_5MS;
+    else if (valueStr.equalsIgnoreCase("LPF_20HZ_N_10MS")) outValue = LPF_20HZ_N_10MS;
+    else if (valueStr.equalsIgnoreCase("LPF_10HZ_N_13MS")) outValue = LPF_10HZ_N_13MS;
+    else if (valueStr.equalsIgnoreCase("LPF_5HZ_N_18MS")) outValue = LPF_5HZ_N_18MS;
+    else { expectedValue = "LPF_256HZ_N_0MS, LPF_188HZ_N_2MS, LPF_98HZ_N_3MS, LPF_42HZ_N_5MS, LPF_20HZ_N_10MS, LPF_10HZ_N_13MS, LPF_5HZ_N_18MS"; return SetResult::INVALID_VALUE; }
+    return SetResult::SUCCESS;
+}
+
+CommunicationManager::SetResult CommunicationManager::_parseAndValidateDShotMode(const String& valueStr, dshot_mode_t& outValue, String& expectedValue) {
+    if (valueStr.equalsIgnoreCase("DSHOT_OFF")) outValue = DSHOT_OFF;
+    else if (valueStr.equalsIgnoreCase("DSHOT150")) outValue = DSHOT150;
+    else if (valueStr.equalsIgnoreCase("DSHOT300")) outValue = DSHOT300;
+    else if (valueStr.equalsIgnoreCase("DSHOT600")) outValue = DSHOT600;
+    else if (valueStr.equalsIgnoreCase("DSHOT1200")) outValue = DSHOT1200;
+    else { expectedValue = "DSHOT_OFF, DSHOT150, DSHOT300, DSHOT600, DSHOT1200"; return SetResult::INVALID_VALUE; }
+    return SetResult::SUCCESS;
+}
+
+CommunicationManager::SetResult CommunicationManager::_parseAndValidateBool(const String& valueStr, bool& outValue, String& expectedValue) {
+    if (valueStr.equalsIgnoreCase("true")) outValue = true;
+    else if (valueStr.equalsIgnoreCase("false")) outValue = false;
+    else { expectedValue = "true, false"; return SetResult::INVALID_VALUE; }
+    return SetResult::SUCCESS;
+}
+
+CommunicationManager::SetResult CommunicationManager::_parseAndValidateRxChannelMap(const String& param, const String& valueStr, int& outValue, String& expectedValue) {
+    String inputName = param.substring(RX_MAP_PREFIX_LENGTH);
+    int channelValue = valueStr.toInt();
+
+    if (valueStr.length() > 0 && channelValue == 0 && valueStr != "0") {
+        expectedValue = "integer";
+        return SetResult::INVALID_VALUE;
+    } else if (channelValue < 0 || channelValue >= RECEIVER_CHANNEL_COUNT) {
+        expectedValue = "0-" + String(RECEIVER_CHANNEL_COUNT - 1);
+        return SetResult::OUT_OF_RANGE;
+    } else {
+        for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i) {
+            if (inputName.equalsIgnoreCase(getFlightControlInputString((FlightControlInput)i))) {
+                outValue = channelValue;
+                return SetResult::SUCCESS;
+            }
+        }
+    }
+    return SetResult::UNKNOWN_PARAMETER;
+}
 
 // --- Command Helpers for Get/Set ---
 
@@ -193,6 +287,11 @@ void _printFlightStatus(const FlightState &state) {
         Serial.print(state.motorOutputs[i]);
         if (i < NUM_MOTORS - 1) Serial.print(",");
     }
+    Serial.print("],\"receiver_channels\":[");
+    for (int i = 0; i < RECEIVER_CHANNEL_COUNT; i++) {
+        Serial.print(state.receiverChannels[i]);
+        if (i < RECEIVER_CHANNEL_COUNT - 1) Serial.print(",");
+    }
     Serial.println("]}}");
 }
 
@@ -220,16 +319,7 @@ void CommunicationManager::_handleSerialInput() {
 
     switch (_currentMode) {
         case OperatingMode::FLIGHT:
-            if (input.equalsIgnoreCase("cli")) {
-                _currentMode = OperatingMode::CLI;
-                settings.enableLogging = false;
-                Serial.println("--- CLI  Activated ---");
-                Serial.print("ESP32_FC > ");
-            } else if (input.equalsIgnoreCase("api")) {
-                _currentMode = OperatingMode::API;
-                settings.enableLogging = true;
-                Serial.println("{\"status\":\"api_mode_activated\"}");
-            }
+            _handleFlightModeInput(input);
             break;
         case OperatingMode::CLI: {
             String commandName = (input.indexOf(' ') != -1) ? input.substring(0, input.indexOf(' ')) : input;
@@ -247,6 +337,19 @@ void CommunicationManager::_handleSerialInput() {
         case OperatingMode::API:
             _executeCommand(input, true);
             break;
+    }
+}
+
+void CommunicationManager::_handleFlightModeInput(const String& input) {
+    if (input.equalsIgnoreCase("cli")) {
+        _currentMode = OperatingMode::CLI;
+        settings.enableLogging = false;
+        Serial.println("--- CLI  Activated ---");
+        Serial.print("ESP32_FC > ");
+    } else if (input.equalsIgnoreCase("api")) {
+        _currentMode = OperatingMode::API;
+        settings.enableLogging = true;
+        Serial.println("{\"status\":\"api_mode_activated\"}");
     }
 }
 
@@ -348,6 +451,7 @@ void CommunicationManager::_printCliHelp() {
     Serial.println("  Logging:");
     Serial.println("    printIntervalMs (Interval for serial logging in ms)");
     Serial.println("    enableLogging (true/false)");
+    Serial.println("    enforce_loop_time (true/false) - Enforce target loop time with delayMicroseconds");
 }
 
 void CommunicationManager::_handleDumpCommand() {
@@ -362,6 +466,7 @@ void CommunicationManager::_handleDumpCommand() {
             case SettingType::RECEIVER_PROTOCOL: Serial.println(getReceiverProtocolString(*(ReceiverProtocol*)s.value)); break;
             case SettingType::IMU_PROTOCOL: Serial.println(getImuProtocolString(*(ImuProtocol*)s.value)); break;
             case SettingType::LPF_BANDWIDTH: Serial.println(getLpfBandwidthString(*(LpfBandwidth*)s.value)); break;
+            case SettingType::BOOL: Serial.println(getBoolString(*(bool*)s.value)); break;
             case SettingType::DSHOT_MODE: Serial.println(getDShotModeString(*(dshot_mode_t*)s.value)); break;
         }
     }
@@ -411,6 +516,11 @@ void CommunicationManager::_handleDumpJsonCommand() {
                 Serial.print(getLpfBandwidthString(*(LpfBandwidth*)s.value));
                 Serial.print("\"");
                 break;
+            case SettingType::BOOL:
+                Serial.print("\"");
+                Serial.print(getBoolString(*(bool*)s.value));
+                Serial.print("\"");
+                break;
             case SettingType::DSHOT_MODE:
                 Serial.print("\"");
                 Serial.print(getDShotModeString(*(dshot_mode_t*)s.value));
@@ -446,6 +556,7 @@ void CommunicationManager::_handleGetCommand(String args, bool isApiMode) {
                 case SettingType::RECEIVER_PROTOCOL: valueStr = getReceiverProtocolString(*(ReceiverProtocol*)s.value); isString = true; break;
                 case SettingType::IMU_PROTOCOL: valueStr = getImuProtocolString(*(ImuProtocol*)s.value); isString = true; break;
                 case SettingType::LPF_BANDWIDTH: valueStr = getLpfBandwidthString(*(LpfBandwidth*)s.value); isString = true; break;
+                case SettingType::BOOL: valueStr = getBoolString(*(bool*)s.value); isString = true; break;
                 case SettingType::DSHOT_MODE: valueStr = getDShotModeString(*(dshot_mode_t*)s.value); isString = true; break;
             }
             _printGetResponse(args, valueStr, isApiMode, isString);
@@ -470,78 +581,61 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode) {
         if (param.equalsIgnoreCase(s.name)) {
             CommunicationManager::SetResult result = CommunicationManager::SetResult::SUCCESS;
             String expectedValue = "";
+
             switch (s.type) {
                 case SettingType::FLOAT: {
-                    float val = valueStr.toFloat();
-                    if (valueStr.length() > 0 && val == 0.0f && valueStr != "0" && valueStr != "0.0") {
-                        result = CommunicationManager::SetResult::INVALID_VALUE; expectedValue = "float";
-                    } else {
-                        *(float*)s.value = val * s.scaleFactor;
-                    }
+                    float val;
+                    result = _parseAndValidateFloat(valueStr, val, s.scaleFactor, expectedValue);
+                    if (result == SetResult::SUCCESS) *(float*)s.value = val;
                     break;
                 }
                 case SettingType::UINT16: {
-                    long val = valueStr.toInt();
-                    if (valueStr.length() > 0 && val == 0 && valueStr != "0") {
-                        result = CommunicationManager::SetResult::INVALID_VALUE; expectedValue = "integer";
-                    } else if (val < 0 || val > 65535) { // uint16_t range
-                        result = CommunicationManager::SetResult::OUT_OF_RANGE; expectedValue = "0-65535";
-                    } else {
-                        *(uint16_t*)s.value = (uint16_t)val;
-                    }
+                    uint16_t val;
+                    result = _parseAndValidateUint16(valueStr, val, expectedValue);
+                    if (result == SetResult::SUCCESS) *(uint16_t*)s.value = val;
                     break;
                 }
                 case SettingType::RECEIVER_PROTOCOL: {
-                    if (valueStr.equalsIgnoreCase("IBUS")) *(ReceiverProtocol*)s.value = PROTOCOL_IBUS;
-                    else if (valueStr.equalsIgnoreCase("PPM")) *(ReceiverProtocol*)s.value = PROTOCOL_PPM;
-                    else { result = CommunicationManager::SetResult::INVALID_VALUE; expectedValue = "IBUS, PPM"; }
+                    ReceiverProtocol val;
+                    result = _parseAndValidateReceiverProtocol(valueStr, val, expectedValue);
+                    if (result == SetResult::SUCCESS) *(ReceiverProtocol*)s.value = val;
                     break;
                 }
                 case SettingType::IMU_PROTOCOL: {
-                    if (valueStr.equalsIgnoreCase("MPU6050")) *(ImuProtocol*)s.value = IMU_MPU6050;
-                    else { result = CommunicationManager::SetResult::INVALID_VALUE; expectedValue = "MPU6050"; }
+                    ImuProtocol val;
+                    result = _parseAndValidateImuProtocol(valueStr, val, expectedValue);
+                    if (result == SetResult::SUCCESS) *(ImuProtocol*)s.value = val;
                     break;
                 }
                 case SettingType::LPF_BANDWIDTH: {
-                    if (valueStr.equalsIgnoreCase("LPF_256HZ_N_0MS")) *(LpfBandwidth*)s.value = LPF_256HZ_N_0MS;
-                    else if (valueStr.equalsIgnoreCase("LPF_188HZ_N_2MS")) *(LpfBandwidth*)s.value = LPF_188HZ_N_2MS;
-                    else if (valueStr.equalsIgnoreCase("LPF_98HZ_N_3MS")) *(LpfBandwidth*)s.value = LPF_98HZ_N_3MS;
-                    else if (valueStr.equalsIgnoreCase("LPF_42HZ_N_5MS")) *(LpfBandwidth*)s.value = LPF_42HZ_N_5MS;
-                    else if (valueStr.equalsIgnoreCase("LPF_20HZ_N_10MS")) *(LpfBandwidth*)s.value = LPF_20HZ_N_10MS;
-                    else if (valueStr.equalsIgnoreCase("LPF_10HZ_N_13MS")) *(LpfBandwidth*)s.value = LPF_10HZ_N_13MS;
-                    else if (valueStr.equalsIgnoreCase("LPF_5HZ_N_18MS")) *(LpfBandwidth*)s.value = LPF_5HZ_N_18MS;
-                    else { result = CommunicationManager::SetResult::INVALID_VALUE; expectedValue = "LPF_256HZ_N_0MS, LPF_188HZ_N_2MS, LPF_98HZ_N_3MS, LPF_42HZ_N_5MS, LPF_20HZ_N_10MS, LPF_10HZ_N_13MS, LPF_5HZ_N_18MS"; }
+                    LpfBandwidth val;
+                    result = _parseAndValidateLpfBandwidth(valueStr, val, expectedValue);
+                    if (result == SetResult::SUCCESS) *(LpfBandwidth*)s.value = val;
                     break;
                 }
                 case SettingType::DSHOT_MODE: {
-                    if (valueStr.equalsIgnoreCase("DSHOT_OFF")) *(dshot_mode_t*)s.value = DSHOT_OFF;
-                    else if (valueStr.equalsIgnoreCase("DSHOT150")) *(dshot_mode_t*)s.value = DSHOT150;
-                    else if (valueStr.equalsIgnoreCase("DSHOT300")) *(dshot_mode_t*)s.value = DSHOT300;
-                    else if (valueStr.equalsIgnoreCase("DSHOT600")) *(dshot_mode_t*)s.value = DSHOT600;
-                    else if (valueStr.equalsIgnoreCase("DSHOT1200")) *(dshot_mode_t*)s.value = DSHOT1200;
-                    else { result = CommunicationManager::SetResult::INVALID_VALUE; expectedValue = "DSHOT_OFF, DSHOT150, DSHOT300, DSHOT600, DSHOT1200"; }
+                    dshot_mode_t val;
+                    result = _parseAndValidateDShotMode(valueStr, val, expectedValue);
+                    if (result == SetResult::SUCCESS) *(dshot_mode_t*)s.value = val;
                     break;
                 }
             }
-            _printSetResponse(param, valueStr, result, isApiMode, (s.type == SettingType::DSHOT_MODE || s.type == SettingType::RECEIVER_PROTOCOL || s.type == SettingType::IMU_PROTOCOL || s.type == SettingType::LPF_BANDWIDTH), expectedValue);
+            _printSetResponse(param, valueStr, result, isApiMode, (s.type == SettingType::DSHOT_MODE || s.type == SettingType::RECEIVER_PROTOCOL || s.type == SettingType::IMU_PROTOCOL || s.type == SettingType::LPF_BANDWIDTH || s.type == SettingType::BOOL), expectedValue);
             return;
         }
     }
-    if (param.startsWith("rx.map.")) {
-        String inputName = param.substring(RX_MAP_PREFIX_LENGTH);
-        int channelValue = valueStr.toInt();
-        CommunicationManager::SetResult result = CommunicationManager::SetResult::UNKNOWN_PARAMETER;
-        String expectedValue = "";
 
-        if (valueStr.length() > 0 && channelValue == 0 && valueStr != "0") {
-            result = CommunicationManager::SetResult::INVALID_VALUE; expectedValue = "integer";
-        } else if (channelValue < 0 || channelValue >= RECEIVER_CHANNEL_COUNT) {
-            result = CommunicationManager::SetResult::OUT_OF_RANGE; expectedValue = "0-" + String(RECEIVER_CHANNEL_COUNT - 1);
-        } else {
+    // Handle rx.map settings
+    if (param.startsWith("rx.map.")) {
+        int channelValue;
+        String expectedValue = "";
+        CommunicationManager::SetResult result = _parseAndValidateRxChannelMap(param, valueStr, channelValue, expectedValue);
+
+        if (result == SetResult::SUCCESS) {
+            String inputName = param.substring(RX_MAP_PREFIX_LENGTH);
             for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i) {
                 if (inputName.equalsIgnoreCase(getFlightControlInputString((FlightControlInput)i))) {
                     settings.channelMapping.channel[i] = channelValue;
-                    result = CommunicationManager::SetResult::SUCCESS;
                     break;
                 }
             }
@@ -549,6 +643,7 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode) {
         _printSetResponse(param, valueStr, result, isApiMode, false, expectedValue);
         return;
     }
+
     _printSetResponse(param, valueStr, CommunicationManager::SetResult::UNKNOWN_PARAMETER, isApiMode, false, "");
 }
 

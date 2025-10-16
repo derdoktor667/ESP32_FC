@@ -20,8 +20,13 @@ An advanced, high-performance flight controller firmware for quadcopters, built 
     *   **API Mode**: A machine-readable JSON interface optimized for programmatic clients and external applications.
     *   **CLI Mode**: A human-readable command-line interface for manual debugging.
 *   **High-Performance JSON API**: The `api` mode provides a clean, JSON-only interface. Settings can be fetched with a single `get_settings` command, and a separate, high-frequency `live_data` stream provides real-time attitude and status with minimal overhead.
-*   **Stack Overflow Protection**: The firmware intelligently pauses the CPU-intensive flight control pipeline when the API mode is active, dedicating resources to stable communication and preventing crashes.
+- **Stack Overflow Prevention**: The `FlightController` pauses the main flight pipeline when the API mode is active to ensure stable communication.
+- **Configurable MPU6050 LPF**: Integrated Digital Low-Pass Filter (DLPF) bandwidth setting into `FlightControllerSettings` and `Mpu6050Imu`, allowing configurable filtering for IMU data. This setting is exposed via CLI/API and persisted in NVS.
+- **IMU Calibration Zeroing**: Modified the IMU calibration process to set the current orientation as the "horizontal zero position" for attitude calculations by resetting the Madgwick filter after sensor calibration.
+- **CommunicationManager Refactoring for Readability**: Significantly improved the readability and maintainability of `CommunicationManager.cpp` by extracting complex parsing, validation, and mode-specific logic into dedicated helper functions. This reduced nesting and made the command handling more explicit and easier to understand.
 *   **High-Performance Motor Control**: Employs hardware-accelerated DShot for low-latency, high-resolution communication with ESCs.
+*   **Configurable MPU6050 LPF**: Integrated Digital Low-Pass Filter (DLPF) bandwidth setting for the MPU6050, allowing users to tune sensor noise filtering.
+*   **IMU Calibration Zeroing**: The IMU calibration now sets the current physical orientation as the "horizontal zero position" for attitude calculations, simplifying setup.
 *   **Flexible Control System**: Supports interchangeable receiver protocols (i-BUS, PPM) and features **configurable channel mapping**.
 *   **Centralized & Persistent Configuration**: All tunable parameters are organized in a single `FlightControllerSettings` struct and are reliably saved to and loaded from flash memory.
 

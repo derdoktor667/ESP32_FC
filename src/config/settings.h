@@ -49,6 +49,7 @@ namespace NVSKeys {
 
     static constexpr const char* MOTOR_IDLE_SPEED = "motor.idle";
     static constexpr const char* DSHOT_MODE_VAL = "dshot_mode_val";
+    static constexpr const char* ENFORCE_LOOP_TIME = "enforce.loop";
 }
 
 // Functions to manage persistent storage
