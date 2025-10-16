@@ -90,7 +90,7 @@ static constexpr int DEFAULT_MPU_CALIBRATION_READINGS = 1000;
 static constexpr float DEFAULT_ACCEL_Z_GRAVITY = 1.0f;
 
 static constexpr float DEFAULT_MADGWICK_SAMPLE_FREQ = 250.0f;
-static constexpr float DEFAULT_MADGWICK_BETA = 0.1f;
+static constexpr float DEFAULT_MADGWICK_BETA = 0.3f;
 
 static constexpr int DEFAULT_IBUS_MIN_VALUE = 1000;
 static constexpr int DEFAULT_IBUS_MAX_VALUE = 2000;

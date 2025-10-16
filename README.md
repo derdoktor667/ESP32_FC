@@ -71,6 +71,41 @@ Follow these steps to get the flight controller up and running on your ESP32.
 
 ---
 
+## 🌐 Web App Configurator
+
+This project includes a powerful web-based configurator that runs locally and connects to the flight controller directly from your browser using the Web Serial API. It provides a modern, user-friendly interface for tuning and monitoring your drone.
+
+### Features
+
+*   **Live Settings Editor**: Modify flight controller settings in real-time. All available settings are automatically populated from the device.
+*   **3D Attitude Visualization**: A live 3D model of a quadcopter visualizes the drone's roll, pitch, and yaw based on the `live_data` stream.
+*   **Raw Serial Log**: A dedicated tab shows the raw, unfiltered serial communication with the flight controller for in-depth debugging.
+
+### Running the Web App
+
+The web app requires a secure context (HTTPS) to use the Web Serial API. The repository includes a simple Python script to serve the application over HTTPS using a self-signed certificate.
+
+1.  **Generate a Self-Signed Certificate**:
+    If you don't have `key.pem` and `cert.pem` files, generate them using OpenSSL. Run this command in the root of the project directory:
+    ```bash
+    openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -sha256 -days 365 -nodes -subj "/C=US/ST=California/L=Mountain View/O=Google/OU=Gemini/CN=localhost"
+    ```
+
+2.  **Start the HTTPS Server**:
+    Run the provided Python script from the root of the project directory:
+    ```bash
+    python server.py
+    ```
+    You should see the output: `Serving HTTPS on https://localhost:8000`
+
+3.  **Connect from your Browser**:
+    *   Open a compatible browser (like Google Chrome or Microsoft Edge).
+    *   Navigate to `https://localhost:8000`.
+    *   Your browser will show a warning about the self-signed certificate. You must accept the risk and proceed to the page.
+    *   Click the **Connect** button, select the serial port for your ESP32, and begin configuring!
+
+---
+
 ## 💻 Interface Modes
 
 The firmware boots into a silent `FLIGHT` mode. To interact with it, you must activate one of the two interactive modes.
@@ -160,8 +195,7 @@ This section details the JSON-based API for programmatic interaction with the fl
 
 *   **Activation**: Send `api` over the serial connection.
 *   **Response**: `{"status":"api_mode_activated"}`
-*   **Keep-Alive**: Send `ping` periodically (e.g., every 1 second) to prevent API mode timeout.
-*   **Timeout**: If no `ping` is received within `API_MODE_TIMEOUT_MS` (2000ms), the device reverts to `FLIGHT` mode and sends `{"status":"api_mode_timeout"}`.
+*   Once activated, the device remains in API mode until it is rebooted.
 
 ### Live Data Stream
 

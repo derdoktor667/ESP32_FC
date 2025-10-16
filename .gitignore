@@ -34,6 +34,10 @@
 *.out
 *.app
 
+# Local development certificates
+cert.pem
+key.pem
+
 # Visual Studio Code
 /VS/
 /.vs/

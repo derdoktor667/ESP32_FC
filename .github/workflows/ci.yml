@@ -59,9 +59,6 @@ jobs:
         run: |
           arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
           arduino-cli core install esp32:esp32
-          arduino-cli lib install "DShotRMT"
-          arduino-cli lib install "ESP32_MPU6050"
-          arduino-cli lib install "FlyskyIBUS"
 
       - name: Save Arduino Core & Libraries Cache
         uses: actions/cache@v4
@@ -72,7 +69,7 @@ jobs:
             ~/.arduino15/cache
             ~/Arduino/libraries
             ~/.arduino-cli
-          key: ${{ runner.os }}-arduino-esp32-cli-${{ hashFiles('.github/workflows/ci.yml') }}-${{ hashFiles('**/library.properties') }}
+          key: ${{ runner.os }}-arduino-esp32-cli-fixed-cache-v1
 
   # ============================================================================
   # Compilation Test
@@ -112,7 +109,7 @@ jobs:
         uses: arduino/setup-arduino-cli@v2
 
       - name: Compile sketch
-        run: arduino-cli compile --fqbn esp32:esp32:esp32 --library ${{ github.workspace }}/libraries/DShotRMT --library ${{ github.workspace }}/libraries/ESP32_MPU6050 --library ${{ github.workspace }}/libraries/FlyskyIBUS ${{ github.workspace }}/${{ matrix.sketch }}
+        run: arduino-cli compile --fqbn esp32:esp32:esp32 --libraries ${{ github.workspace }}/libraries ${{ github.workspace }}/${{ matrix.sketch }}
 
   # ============================================================================
   # Build Status Report
