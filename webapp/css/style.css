@@ -1,70 +1,239 @@
+/* General Body and Typography */
 body {
-    font-family: sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
+    background-color: #eef2f7; /* Light blue-grey background */
+    color: #333;
+    line-height: 1.6;
 }
 
-header {
-    background-color: #333;
-    color: white;
-    padding: 1rem;
-    text-align: center;
+/* Header */
+.header {
+    background-color: #2c3e50; /* Dark blue-grey */
+    color: #ffffff;
+    padding: 15px 25px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-main {
-    padding: 1rem;
+.header h1 {
+    margin: 0;
+    font-size: 1.8em;
+    font-weight: 600;
 }
 
-/* Style the tab */
-.tab {
-    overflow: hidden;
-    border: 1px solid #ccc;
-    background-color: #f1f1f1;
+/* Connect Button */
+#toggleConnectButton {
+    background-color: #28a745; /* Green for connect */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
 }
 
-/* Style the buttons inside the tab */
-.tab button {
-    background-color: inherit;
-    float: left;
+#toggleConnectButton.connected {
+    background-color: #dc3545; /* Red for disconnect */
+}
+
+#toggleConnectButton:hover {
+    opacity: 0.9;
+}
+
+/* Tabs Navigation */
+.tabs {
+    display: flex;
+    background-color: #ffffff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin: 15px 25px 0;
+    border-radius: 8px;
+    overflow: hidden; /* Ensures border-radius is applied */
+}
+
+.tablinks {
+    background-color: #ffffff;
     border: none;
     outline: none;
     cursor: pointer;
-    padding: 14px 16px;
-    transition: 0.3s;
+    padding: 15px 20px;
+    transition: all 0.3s ease;
+    font-size: 1em;
+    color: #555;
+    flex-grow: 1; /* Distribute space evenly */
+    text-align: center;
 }
 
-/* Change background color of buttons on hover */
-.tab button:hover {
-    background-color: #ddd;
+.tablinks:hover {
+    background-color: #f0f0f0;
 }
 
-/* Create an active/current tablink class */
-.tab button.active {
-    background-color: #ccc;
+.tablinks.active {
+    background-color: #007bff; /* Primary blue */
+    color: white;
+    font-weight: 600;
+    box-shadow: inset 0 3px 0 0 #0056b3; /* Subtle bottom border for active tab */
 }
 
-/* Style the tab content */
+.tablinks:disabled {
+    color: #cccccc;
+    cursor: not-allowed;
+    background-color: #f8f8f8;
+}
+
+/* Tab Content */
 .tabcontent {
     display: none;
-    padding: 6px 12px;
-    border: 1px solid #ccc;
-    border-top: none;
+    padding: 25px;
+    margin: 15px 25px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-#controls {
-    margin-bottom: 1rem;
+.tabcontent h2 {
+    color: #2c3e50;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.5em;
 }
 
-#log {
-    border: 1px solid #ccc;
-    height: 300px;
-    overflow-y: scroll;
-    padding: 0.5rem;
+/* Info Container */
+#infoContainer div {
+    margin-bottom: 10px;
+}
+
+#infoContainer h3 {
+    color: #34495e;
+    font-size: 1.2em;
+    margin-bottom: 5px;
+}
+
+#infoContainer ul {
+    list-style: none;
+    padding: 0;
+}
+
+#infoContainer li {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+}
+
+/* 3D View */
+#attitude-display {
+    font-size: 1.2em;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 15px;
+    color: #007bff;
 }
 
 #3d-container {
     width: 100%;
     height: 400px;
+    background-color: #eef2f7; /* Light background for 3D view */
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+}
+
+#calibrateImuButton {
+    background-color: #ffc107; /* Orange/Yellow */
+    color: #333;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    margin-top: 15px;
+    transition: background-color 0.3s ease;
+}
+
+#calibrateImuButton:hover {
+    background-color: #e0a800;
+}
+
+/* Settings Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    overflow: hidden; /* For rounded corners */
+}
+
+table th,
+table td {
+    padding: 12px 15px;
+    border: 1px solid #dee2e6;
+    text-align: left;
+}
+
+table th {
+    background-color: #f0f4f8; /* Light header background */
+    font-weight: 600;
+    color: #34495e;
+}
+
+table tr:nth-child(even) {
+    background-color: #f8f9fa; /* Zebra striping */
+}
+
+table input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-sizing: border-box; /* Include padding in width */
+    font-size: 0.95em;
+}
+
+/* Raw Log */
+#log {
+    height: 500px;
+    overflow-y: scroll;
+    background-color: #2d2d2d; /* Dark background for code/log */
+    color: #f8f8f2; /* Light text */
+    padding: 15px;
+    border-radius: 8px;
+    font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .header,
+    .tabs {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .header h1,
+    .header button {
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    .tabs {
+        margin: 10px 15px 0;
+    }
+    .tablinks {
+        flex-grow: unset;
+        width: 100%;
+        border-bottom: 1px solid #eee;
+    }
+    .tablinks:last-child {
+        border-bottom: none;
+    }
+    .tabcontent {
+        margin: 10px 15px;
+        padding: 15px;
+    }
 }

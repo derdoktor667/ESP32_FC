@@ -324,7 +324,7 @@ function handleIncomingData(data) {
 
         if (data.version) {
             const infoContainer = document.getElementById('infoContainer');
-            let versionDiv = document.getElementById('firmwareVersion');
+            let versionDiv = document.createElement('div');
             if (!versionDiv) {
                 versionDiv = document.createElement('div');
                 versionDiv.id = 'firmwareVersion';
@@ -335,7 +335,7 @@ function handleIncomingData(data) {
 
         if (data.status) {
             const infoContainer = document.getElementById('infoContainer');
-            let statusDiv = document.getElementById('systemStatus');
+            let statusDiv = document.createElement('div');
             if (!statusDiv) {
                 statusDiv = document.createElement('div');
                 statusDiv.id = 'systemStatus';
