@@ -189,12 +189,7 @@ void CommunicationManager::begin() {}
 
 void CommunicationManager::update(const FlightState &state) {
     _handleSerialInput();
-    if (_currentMode == OperatingMode::API && millis() - _lastApiPingTime > API_MODE_TIMEOUT_MS) {
-        Serial.println("{\"status\":\"api_mode_timeout\"}");
-        _currentMode = OperatingMode::FLIGHT;
-        settings.enableLogging = false;
-    }
-    if (_currentMode == OperatingMode::API && settings.enableLogging && millis() - _lastSerialLogTime >= settings.printIntervalMs) {
+    if (_currentMode == OperatingMode::API && !_isSendingSettings && settings.enableLogging && millis() - _lastSerialLogTime >= settings.printIntervalMs) {
         _printFlightStatus(state);
         _lastSerialLogTime = millis();
     }
@@ -278,8 +273,6 @@ void CommunicationManager::_executeCommand(String command, bool isApiMode) {
         _handleStatusCommand();
     } else if (commandName.equals("version")) {
         _handleVersionCommand();
-    } else if (commandName.equals("ping") && isApiMode) {
-        _lastApiPingTime = millis();
     } else if (commandName.equals("help") && !isApiMode) {
         _printCliHelp();
     } else {
@@ -366,21 +359,43 @@ void CommunicationManager::_handleDumpCommand() {
 }
 
 void CommunicationManager::_handleDumpJsonCommand() {
-    _lastApiPingTime = millis();
+    _isSendingSettings = true;
     Serial.print("{\"settings\":{");
+    delay(1);
     for (int i = 0; i < numSettings; ++i) {
         const Setting& s = settingsRegistry[i];
-        if (i > 0) Serial.print(",");
+        if (i > 0) {
+            Serial.print(",");
+            delay(1);
+        }
         Serial.print("\"");
         Serial.print(s.name);
         Serial.print("\":");
+        delay(1);
         switch (s.type) {
-            case SettingType::FLOAT: Serial.print(*(float*)s.value / s.scaleFactor, 4); break;
-            case SettingType::UINT16: Serial.print(*(uint16_t*)s.value); break;
-            case SettingType::RECEIVER_PROTOCOL: Serial.print("\""); Serial.print(getReceiverProtocolString(*(ReceiverProtocol*)s.value)); Serial.print("\""); break;
-            case SettingType::IMU_PROTOCOL: Serial.print("\""); Serial.print(getImuProtocolString(*(ImuProtocol*)s.value)); Serial.print("\""); break;
-            case SettingType::DSHOT_MODE: Serial.print("\""); Serial.print(getDShotModeString(*(dshot_mode_t*)s.value)); Serial.print("\""); break;
+            case SettingType::FLOAT:
+                Serial.print(*(float*)s.value / s.scaleFactor, 4);
+                break;
+            case SettingType::UINT16:
+                Serial.print(*(uint16_t*)s.value);
+                break;
+            case SettingType::RECEIVER_PROTOCOL:
+                Serial.print("\"");
+                Serial.print(getReceiverProtocolString(*(ReceiverProtocol*)s.value));
+                Serial.print("\"");
+                break;
+            case SettingType::IMU_PROTOCOL:
+                Serial.print("\"");
+                Serial.print(getImuProtocolString(*(ImuProtocol*)s.value));
+                Serial.print("\"");
+                break;
+            case SettingType::DSHOT_MODE:
+                Serial.print("\"");
+                Serial.print(getDShotModeString(*(dshot_mode_t*)s.value));
+                Serial.print("\"");
+                break;
         }
+        delay(1);
     }
     for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i) {
         String key = "rx.map.";
@@ -391,8 +406,10 @@ void CommunicationManager::_handleDumpJsonCommand() {
         Serial.print(key);
         Serial.print("\":");
         Serial.print(settings.channelMapping.channel[i]);
+        delay(1);
     }
     Serial.println("}}");
+    _isSendingSettings = false;
 }
 
 void CommunicationManager::_handleGetCommand(String args, bool isApiMode) {

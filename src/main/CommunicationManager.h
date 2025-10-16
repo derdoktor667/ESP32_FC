@@ -53,10 +53,8 @@ private:
 
     FlightController* _fc; // Pointer to the FlightController instance
     OperatingMode _currentMode = OperatingMode::FLIGHT; // Current operating mode
-    unsigned long _lastApiPingTime = 0; // Timestamp of the last API ping command
     unsigned long _lastSerialLogTime = 0; // Timestamp of the last serial log output
-
-    static constexpr unsigned long API_MODE_TIMEOUT_MS = 2000; // API mode timeout in milliseconds
+    bool _isSendingSettings = false; // Flag to prevent live_data stream during settings dump
 
 public:
     enum class SetResult {
