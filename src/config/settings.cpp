@@ -21,12 +21,18 @@ const char *PREFERENCES_NAMESPACE = "fc-settings";
 // A key to check if settings have been initialized before
 const char *INIT_KEY = "initialized";
 
-static constexpr bool NVS_READ_WRITE_MODE = false;
+static constexpr bool NVS_READ_WRITE_MODE = false; // true = read-only mode, false = read-write mode
+
+static void _logSettingsStatus(const char* message)
+{
+    Serial.print("INFO: ");
+    Serial.println(message);
+}
 
 void saveSettings()
 {
-    Serial.println("INFO: Saving settings to flash...");
-    preferences.begin(PREFERENCES_NAMESPACE, NVS_READ_WRITE_MODE); // false = read-write mode
+    _logSettingsStatus("Saving settings to flash...");
+    preferences.begin(PREFERENCES_NAMESPACE, NVS_READ_WRITE_MODE);
 
     // Mark settings as initialized
     preferences.putBool(INIT_KEY, true);
@@ -78,19 +84,19 @@ void saveSettings()
     preferences.putInt(NVSKeys::DSHOT_MODE_VAL, (int)settings.dshotMode);
     preferences.putBool(NVSKeys::ENFORCE_LOOP_TIME, settings.enforceLoopTime);
 
-    Serial.println("INFO: Settings saved.");
+    _logSettingsStatus("Settings saved.");
 }
 
 void loadSettings()
 {
-    preferences.begin(PREFERENCES_NAMESPACE, NVS_READ_WRITE_MODE); // Open in read-write mode
+    preferences.begin(PREFERENCES_NAMESPACE, NVS_READ_WRITE_MODE);
 
     // Check if settings have been initialized before.
     bool initialized = preferences.getBool(INIT_KEY, false);
 
     if (initialized)
     {
-        Serial.println("INFO: Saved settings found. Loading...");
+        _logSettingsStatus("Saved settings found. Loading...");
         // Load all settings into the struct
         settings.pidRoll.kp = preferences.getInt(NVSKeys::PID_ROLL_KP, settings.pidRoll.kp);
         settings.pidRoll.ki = preferences.getInt(NVSKeys::PID_ROLL_KI, settings.pidRoll.ki);
@@ -137,14 +143,14 @@ void loadSettings()
             String key = String(NVSKeys::RX_CHANNEL_MAP_PREFIX) + String(i);
             settings.channelMapping.channel[i] = preferences.getInt(key.c_str(), settings.channelMapping.channel[i]);
         }
-        Serial.println("INFO: Settings loaded.");
+        _logSettingsStatus("Settings loaded.");
     }
     else
     {
         // This is the first run, or settings were cleared.
         // The 'settings' object already holds the default values from config.h.
         // We just need to save them to flash for the first time.
-        Serial.println("INFO: No saved settings found. Saving default values...");
+        _logSettingsStatus("No saved settings found. Saving default values...");
         saveSettings(); // This will also set the 'initialized' flag.
     }
 

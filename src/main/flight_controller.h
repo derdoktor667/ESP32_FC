@@ -21,6 +21,7 @@
 #include "src/modules/PidProcessor.h"
 #include "src/modules/MotorMixer.h"
 #include <DShotRMT.h>
+#include <memory> // Required for std::unique_ptr
 
 // Forward declaration to break circular dependency
 class CommunicationManager;
@@ -33,7 +34,7 @@ class FlightController
 {
 public:
     FlightController();
-    ~FlightController(); // Destructor to clean up dynamically allocated objects
+    // Destructor is no longer explicitly needed as std::unique_ptr handles cleanup
 
     // Initializes all hardware and modules.
     void initialize();
@@ -42,7 +43,7 @@ public:
     void runLoop();
 
     // Sets the CommunicationManager instance.
-    void setCommunicationManager(CommunicationManager* comms);
+    void setCommunicationManager(CommunicationManager *comms);
 
     // Requests IMU calibration.
     void requestImuCalibration();
@@ -51,24 +52,32 @@ public:
     FlightState state;
 
 private:
+    // --- Private Helper Methods for Initialization ---
+    void _initializeMotors();
+    void _initializeReceiver();
+    void _initializeImu();
+    void _initializeModules();
+
+    // --- Error Handling ---
+    void _haltOnError(const char* message);
+
     // --- Hardware Objects ---
-    ImuInterface *_imuInterface = nullptr; // Pointer to the active IMU interface
-    ReceiverInterface *_receiver;
-    DShotRMT *_motor1 = nullptr, *_motor2 = nullptr, *_motor3 = nullptr, *_motor4 = nullptr;
+    std::unique_ptr<ImuInterface> _imuInterface; // Pointer to the active IMU interface
+    std::unique_ptr<ReceiverInterface> _receiver;
+    std::unique_ptr<DShotRMT> _motor1, _motor2, _motor3, _motor4;
 
     // --- Processing Modules ---
     AttitudeEstimator _attitudeEstimator;
-    SafetyManager *_safetyManager;
-    SetpointManager *_setpointManager;
+    std::unique_ptr<SafetyManager> _safetyManager;
+    std::unique_ptr<SetpointManager> _setpointManager;
     PidProcessor _pidProcessor;
-    MotorMixer *_motorMixer = nullptr;
+    std::unique_ptr<MotorMixer> _motorMixer;
 
     // --- Communication Manager ---
-    CommunicationManager* _comms = nullptr; // Communication Manager instance (now a pointer)
+    CommunicationManager *_comms = nullptr; // Communication Manager instance (now a pointer)
 
     // --- Loop Timing ---
-    unsigned long _lastLoopTimeUs = 0; // Timestamp of the last loop iteration in microseconds
-    unsigned long _loopTimer = 0;      // Timer for measuring loop duration
+    unsigned long _loopTimer = 0;
 };
 
 #endif // FLIGHT_CONTROLLER_H

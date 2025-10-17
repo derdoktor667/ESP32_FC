@@ -209,6 +209,28 @@ table input[type="text"] {
     box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
 }
 
+/* Receiver Channel Bars */
+.channel-bar-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.channel-label {
+    width: 120px; /* Fixed width for labels */
+    margin-right: 10px;
+    font-weight: bold;
+    color: #34495e;
+}
+
+.channel-bar {
+    flex-grow: 1;
+    height: 20px;
+    background-color: #007bff; /* Blue bar */
+    border-radius: 3px;
+    transition: width 0.1s ease-out; /* Smooth transition for bar width */
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .header,

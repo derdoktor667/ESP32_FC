@@ -18,7 +18,7 @@
         <button class="tablinks" onclick="openTab(event, '3dViewTab')" disabled>3D View</button>
         <button class="tablinks" onclick="openTab(event, 'motorSettingsTab')" disabled>Motor Settings</button>
         <button class="tablinks" onclick="openTab(event, 'pidSettingsTab')" disabled>PID Settings</button>
-        <button class="tablinks" onclick="openTab(event, 'receiverSettingsTab')" disabled>Receiver Settings</button>
+        <button class="tablinks" onclick="openTab(event, 'receiverTab')" disabled>Receiver</button>
         <button class="tablinks" onclick="openTab(event, 'rawLogTab')">Raw Log</button>
     </div>
 
@@ -44,10 +44,11 @@
         <div id="pidSettingsContainer"></div>
     </div>
 
-    <div id="receiverSettingsTab" class="tabcontent">
-        <h2>Receiver Settings</h2>
+    <div id="receiverTab" class="tabcontent">
+        <h2>Receiver Settings & Live Data</h2>
         <div id="receiverSettingsContainer"></div>
-        <div id="receiverChannelValues"></div>
+        <h3>Live Receiver Channels</h3>
+        <div id="receiverChannelBars"></div>
     </div>
 
     <div id="rawLogTab" class="tabcontent">

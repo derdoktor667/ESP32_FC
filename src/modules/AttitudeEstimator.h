@@ -15,6 +15,7 @@
 #include "src/hardware/imu/ImuInterface.h"
 #include "src/utils/filter/ComplementaryFilter.h"
 #include "src/utils/filter/MultiStageBiquadFilter.h"
+#include <memory> // Required for std::unique_ptr
 
 // Estimates the drone's attitude (roll, pitch, yaw) using sensor fusion.
 // This module encapsulates the logic for reading raw IMU data, applying a
@@ -26,7 +27,7 @@ public:
     // Default constructor.
     // Use init() for proper initialization after settings are loaded.
     AttitudeEstimator();
-    ~AttitudeEstimator(); // Destructor to clean up dynamically allocated filters
+    // Destructor is no longer explicitly needed as std::unique_ptr handles cleanup
 
     // Initializes the AttitudeEstimator with required dependencies.
     // This method must be called after settings are loaded and IMU is initialized.
@@ -49,17 +50,20 @@ private:
     ImuInterface *_imu = nullptr;                        // Pointer to the IMU sensor interface
     const FlightControllerSettings *_settings = nullptr; // Pointer to global flight controller settings
 
-    ComplementaryFilter *_complementaryFilter = nullptr; // Instance of the Complementary filter for sensor fusion
+    std::unique_ptr<ComplementaryFilter> _complementaryFilter; // Instance of the Complementary filter for sensor fusion
 
     // Multi-stage biquad low-pass filters for raw gyroscope data
-    MultiStageBiquadFilter *_gyroRollLpf = nullptr;
-    MultiStageBiquadFilter *_gyroPitchLpf = nullptr;
-    MultiStageBiquadFilter *_gyroYawLpf = nullptr;
+    std::unique_ptr<MultiStageBiquadFilter> _gyroRollLpf;
+    std::unique_ptr<MultiStageBiquadFilter> _gyroPitchLpf;
+    std::unique_ptr<MultiStageBiquadFilter> _gyroYawLpf;
 
     // Multi-stage biquad low-pass filters for raw accelerometer data
-    MultiStageBiquadFilter *_accelRollLpf = nullptr;
-    MultiStageBiquadFilter *_accelPitchLpf = nullptr;
-    MultiStageBiquadFilter *_accelYawLpf = nullptr;
+    std::unique_ptr<MultiStageBiquadFilter> _accelRollLpf;
+    std::unique_ptr<MultiStageBiquadFilter> _accelPitchLpf;
+    std::unique_ptr<MultiStageBiquadFilter> _accelYawLpf;
+
+    // Private helper method for filter initialization
+    void _initializeFilters();
 
 
 };

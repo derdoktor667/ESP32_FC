@@ -37,6 +37,9 @@ public:
 private:
     ESP32_MPU6050 _mpu;
     LpfBandwidth _lpfBandwidth;
+
+    // Private helper method for logging calibration status
+    void _logCalibrationStatus(const char* message);
 };
 
 #endif // MPU6050_IMU_H

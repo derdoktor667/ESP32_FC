@@ -27,7 +27,7 @@ void SetpointManager::update(FlightState &state)
     // Use the values directly from FlightState.
 
     // Determine the current flight mode based on the mapped flight mode switch channel.
-    uint16_t flightModeChannelValue = state.receiverChannels[_settings.channelMapping.channel[FLIGHT_MODE_SWITCH]];
+    uint16_t flightModeChannelValue = state.receiverChannels[_settings.channelMapping.channel[FLIGHT_MODE_SWITCH] - RECEIVER_CHANNEL_OFFSET];
     if (flightModeChannelValue < FLIGHT_MODE_ACRO_THRESHOLD) // Example threshold for ACRO_MODE
     {
         state.currentFlightMode = ACRO_MODE;
@@ -39,28 +39,38 @@ void SetpointManager::update(FlightState &state)
     // Intermediate values could imply other modes or be ignored.
 
     // Calculate setpoints for Roll, Pitch, Yaw, and Throttle based on flight mode and mapped channels.
-    uint16_t rollChannelValue = state.receiverChannels[_settings.channelMapping.channel[ROLL]];
-    uint16_t pitchChannelValue = state.receiverChannels[_settings.channelMapping.channel[PITCH]];
-    uint16_t yawChannelValue = state.receiverChannels[_settings.channelMapping.channel[YAW]];
-    uint16_t throttleChannelValue = state.receiverChannels[_settings.channelMapping.channel[THROTTLE]];
+    uint16_t rollChannelValue = state.receiverChannels[_settings.channelMapping.channel[ROLL] - RECEIVER_CHANNEL_OFFSET];
+    uint16_t pitchChannelValue = state.receiverChannels[_settings.channelMapping.channel[PITCH] - RECEIVER_CHANNEL_OFFSET];
+    uint16_t yawChannelValue = state.receiverChannels[_settings.channelMapping.channel[YAW] - RECEIVER_CHANNEL_OFFSET];
+    uint16_t throttleChannelValue = state.receiverChannels[_settings.channelMapping.channel[THROTTLE] - RECEIVER_CHANNEL_OFFSET];
 
     // Map receiver input to target setpoints. The `map` function is an Arduino utility function.
     if (state.currentFlightMode == ANGLE_MODE)
     {
         // In ANGLE_MODE, stick input directly maps to a target angle (degrees).
-        state.setpoints.roll = (float)(rollChannelValue - _settings.receiver.ibusMinValue) * (2.0f * _settings.rates.maxAngleRollPitch) / (_settings.receiver.ibusMaxValue - _settings.receiver.ibusMinValue) - _settings.rates.maxAngleRollPitch;
-        state.setpoints.pitch = (float)(pitchChannelValue - _settings.receiver.ibusMinValue) * (2.0f * _settings.rates.maxAngleRollPitch) / (_settings.receiver.ibusMaxValue - _settings.receiver.ibusMinValue) - _settings.rates.maxAngleRollPitch;
+        state.setpoints.roll = _calculateSetpoint(rollChannelValue, _settings.rates.maxAngleRollPitch);
+        state.setpoints.pitch = _calculateSetpoint(pitchChannelValue, _settings.rates.maxAngleRollPitch);
     }
     else // ACRO_MODE (or any other rate-based mode)
     {
         // In ACRO_MODE, stick input maps to a target rotation rate (degrees/second).
-        state.setpoints.roll = (float)(rollChannelValue - _settings.receiver.ibusMinValue) * (2.0f * _settings.rates.maxRateRollPitch) / (_settings.receiver.ibusMaxValue - _settings.receiver.ibusMinValue) - _settings.rates.maxRateRollPitch;
-        state.setpoints.pitch = (float)(pitchChannelValue - _settings.receiver.ibusMinValue) * (2.0f * _settings.rates.maxRateRollPitch) / (_settings.receiver.ibusMaxValue - _settings.receiver.ibusMinValue) - _settings.rates.maxRateRollPitch;
+        state.setpoints.roll = _calculateSetpoint(rollChannelValue, _settings.rates.maxRateRollPitch);
+        state.setpoints.pitch = _calculateSetpoint(pitchChannelValue, _settings.rates.maxRateRollPitch);
     }
 
     // Yaw control is typically always rate-based, regardless of flight mode.
-    state.setpoints.yaw = (float)(yawChannelValue - _settings.receiver.ibusMinValue) * (2.0f * _settings.rates.maxRateYaw) / (_settings.receiver.ibusMaxValue - _settings.receiver.ibusMinValue) - _settings.rates.maxRateYaw;
+    state.setpoints.yaw = _calculateSetpoint(yawChannelValue, _settings.rates.maxRateYaw);
 
     // Map throttle input from receiver's raw range to the DShot throttle range.
-    state.throttle = (float)(throttleChannelValue - _settings.receiver.ibusMinValue) * (DSHOT_MAX_THROTTLE - DSHOT_MIN_THROTTLE) / (_settings.receiver.ibusMaxValue - _settings.receiver.ibusMinValue) + DSHOT_MIN_THROTTLE;
+    state.throttle = _calculateThrottle(throttleChannelValue);
+}
+
+float SetpointManager::_calculateSetpoint(uint16_t channelValue, float maxRateOrAngle) const
+{
+    return (float)(channelValue - _settings.receiver.ibusMinValue) * (SETPOINT_SCALING_FACTOR * maxRateOrAngle) / (_settings.receiver.ibusMaxValue - _settings.receiver.ibusMinValue) - maxRateOrAngle;
+}
+
+float SetpointManager::_calculateThrottle(uint16_t throttleChannelValue) const
+{
+    return (float)(throttleChannelValue - _settings.receiver.ibusMinValue) * (DSHOT_MAX_THROTTLE - DSHOT_MIN_THROTTLE) / (_settings.receiver.ibusMaxValue - _settings.receiver.ibusMinValue) + DSHOT_MIN_THROTTLE;
 }

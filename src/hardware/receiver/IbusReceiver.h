@@ -32,9 +32,7 @@ public:
     bool hasFailsafe() const override;
 
 private:
-    mutable FlyskyIBUS _ibus; // The underlying iBUS library object
-    static constexpr unsigned long IBUS_SIGNAL_TIMEOUT_MS = 500; // Milliseconds before signal is considered lost
-    static constexpr uint16_t IBUS_INVALID_CHANNEL_VALUE = 0; // Value indicating an invalid or unreceived channel
+    FlyskyIBUS _ibus; // The underlying iBUS library object
 };
 
 #endif // IBUS_RECEIVER_H
