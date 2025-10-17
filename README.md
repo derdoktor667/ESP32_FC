@@ -396,6 +396,7 @@ This project stands on the shoulders of giants. The core hardware interaction is
 *   [**DShotRMT**](libraries/DShotRMT): A fantastic library for generating DShot signals using the ESP32's RMT peripheral.
 *   [**ESP32_MPU6050**](libraries/ESP32_MPU6050): A driver for the MPU6050 IMU.
 *   [**FlyskyIBUS**](libraries/FlyskyIBUS): A lightweight library for decoding the Flysky i-BUS protocol.
+*   [**ArduinoJson**](libraries/ArduinoJson): A popular and efficient library for JSON serialization and deserialization in embedded environments.
 
 ---
 

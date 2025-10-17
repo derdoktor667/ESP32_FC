@@ -7,3 +7,6 @@
 [submodule "libraries/ESP32_MPU6050"]
 	path = libraries/ESP32_MPU6050
 	url = https://github.com/derdoktor667/ESP32_MPU6050
+[submodule "libraries/ArduinoJson"]
+	path = libraries/ArduinoJson
+	url = https://github.com/bblanchon/ArduinoJson
