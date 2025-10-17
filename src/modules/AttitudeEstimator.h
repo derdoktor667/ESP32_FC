@@ -61,6 +61,9 @@ private:
     MultiStageBiquadFilter *_accelPitchLpf = nullptr;
     MultiStageBiquadFilter *_accelYawLpf = nullptr;
 
+    // Private helper method for filter initialization
+    void _initializeFilters();
+
 
 };
 

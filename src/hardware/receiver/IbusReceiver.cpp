@@ -33,15 +33,14 @@ void IbusReceiver::update()
 // Gets the value of a specific iBUS channel.
 uint16_t IbusReceiver::getChannel(int channel) const
 {
-    // The const_cast is necessary because the underlying library's getChannel
-    // is not marked as const, but our interface requires it to be. This is safe
-    // as the library's getChannel method only reads data and does not modify state.
-    return const_cast<FlyskyIBUS &>(_ibus).getChannel(channel);
+    // The FlyskyIBUS library now handles failsafe internally, so we can directly
+    // call its getChannel method.
+    return _ibus.getChannel(channel);
 }
 
 // Checks the failsafe status from the iBUS receiver.
 bool IbusReceiver::hasFailsafe() const
 {
-    // Failsafe is active if no signal has been received for a certain period.
-    return (millis() - _ibus.getReadTime() > IBUS_SIGNAL_TIMEOUT_MS);
+    // The FlyskyIBUS library now handles all failsafe logic internally.
+    return _ibus.hasFailsafe();
 }

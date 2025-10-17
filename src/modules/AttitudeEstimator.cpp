@@ -44,18 +44,7 @@ void AttitudeEstimator::init(ImuInterface &imu, const FlightControllerSettings &
 {
     _imu = &imu;
     _settings = &settings;
-    // Initialize Complementary filter with actual settings from config.h
-    _complementaryFilter = new ComplementaryFilter(_settings->filter.complementaryFilterTau, _settings->filter.filterSampleFreq);
-
-    // Initialize gyroscope low-pass filters
-    _gyroRollLpf = new MultiStageBiquadFilter(_settings->filter.gyroLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroLpfStages);
-    _gyroPitchLpf = new MultiStageBiquadFilter(_settings->filter.gyroLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroLpfStages);
-    _gyroYawLpf = new MultiStageBiquadFilter(_settings->filter.gyroLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroLpfStages);
-
-    // Initialize accelerometer low-pass filters
-    _accelRollLpf = new MultiStageBiquadFilter(_settings->filter.accelLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.accelLpfStages);
-    _accelPitchLpf = new MultiStageBiquadFilter(_settings->filter.accelLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.accelLpfStages);
-    _accelYawLpf = new MultiStageBiquadFilter(_settings->filter.accelLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.accelLpfStages);
+    _initializeFilters();
 }
 
 // Performs the initial calibration of the IMU.
@@ -109,4 +98,20 @@ void AttitudeEstimator::calibrate()
     // After IMU calibration, reset the filter to consider the current
     // orientation as the new horizontal zero position.
     _complementaryFilter->reset();
+}
+
+void AttitudeEstimator::_initializeFilters()
+{
+    // Initialize Complementary filter with actual settings from config.h
+    _complementaryFilter = new ComplementaryFilter(_settings->filter.complementaryFilterTau, _settings->filter.filterSampleFreq);
+
+    // Initialize gyroscope low-pass filters
+    _gyroRollLpf = new MultiStageBiquadFilter(_settings->filter.gyroLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroLpfStages);
+    _gyroPitchLpf = new MultiStageBiquadFilter(_settings->filter.gyroLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroLpfStages);
+    _gyroYawLpf = new MultiStageBiquadFilter(_settings->filter.gyroLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroLpfStages);
+
+    // Initialize accelerometer low-pass filters
+    _accelRollLpf = new MultiStageBiquadFilter(_settings->filter.accelLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.accelLpfStages);
+    _accelPitchLpf = new MultiStageBiquadFilter(_settings->filter.accelLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.accelLpfStages);
+    _accelYawLpf = new MultiStageBiquadFilter(_settings->filter.accelLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.accelLpfStages);
 }

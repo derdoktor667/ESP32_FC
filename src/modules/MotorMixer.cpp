@@ -46,6 +46,18 @@ void MotorMixer::apply(FlightState &state)
     // --- Motor Mixing for X-quad configuration ---
     // The PID outputs (roll, pitch, yaw) are added/subtracted from the base throttle
     // to achieve the desired attitude changes.
+    //
+    // Motor layout (viewed from top, front is +X):
+    //   M2 (Front-Left) --- M1 (Front-Right)
+    //        |       |
+    //        |   +X  |
+    //        |       |
+    //   M4 (Rear-Left)  --- M3 (Rear-Right)
+    //
+    // Roll:   (M1+M3) - (M2+M4)  (Right side up, Left side down)
+    // Pitch:  (M1+M2) - (M3+M4)  (Front up, Rear down)
+    // Yaw:    (M1+M4) - (M2+M3)  (CW rotation)
+    //
     // m1: Front Right motor
     // m2: Front Left motor
     // m3: Rear Right motor

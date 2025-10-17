@@ -28,15 +28,18 @@ void SafetyManager::update(FlightState &state)
     uint16_t failsafeSwitchChannelValue = state.receiverChannels[_settings.channelMapping.channel[FAILSAFE_SWITCH]];
 
     // --- Failsafe Logic (Highest Priority) ---
+    bool receiverFailsafeActive = _receiver.hasFailsafe();
+    bool failsafeSwitchEngaged = (failsafeSwitchChannelValue > _settings.receiver.failsafeThreshold);
+
     // Failsafe is activated if the receiver reports signal loss OR if the dedicated failsafe switch is active.
-    if (_receiver.hasFailsafe() || (failsafeSwitchChannelValue > _settings.receiver.failsafeThreshold))
+    if (receiverFailsafeActive || failsafeSwitchEngaged)
     {
         // If failsafe was not previously active, activate it and force disarm.
         if (!state.isFailsafeActive)
         {
             state.isFailsafeActive = true;
             state.isArmed = false; // Crucial: Always disarm when failsafe is active.
-            Serial.println("INFO: FAILSAFE ACTIVATED - MOTORS STOPPED");
+            _logSafetyStatus("FAILSAFE ACTIVATED - MOTORS STOPPED");
         }
         // When in failsafe, no further arming/disarming logic should be processed.
         // Motors are commanded to stop by MotorMixer.
@@ -48,21 +51,30 @@ void SafetyManager::update(FlightState &state)
         if (state.isFailsafeActive)
         {
             state.isFailsafeActive = false;
-            Serial.println("INFO: Failsafe deactivated.");
+            _logSafetyStatus("Failsafe deactivated.");
         }
     }
 
     // --- Arming/Disarming Logic (Only processed if failsafe is NOT active) ---
+    bool armingSwitchEngaged = (armingChannelValue > _settings.receiver.armingThreshold);
+    bool disarmingSwitchEngaged = (armingChannelValue < _settings.receiver.armingThreshold);
+
     // Check if the arming switch is in the "armed" position and the drone is not yet armed.
-    if (armingChannelValue > _settings.receiver.armingThreshold && !state.isArmed)
+    if (armingSwitchEngaged && !state.isArmed)
     {
         state.isArmed = true;
-        Serial.println("INFO: ARMED");
+        _logSafetyStatus("ARMED");
     }
     // Check if the arming switch is in the "disarmed" position and the drone is currently armed.
-    else if (armingChannelValue < _settings.receiver.armingThreshold && state.isArmed)
+    else if (disarmingSwitchEngaged && state.isArmed)
     {
         state.isArmed = false;
-        Serial.println("INFO: DISARMED");
+        _logSafetyStatus("DISARMED");
     }
+}
+
+void SafetyManager::_logSafetyStatus(const char* message)
+{
+    Serial.print("INFO: ");
+    Serial.println(message);
 }

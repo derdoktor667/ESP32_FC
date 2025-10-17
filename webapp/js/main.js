@@ -56,6 +56,12 @@ let port;
 let writer;
 let isConnected = false;
 
+// Receiver channel names for display
+const receiverChannelNames = [
+    "Roll", "Pitch", "Throttle", "Yaw", "Arm", "Failsafe", "Flight Mode",
+    "Aux 1", "Aux 2", "Aux 3", "Aux 4", "Aux 5", "Aux 6", "Aux 7", "Aux 8", "Aux 9"
+];
+
 // --- 3D View ---
 let scene, camera, renderer, quadcopter;
 
@@ -350,33 +356,52 @@ function handleIncomingData(data) {
             statusDiv.innerHTML = statusHtml;
         }
 
-        const receiverSettingsTab = document.getElementById('receiverSettingsTab');
-        if (receiverSettingsTab && receiverSettingsTab.style.display === 'block' && data.live_data && data.live_data.receiver_channels) {
+        // Update receiver live data bars
+        const receiverTab = document.getElementById('receiverTab');
+        if (receiverTab && receiverTab.style.display === 'block' && data.live_data && data.live_data.receiver_channels) {
             const receiverChannels = data.live_data.receiver_channels;
-            const receiverChannelValuesDiv = document.getElementById('receiverChannelValues');
-            if (receiverChannelValuesDiv) {
-                let html = '<h3>Live Receiver Channels:</h3><table>';
+            const receiverChannelBarsDiv = document.getElementById('receiverChannelBars');
+            if (receiverChannelBarsDiv) {
+                receiverChannelBarsDiv.innerHTML = ''; // Clear previous bars
                 for (let i = 0; i < receiverChannels.length; i++) {
-                    html += `<tr><td>Channel ${i}:</td><td>${receiverChannels[i]}</td></tr>`;
+                    const channelName = receiverChannelNames[i] || `Channel ${i}`;
+                    const channelValue = receiverChannels[i];
+                    const barContainer = document.createElement('div');
+                    barContainer.className = 'channel-bar-container';
+
+                    const label = document.createElement('span');
+                    label.className = 'channel-label';
+                    label.textContent = `${channelName}: ${channelValue}`;
+                    barContainer.appendChild(label);
+
+                    const bar = document.createElement('div');
+                    bar.className = 'channel-bar';
+                    // Assuming channel values are between 1000 and 2000 for scaling
+                    const percentage = ((channelValue - 1000) / 1000) * 100; 
+                    bar.style.width = `${Math.max(0, Math.min(100, percentage))}%`;
+                    barContainer.appendChild(bar);
+
+                    receiverChannelBarsDiv.appendChild(barContainer);
                 }
-                html += '</table>';
-                receiverChannelValuesDiv.innerHTML = html;
             }
         }
 
         const threeDViewTab = document.getElementById('3dViewTab');
         if (threeDViewTab && threeDViewTab.style.display === 'block' && data.live_data && data.live_data.attitude && quadcopter) {
             const attitude = data.live_data.attitude;
+            const roll = parseFloat(attitude.roll);
+            const pitch = parseFloat(attitude.pitch);
+            const yaw = parseFloat(attitude.yaw);
             
             // Update 3D model
-            if (typeof attitude.pitch === 'number') quadcopter.rotation.x = THREE.MathUtils.degToRad(attitude.pitch);
-            if (typeof attitude.yaw === 'number') quadcopter.rotation.y = THREE.MathUtils.degToRad(attitude.yaw);
-            if (typeof attitude.roll === 'number') quadcopter.rotation.z = THREE.MathUtils.degToRad(attitude.roll);
+            if (!isNaN(pitch)) quadcopter.rotation.x = THREE.MathUtils.degToRad(pitch);
+            if (!isNaN(yaw)) quadcopter.rotation.y = THREE.MathUtils.degToRad(yaw);
+            if (!isNaN(roll)) quadcopter.rotation.z = THREE.MathUtils.degToRad(roll);
 
             // Update numerical display
             const attitudeDisplay = document.getElementById('attitude-display');
             if (attitudeDisplay) {
-                attitudeDisplay.innerHTML = `Roll: ${attitude.roll !== undefined ? attitude.roll.toFixed(2) : 'N/A'}&deg; | Pitch: ${attitude.pitch !== undefined ? attitude.pitch.toFixed(2) : 'N/A'}&deg; | Yaw: ${attitude.yaw !== undefined ? attitude.yaw.toFixed(2) : 'N/A'}&deg;`;
+                attitudeDisplay.innerHTML = `Roll: ${!isNaN(roll) ? roll : 'N/A'}&deg; | Pitch: ${!isNaN(pitch) ? pitch : 'N/A'}&deg; | Yaw: ${!isNaN(yaw) ? yaw : 'N/A'}&deg;`;
             }
         }
     } else {

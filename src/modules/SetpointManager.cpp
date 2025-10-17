@@ -48,19 +48,29 @@ void SetpointManager::update(FlightState &state)
     if (state.currentFlightMode == ANGLE_MODE)
     {
         // In ANGLE_MODE, stick input directly maps to a target angle (degrees).
-        state.setpoints.roll = (float)(rollChannelValue - _settings.receiver.ibusMinValue) * (SETPOINT_SCALING_FACTOR * _settings.rates.maxAngleRollPitch) / (_settings.receiver.ibusMaxValue - _settings.receiver.ibusMinValue) - _settings.rates.maxAngleRollPitch;
-        state.setpoints.pitch = (float)(pitchChannelValue - _settings.receiver.ibusMinValue) * (SETPOINT_SCALING_FACTOR * _settings.rates.maxAngleRollPitch) / (_settings.receiver.ibusMaxValue - _settings.receiver.ibusMinValue) - _settings.rates.maxAngleRollPitch;
+        state.setpoints.roll = _calculateSetpoint(rollChannelValue, _settings.rates.maxAngleRollPitch);
+        state.setpoints.pitch = _calculateSetpoint(pitchChannelValue, _settings.rates.maxAngleRollPitch);
     }
     else // ACRO_MODE (or any other rate-based mode)
     {
         // In ACRO_MODE, stick input maps to a target rotation rate (degrees/second).
-        state.setpoints.roll = (float)(rollChannelValue - _settings.receiver.ibusMinValue) * (SETPOINT_SCALING_FACTOR * _settings.rates.maxRateRollPitch) / (_settings.receiver.ibusMaxValue - _settings.receiver.ibusMinValue) - _settings.rates.maxRateRollPitch;
-        state.setpoints.pitch = (float)(pitchChannelValue - _settings.receiver.ibusMinValue) * (SETPOINT_SCALING_FACTOR * _settings.rates.maxRateRollPitch) / (_settings.receiver.ibusMaxValue - _settings.receiver.ibusMinValue) - _settings.rates.maxRateRollPitch;
+        state.setpoints.roll = _calculateSetpoint(rollChannelValue, _settings.rates.maxRateRollPitch);
+        state.setpoints.pitch = _calculateSetpoint(pitchChannelValue, _settings.rates.maxRateRollPitch);
     }
 
     // Yaw control is typically always rate-based, regardless of flight mode.
-    state.setpoints.yaw = (float)(yawChannelValue - _settings.receiver.ibusMinValue) * (SETPOINT_SCALING_FACTOR * _settings.rates.maxRateYaw) / (_settings.receiver.ibusMaxValue - _settings.receiver.ibusMinValue) - _settings.rates.maxRateYaw;
+    state.setpoints.yaw = _calculateSetpoint(yawChannelValue, _settings.rates.maxRateYaw);
 
     // Map throttle input from receiver's raw range to the DShot throttle range.
-    state.throttle = (float)(throttleChannelValue - _settings.receiver.ibusMinValue) * (DSHOT_MAX_THROTTLE - DSHOT_MIN_THROTTLE) / (_settings.receiver.ibusMaxValue - _settings.receiver.ibusMinValue) + DSHOT_MIN_THROTTLE;
+    state.throttle = _calculateThrottle(throttleChannelValue);
+}
+
+float SetpointManager::_calculateSetpoint(uint16_t channelValue, float maxRateOrAngle) const
+{
+    return (float)(channelValue - _settings.receiver.ibusMinValue) * (SETPOINT_SCALING_FACTOR * maxRateOrAngle) / (_settings.receiver.ibusMaxValue - _settings.receiver.ibusMinValue) - maxRateOrAngle;
+}
+
+float SetpointManager::_calculateThrottle(uint16_t throttleChannelValue) const
+{
+    return (float)(throttleChannelValue - _settings.receiver.ibusMinValue) * (DSHOT_MAX_THROTTLE - DSHOT_MIN_THROTTLE) / (_settings.receiver.ibusMaxValue - _settings.receiver.ibusMinValue) + DSHOT_MIN_THROTTLE;
 }

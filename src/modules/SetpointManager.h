@@ -33,6 +33,10 @@ public:
 private:
     ReceiverInterface &_receiver;              // Reference to the active RC receiver
     const FlightControllerSettings &_settings; // Reference to global flight controller settings
+
+    // Private helper methods for setpoint calculations
+    float _calculateSetpoint(uint16_t channelValue, float maxRateOrAngle) const;
+    float _calculateThrottle(uint16_t throttleChannelValue) const;
 };
 
 #endif // SETPOINT_MANAGER_MODULE_H

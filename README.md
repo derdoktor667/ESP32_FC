@@ -16,7 +16,7 @@ An advanced, high-performance flight controller firmware for quadcopters, built 
 *   **DShot ESC Control**
 *   **Centralized Settings**: All user-tunable parameters are consolidated into a single `FlightControllerSettings` struct in `src/config.h`.
 *   **System Status and Versioning**: CLI and API commands to retrieve detailed system status (loop time, memory, CPU load) and firmware version.
-*   **Web Application Configurator**: A comprehensive web-based UI in the `/webapp` directory that connects via the Web Serial API. It features an 'Info' tab as the default, displaying general software and hardware information (firmware version, system status). Other tabs (3D View, Motor Settings, PID Settings, Receiver Settings, Raw Log) are initially disabled and become available only after data is successfully received from the ESP32. The web app is served locally via a Python HTTPS server using a self-signed certificate.
+*   **Comprehensive Code Refactoring for Maintainability and Readability**: Extensive refactoring across core modules, hardware abstraction layers, and configuration files to improve code clarity, reduce complexity, enhance long-term maintainability, and ensure consistent coding practices. This includes breaking down large functions, centralizing logging, correcting `const` qualifiers, and improving comments.
     *   **Web App Connection Fix**: Resolved an issue where the 'Connect' button in the web app was unresponsive due to a JavaScript syntax error and missing `releaseLock()` calls in the disconnect logic.
     *   **Improved 3D Quadcopter Representation**: Enhanced the 3D model in the web app to include a central body, arms, propellers, and a flight direction marker, providing a more realistic visual representation.
     *   **Web App Communication Fix (Settings JSON)**: Corrected the JSON output format for the `get_settings` command in `CommunicationManager.cpp` to properly wrap settings in a `{"settings": {...}}` object, ensuring the web app correctly receives and processes settings and activates all tabs.
@@ -61,6 +61,8 @@ An advanced, high-performance flight controller firmware for quadcopters, built 
 *   **Betaflight-like Filtering with Biquad Filters**: Implemented multi-stage filtering using `BiquadFilter` for both gyroscope and accelerometer data, allowing for more effective noise reduction and improved attitude stability. A general `filterSampleFreq` parameter was introduced for all filters.
 *   **Magic Number Elimination**: Replaced hardcoded numerical literals with named `static constexpr` constants for improved readability and maintainability across the codebase. This includes JSON document sizes, API error messages, `uint16_t` range checks, receiver channel offsets, and setpoint scaling factors.
 *   **CommunicationManager Interface Simplification**: Optimized the `CommunicationManager::update()` method by removing the redundant `FlightState` parameter, simplifying its interface and clarifying data flow, as `CommunicationManager` already holds a reference to `FlightController`'s state.
+*   **Live Data Stream - Receiver Channel Update**: Ensured that the `receiver_channels` object within the `live_data` stream is consistently updated with the *currently received* raw channel values in every loop iteration, providing real-time receiver data to connected clients.
+*   **Web App - Combined Receiver Tab**: Merged the 'Receiver Settings' and 'Receiver Live Data' tabs into a single 'Receiver' tab in the web application, providing a consolidated view for receiver configuration and real-time channel monitoring.
 
 ---
 
@@ -383,7 +385,7 @@ The firmware is organized into a clean, modular, object-oriented structure withi
 | `ESP32_FC.ino`                | Main entry point. Creates and runs the `FlightController` and `CommunicationManager`. |
 | `main/`                       | Contains the top-level orchestrator classes.                                    |
 | &nbsp;&nbsp;`flight_controller.h/.cpp`    | The main `FlightController` class, orchestrating all flight-related modules.    |
-| &nbsp;&nbsp;`CommunicationManager.h/.cpp` | Manages all serial communication (CLI/API) and logging.                       |
+| &nbsp;&nbsp;`CommunicationManager.h/.cpp` | Manages all serial communication (CLI/API) and logging, extensively refactored for improved clarity and maintainability. |
 | `config/`                     | Contains global configuration and state definitions.                            |
 | &nbsp;&nbsp;`config.h`                    | Central hub for hardware definitions and the `FlightControllerSettings` struct. |
 | &nbsp;&nbsp;`FlightState.h`               | Defines the central `FlightState` struct.                                       |

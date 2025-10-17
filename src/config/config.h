@@ -224,6 +224,9 @@ static constexpr int DSHOT_MAX_THROTTLE = 2047; // Maximum DShot throttle value
 // Flight Loop Timing
 static constexpr unsigned long TARGET_LOOP_TIME_US = 500; // Target loop time in microseconds (2 kHz)
 
+// Attitude Estimation
+static constexpr size_t ATTITUDE_BUFFER_SIZE = 16; // Buffer size for attitude float to string conversion
+
 // Firmware Version
 static constexpr const char* FIRMWARE_VERSION = "0.2.6"; // Updated for release
 

@@ -13,8 +13,8 @@
 #include "src/config/config.h"
 
 // Global instances of the core components
-FlightController* fc;
-CommunicationManager* comms;
+FlightController *fc;
+CommunicationManager *comms;
 
 void setup()
 {
@@ -27,7 +27,7 @@ void setup()
     fc->setCommunicationManager(comms);
 
     fc->initialize();
-    comms->begin();
+    comms->initializeCommunication();
 
     Serial.println(); // Print a blank line for readability
     Serial.print("--- ESP32 Flight Controller Ready (v");
@@ -38,5 +38,5 @@ void setup()
 void loop()
 {
     fc->runLoop();
-    comms->update(); // Call update without arguments
+    comms->processCommunication();
 }

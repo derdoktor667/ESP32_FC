@@ -26,6 +26,7 @@ public:
     // @param settings Reference to the global flight controller settings,
     //                 which contain the PID gains (Kp, Ki, Kd).
     PidProcessor(const FlightControllerSettings &settings);
+    ~PidProcessor(); // Destructor to clean up dynamically allocated PID controllers
 
     // Performs one cycle of PID calculations for all axes.
     // It reads the current attitude and setpoints from the FlightState,
@@ -34,10 +35,13 @@ public:
     void update(FlightState &state);
 
 private:
-    PIDController _pidRoll;  // PID controller instance for the Roll axis
-    PIDController _pidPitch; // PID controller instance for the Pitch axis
-    PIDController _pidYaw;   // PID controller instance for the Yaw axis
+    PIDController *_pidRoll = nullptr;  // PID controller instance for the Roll axis
+    PIDController *_pidPitch = nullptr; // PID controller instance for the Pitch axis
+    PIDController *_pidYaw = nullptr;   // PID controller instance for the Yaw axis
     const FlightControllerSettings &_settings; // Reference to global flight controller settings
+
+    // Private helper method for PID controller initialization
+    void _initializePidControllers();
 };
 
 #endif // PID_PROCESSOR_MODULE_H

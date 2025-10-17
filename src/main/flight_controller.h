@@ -42,7 +42,7 @@ public:
     void runLoop();
 
     // Sets the CommunicationManager instance.
-    void setCommunicationManager(CommunicationManager* comms);
+    void setCommunicationManager(CommunicationManager *comms);
 
     // Requests IMU calibration.
     void requestImuCalibration();
@@ -51,6 +51,15 @@ public:
     FlightState state;
 
 private:
+    // --- Private Helper Methods for Initialization ---
+    void _initializeMotors();
+    void _initializeReceiver();
+    void _initializeImu();
+    void _initializeModules();
+
+    // --- Error Handling ---
+    void _haltOnError(const char* message);
+
     // --- Hardware Objects ---
     ImuInterface *_imuInterface = nullptr; // Pointer to the active IMU interface
     ReceiverInterface *_receiver;
@@ -64,11 +73,10 @@ private:
     MotorMixer *_motorMixer = nullptr;
 
     // --- Communication Manager ---
-    CommunicationManager* _comms = nullptr; // Communication Manager instance (now a pointer)
+    CommunicationManager *_comms = nullptr; // Communication Manager instance (now a pointer)
 
     // --- Loop Timing ---
-    unsigned long _lastLoopTimeUs = 0; // Timestamp of the last loop iteration in microseconds
-    unsigned long _loopTimer = 0;      // Timer for measuring loop duration
+    unsigned long _loopTimer = 0;
 };
 
 #endif // FLIGHT_CONTROLLER_H
