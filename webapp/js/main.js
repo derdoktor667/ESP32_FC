@@ -324,8 +324,12 @@ async function readLoop() {
 function handleIncomingData(data) {
     if (data && typeof data === 'object') {
         if (data.settings) {
-            populateSettings(data.settings);
-            enableTabs(); // Enable tabs once settings are received
+            try {
+                populateSettings(data.settings);
+                enableTabs(); // Enable tabs once settings are received
+            } catch (e) {
+                console.error("Error populating settings or enabling tabs:", e);
+            }
         }
 
         if (data.version) {
@@ -415,15 +419,28 @@ function populateSettings(settings) {
     const receiverSettingsContainer = document.getElementById('receiverSettingsContainer');
 
     // Clear previous settings
-    motorSettingsContainer.innerHTML = '';
+    // motorSettingsContainer.innerHTML = ''; // Now static content
     pidSettingsContainer.innerHTML = '';
-    receiverSettingsContainer.innerHTML = '';
+    // receiverSettingsContainer.innerHTML = ''; // Now static content
+
+    // Update filter settings UI directly
+    updateFilterSettingsUI(settings);
+    // Update IMU settings UI directly
+    updateImuSettingsUI(settings);
+    // Update motor settings UI directly
+    updateMotorSettingsUI(settings);
+    // Update receiver settings UI directly
+    updateReceiverSettingsUI(settings);
 
     // Group settings by category
     const groupedSettings = {};
     for (const key in settings) {
         const parts = key.split('.');
         const value = settings[key];
+        // Skip filter, IMU, motor, and receiver settings as they are handled by dedicated update functions
+        if (parts[0] === 'filter' || parts[0] === 'gyro' || parts[0] === 'accel' || parts[0] === 'imu' || parts[0] === 'motor' || parts[0] === 'rx') {
+            continue;
+        }
         if (parts.length > 1) {
             const category = parts[0]; // Use the first part for the main category
             const subCategory = parts.slice(0, -1).join('.'); // Keep full category for display
@@ -487,14 +504,8 @@ function populateSettings(settings) {
         }
     };
 
-    if (groupedSettings.motor) {
-        createSettingsTable(motorSettingsContainer, groupedSettings.motor, 'motor');
-    }
     if (groupedSettings.pid) {
         createSettingsTable(pidSettingsContainer, groupedSettings.pid, 'pid');
-    }
-    if (groupedSettings.rx) {
-        createSettingsTable(receiverSettingsContainer, groupedSettings.rx, 'rx');
     }
     // Handle general settings if any, though current structure implies all are categorized
     if (groupedSettings.general) {
@@ -505,11 +516,93 @@ function populateSettings(settings) {
 
 async function handleSettingChange(event) {
     const input = event.target;
-    const category = input.dataset.category;
-    const key = input.dataset.key;
-    const value = input.value;
+    const settingKey = input.dataset.setting; // Use data-setting attribute for full key
+    let value;
 
-    const command = `set ${category}.${key} ${value}\n`;
+    if (input.type === 'checkbox') {
+        value = input.checked;
+    } else {
+        value = input.value;
+    }
+
+    const command = `set ${settingKey} ${value}\n`;
     log.textContent += `Sending command: ${command}`;
     await writer.write(new TextEncoder().encode(command));
+}
+
+function updateFilterSettingsUI(settings) {
+    // Gyroscope Low-Pass Filter
+    document.getElementById('gyroLpfCutoffFreq').value = settings['gyro.lpf_cutoff_freq'];
+    document.getElementById('gyroLpfStages').value = settings['gyro.lpf_stages'];
+
+    // Accelerometer Low-Pass Filter
+    document.getElementById('accelLpfCutoffFreq').value = settings['accel.lpf_cutoff_freq'];
+    document.getElementById('accelLpfStages').value = settings['accel.lpf_stages'];
+
+    // Complementary Filter
+    document.getElementById('complementaryFilterTau').value = settings['filter.comp_tau'];
+
+    // Gyroscope Notch Filter
+    document.getElementById('enableGyroNotchFilter').checked = settings['gyro.notch.enable'];
+    document.getElementById('gyroNotchFreq').value = settings['gyro.notch.freq'];
+    document.getElementById('gyroNotchQ').value = settings['gyro.notch.q'];
+
+    // Add event listeners
+    document.getElementById('gyroLpfCutoffFreq').addEventListener('change', handleSettingChange);
+    document.getElementById('gyroLpfStages').addEventListener('change', handleSettingChange);
+    document.getElementById('accelLpfCutoffFreq').addEventListener('change', handleSettingChange);
+    document.getElementById('accelLpfStages').addEventListener('change', handleSettingChange);
+    document.getElementById('complementaryFilterTau').addEventListener('change', handleSettingChange);
+    document.getElementById('enableGyroNotchFilter').addEventListener('change', handleSettingChange);
+    document.getElementById('gyroNotchFreq').addEventListener('change', handleSettingChange);
+    document.getElementById('gyroNotchQ').addEventListener('change', handleSettingChange);
+}
+
+function updateImuSettingsUI(settings) {
+    // IMU Protocol
+    document.getElementById('imuProtocol').value = settings['imu.protocol'];
+    // IMU LPF Bandwidth
+    document.getElementById('imuLpfBandwidth').value = settings['imu.lpf'];
+    // IMU Rotation
+    document.getElementById('imuRotation').value = settings['imu.rotation'];
+
+    // Add event listeners
+    document.getElementById('imuProtocol').addEventListener('change', handleSettingChange);
+    document.getElementById('imuLpfBandwidth').addEventListener('change', handleSettingChange);
+    document.getElementById('imuRotation').addEventListener('change', handleSettingChange);
+}
+
+function updateMotorSettingsUI(settings) {
+    // Motor Idle Speed
+    document.getElementById('motorIdleSpeedPercent').value = settings['motor.idle_speed'];
+    // DShot Mode
+    document.getElementById('dshotMode').value = settings['motor.dshot_mode'];
+
+    // Add event listeners
+    document.getElementById('motorIdleSpeedPercent').addEventListener('change', handleSettingChange);
+    document.getElementById('dshotMode').addEventListener('change', handleSettingChange);
+}
+
+function updateReceiverSettingsUI(settings) {
+    // Receiver Protocol
+    document.getElementById('receiverProtocol').value = settings['rx.protocol'];
+
+    // Channel Mapping
+    document.getElementById('rxMapThrottle').value = settings['rx.map.throttle'];
+    document.getElementById('rxMapRoll').value = settings['rx.map.roll'];
+    document.getElementById('rxMapPitch').value = settings['rx.map.pitch'];
+    document.getElementById('rxMapYaw').value = settings['rx.map.yaw'];
+    document.getElementById('rxMapArmSwitch').value = settings['rx.map.arm_switch'];
+    document.getElementById('rxMapFailsafeSwitch').value = settings['rx.map.failsafe_switch'];
+    document.getElementById('rxMapFlightModeSwitch').value = settings['rx.map.flight_mode_switch'];
+
+    // Add event listeners
+    document.getElementById('receiverProtocol').addEventListener('change', handleSettingChange);
+    document.getElementById('rxMapThrottle').addEventListener('change', handleSettingChange);
+    document.getElementById('rxMapRoll').addEventListener('change', handleSettingChange);
+    document.getElementById('rxMapPitch').addEventListener('change', handleSettingChange);
+    document.getElementById('rxMapYaw').addEventListener('change', handleSettingChange);
+    document.getElementById('rxMapArmSwitch').addEventListener('change', handleSettingChange);
+    document.getElementById('rxMapFailsafeSwitch').addEventListener('change', handleSettingChange);
+    document.getElementById('rxMapFlightModeSwitch').addEventListener('change', handleSettingChange);
 }

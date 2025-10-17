@@ -97,6 +97,31 @@ String CommunicationManager::_getDShotModeString(dshot_mode_t mode) const
     return "UNKNOWN";
 }
 
+String CommunicationManager::_getImuRotationString(ImuRotation rotation) const
+{
+    switch (rotation)
+    {
+    case IMU_ROTATION_NONE:
+        return "NONE";
+    case IMU_ROTATION_90_DEG_CW:
+        return "90_CW";
+    case IMU_ROTATION_180_DEG_CW:
+        return "180_CW";
+    case IMU_ROTATION_270_DEG_CW:
+        return "270_CW";
+    case IMU_ROTATION_90_DEG_CCW:
+        return "90_CCW";
+    case IMU_ROTATION_180_DEG_CCW:
+        return "180_CCW";
+    case IMU_ROTATION_270_DEG_CCW:
+        return "270_CCW";
+    case IMU_ROTATION_FLIP:
+        return "FLIP";
+    default:
+        return "UNKNOWN";
+    }
+}
+
 String CommunicationManager::_getBoolString(bool value) const
 {
     return value ? "true" : "false";
@@ -129,6 +154,9 @@ const Setting CommunicationManager::settingsRegistry[] = {
     {"gyro.lpf_stages", SettingType::UINT8, &settings.filter.gyroLpfStages, DEFAULT_SCALE_FACTOR},
     {"accel.lpf_stages", SettingType::UINT8, &settings.filter.accelLpfStages, DEFAULT_SCALE_FACTOR},
     {"filter.sample_freq", SettingType::FLOAT, &settings.filter.filterSampleFreq, DEFAULT_SCALE_FACTOR},
+    {"gyro.notch.enable", SettingType::BOOL, &settings.filter.enableGyroNotchFilter, DEFAULT_SCALE_FACTOR},
+    {"gyro.notch.freq", SettingType::FLOAT, &settings.filter.gyroNotchFreq, DEFAULT_SCALE_FACTOR},
+    {"gyro.notch.q", SettingType::FLOAT, &settings.filter.gyroNotchQ, DEFAULT_SCALE_FACTOR},
     {"rx.min", SettingType::UINT16, &settings.receiver.ibusMinValue, DEFAULT_SCALE_FACTOR},
     {"rx.max", SettingType::UINT16, &settings.receiver.ibusMaxValue, DEFAULT_SCALE_FACTOR},
     {"rx.arming_threshold", SettingType::UINT16, &settings.receiver.armingThreshold, DEFAULT_SCALE_FACTOR},
@@ -136,6 +164,7 @@ const Setting CommunicationManager::settingsRegistry[] = {
     {"rx.protocol", SettingType::ENUM_IBUS_PROTOCOL, &settings.receiverProtocol, DEFAULT_SCALE_FACTOR},
     {"imu.protocol", SettingType::ENUM_IMU_PROTOCOL, &settings.imuProtocol, DEFAULT_SCALE_FACTOR},
     {"imu.lpf", SettingType::ENUM_LPF_BANDWIDTH, &settings.imuLpfBandwidth, DEFAULT_SCALE_FACTOR},
+    {"imu.rotation", SettingType::ENUM_IMU_ROTATION, &settings.imuRotation, DEFAULT_SCALE_FACTOR},
     {"motor.idle_speed", SettingType::FLOAT, &settings.motorIdleSpeedPercent, DEFAULT_SCALE_FACTOR},
     {"motor.dshot_mode", SettingType::ENUM_DSHOT_MODE, &settings.dshotMode, DEFAULT_SCALE_FACTOR},
     {"enforce_loop_time", SettingType::BOOL, &settings.enforceLoopTime, DEFAULT_SCALE_FACTOR},
@@ -218,6 +247,32 @@ SetResult CommunicationManager::_parseAndValidateLpfBandwidth(const String &valu
     else
     {
         expectedValue = "LPF_256HZ_N_0MS, LPF_188HZ_N_2MS, LPF_98HZ_N_3MS, LPF_42HZ_N_5MS, LPF_20HZ_N_10MS, LPF_10HZ_N_13MS, LPF_5HZ_N_18MS";
+        return SetResult::INVALID_VALUE;
+    }
+    return SetResult::SUCCESS;
+}
+
+SetResult CommunicationManager::_parseAndValidateImuRotation(const String &valueStr, ImuRotation &outValue, String &expectedValue) const
+{
+    if (valueStr.equalsIgnoreCase("NONE"))
+        outValue = IMU_ROTATION_NONE;
+    else if (valueStr.equalsIgnoreCase("90_CW"))
+        outValue = IMU_ROTATION_90_DEG_CW;
+    else if (valueStr.equalsIgnoreCase("180_CW"))
+        outValue = IMU_ROTATION_180_DEG_CW;
+    else if (valueStr.equalsIgnoreCase("270_CW"))
+        outValue = IMU_ROTATION_270_DEG_CW;
+    else if (valueStr.equalsIgnoreCase("90_CCW"))
+        outValue = IMU_ROTATION_90_DEG_CCW;
+    else if (valueStr.equalsIgnoreCase("180_CCW"))
+        outValue = IMU_ROTATION_180_DEG_CCW;
+    else if (valueStr.equalsIgnoreCase("270_CCW"))
+        outValue = IMU_ROTATION_270_DEG_CCW;
+    else if (valueStr.equalsIgnoreCase("FLIP"))
+        outValue = IMU_ROTATION_FLIP;
+    else
+    {
+        expectedValue = "NONE, 90_CW, 180_CW, 270_CW, 90_CCW, 180_CCW, 270_CCW, FLIP";
         return SetResult::INVALID_VALUE;
     }
     return SetResult::SUCCESS;
@@ -709,6 +764,11 @@ void CommunicationManager::_printCliHelp()
     Serial.println("    accel.lpf_stages (Number of Accelerometer LPF Stages, 1-5)");
     Serial.println("    filter.sample_freq (Filter Sample Frequency in Hz)");
 
+    Serial.println("  Gyroscope Notch Filter:");
+    Serial.println("    gyro.notch.enable (Enable/Disable Gyroscope Notch Filter)");
+    Serial.println("    gyro.notch.freq (Gyroscope Notch Filter Center Frequency in Hz)");
+    Serial.println("    gyro.notch.q (Gyroscope Notch Filter Q-Factor)");
+
     Serial.println("  Receiver:");
     Serial.println("    rx.min, rx.max (Min/Max raw receiver values)");
     Serial.println("    rx.arming_threshold, rx.failsafe_threshold");
@@ -722,6 +782,7 @@ void CommunicationManager::_printCliHelp()
     Serial.println("  IMU:");
     Serial.println("    imu.protocol (MPU6050)");
     Serial.println("    imu.lpf (LPF_256HZ_N_0MS, LPF_188HZ_N_2MS, LPF_98HZ_N_3MS, LPF_42HZ_N_5MS, LPF_20HZ_N_10MS, LPF_10HZ_N_13MS, LPF_5HZ_N_18MS)");
+    Serial.println("    imu.rotation (NONE, 90_CW, 180_CW, 270_CW, 90_CCW, 180_CCW, 270_CCW, FLIP)");
 
     Serial.println("  Motor:");
     Serial.println("    motor.idle_speed (Percent)");
@@ -760,6 +821,9 @@ void CommunicationManager::_handleDumpCommand()
             break;
         case SettingType::ENUM_LPF_BANDWIDTH:
             Serial.println(_getLpfBandwidthString(*(LpfBandwidth *)s.value));
+            break;
+        case SettingType::ENUM_IMU_ROTATION:
+            Serial.println(_getImuRotationString(*(ImuRotation *)s.value));
             break;
         case SettingType::BOOL:
             Serial.println(_getBoolString(*(bool *)s.value));
@@ -814,6 +878,9 @@ void CommunicationManager::_handleDumpJsonCommand()
         case SettingType::ENUM_LPF_BANDWIDTH:
             jsonDoc[s.name] = _getLpfBandwidthString(*(LpfBandwidth *)s.value);
             break;
+        case SettingType::ENUM_IMU_ROTATION:
+            jsonDoc[s.name] = _getImuRotationString(*(ImuRotation *)s.value);
+            break;
         case SettingType::ENUM_DSHOT_MODE:
             jsonDoc[s.name] = _getDShotModeString(*(dshot_mode_t *)s.value);
             break;
@@ -864,6 +931,10 @@ void CommunicationManager::_handleGetCommand(String args, bool isApiMode)
                 break;
             case SettingType::ENUM_LPF_BANDWIDTH:
                 valueStr = _getLpfBandwidthString(*(LpfBandwidth *)s.value);
+                isString = true;
+                break;
+            case SettingType::ENUM_IMU_ROTATION:
+                valueStr = _getImuRotationString(*(ImuRotation *)s.value);
                 isString = true;
                 break;
             case SettingType::BOOL:
@@ -950,6 +1021,14 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode)
                     *(LpfBandwidth *)s.value = val;
                 break;
             }
+            case SettingType::ENUM_IMU_ROTATION:
+            {
+                ImuRotation val;
+                result = _parseAndValidateImuRotation(valueStr, val, expectedValue);
+                if (result == SetResult::SUCCESS)
+                    *(ImuRotation *)s.value = val;
+                break;
+            }
             case SettingType::ENUM_DSHOT_MODE:
             {
                 dshot_mode_t val;
@@ -959,7 +1038,7 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode)
                 break;
             }
             }
-            _printSetResponse(param, valueStr, result, isApiMode, (s.type == SettingType::ENUM_DSHOT_MODE || s.type == SettingType::ENUM_IBUS_PROTOCOL || s.type == SettingType::ENUM_IMU_PROTOCOL || s.type == SettingType::ENUM_LPF_BANDWIDTH || s.type == SettingType::BOOL), expectedValue);
+            _printSetResponse(param, valueStr, result, isApiMode, (s.type == SettingType::ENUM_DSHOT_MODE || s.type == SettingType::ENUM_IBUS_PROTOCOL || s.type == SettingType::ENUM_IMU_PROTOCOL || s.type == SettingType::ENUM_LPF_BANDWIDTH || s.type == SettingType::ENUM_IMU_ROTATION || s.type == SettingType::BOOL), expectedValue);
             return;
         }
     }

@@ -13,14 +13,22 @@
 
 #include <Arduino.h>
 
+enum FilterType
+{
+    LPF,
+    HPF,
+    NOTCH
+};
+
 class BiquadFilter
 {
 public:
-    // Constructor: Initializes the filter as a low-pass filter.
-    // @param cutoffFreq The cutoff frequency in Hz.
+    // Constructor: Initializes the filter.
+    // @param cutoffFreq The cutoff frequency in Hz (for LPF/HPF) or center frequency (for NOTCH).
     // @param sampleFreq The sample frequency in Hz.
-    // @param Q The Q factor of the filter (typically 0.707 for Butterworth).
-    BiquadFilter(float cutoffFreq, float sampleFreq, float Q = 0.707f);
+    // @param Q The Q factor of the filter.
+    // @param type The type of filter (LPF, HPF, NOTCH).
+    BiquadFilter(float cutoffFreq, float sampleFreq, float Q = 0.707f, FilterType type = LPF);
 
     // Updates the filter with a new raw value and returns the filtered value.
     float update(float rawValue);

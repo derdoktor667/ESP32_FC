@@ -11,8 +11,8 @@
 #include "src/hardware/imu/Mpu6050Imu.h"
 
 // Constructor: Initializes the MPU6050 object.
-Mpu6050Imu::Mpu6050Imu(LpfBandwidth lpfBandwidth)
-    : _mpu(), _lpfBandwidth(lpfBandwidth) // Default constructor for the underlying MPU6050 library object
+Mpu6050Imu::Mpu6050Imu(LpfBandwidth lpfBandwidth, ImuRotation imuRotation)
+    : _mpu(), _lpfBandwidth(lpfBandwidth), _imuRotation(imuRotation) // Default constructor for the underlying MPU6050 library object
 {
 }
 
@@ -28,6 +28,67 @@ bool Mpu6050Imu::begin()
 void Mpu6050Imu::update()
 {
     _mpu.update();
+
+    // Apply IMU rotation based on settings
+    float tempAccelX = _mpu.readings.accelerometer.x;
+    float tempAccelY = _mpu.readings.accelerometer.y;
+    float tempAccelZ = _mpu.readings.accelerometer.z;
+
+    float tempGyroX = _mpu.readings.gyroscope.x;
+    float tempGyroY = _mpu.readings.gyroscope.y;
+    float tempGyroZ = _mpu.readings.gyroscope.z;
+
+    switch (_imuRotation)
+    {
+    case IMU_ROTATION_NONE:
+        // No rotation needed
+        break;
+    case IMU_ROTATION_90_DEG_CW:
+        _mpu.readings.accelerometer.x = tempAccelY;
+        _mpu.readings.accelerometer.y = -tempAccelX;
+        _mpu.readings.gyroscope.x = tempGyroY;
+        _mpu.readings.gyroscope.y = -tempGyroX;
+        break;
+    case IMU_ROTATION_180_DEG_CW:
+        _mpu.readings.accelerometer.x = -tempAccelX;
+        _mpu.readings.accelerometer.y = -tempAccelY;
+        _mpu.readings.gyroscope.x = -tempGyroX;
+        _mpu.readings.gyroscope.y = -tempGyroY;
+        break;
+    case IMU_ROTATION_270_DEG_CW:
+        _mpu.readings.accelerometer.x = -tempAccelY;
+        _mpu.readings.accelerometer.y = tempAccelX;
+        _mpu.readings.gyroscope.x = -tempGyroY;
+        _mpu.readings.gyroscope.y = tempGyroX;
+        break;
+    case IMU_ROTATION_90_DEG_CCW:
+        _mpu.readings.accelerometer.x = -tempAccelY;
+        _mpu.readings.accelerometer.y = tempAccelX;
+        _mpu.readings.gyroscope.x = -tempGyroY;
+        _mpu.readings.gyroscope.y = tempGyroX;
+        break;
+    case IMU_ROTATION_180_DEG_CCW:
+        _mpu.readings.accelerometer.x = -tempAccelX;
+        _mpu.readings.accelerometer.y = -tempAccelY;
+        _mpu.readings.gyroscope.x = -tempGyroX;
+        _mpu.readings.gyroscope.y = -tempGyroY;
+        break;
+    case IMU_ROTATION_270_DEG_CCW:
+        _mpu.readings.accelerometer.x = tempAccelY;
+        _mpu.readings.accelerometer.y = -tempAccelX;
+        _mpu.readings.gyroscope.x = tempGyroY;
+        _mpu.readings.gyroscope.y = -tempGyroX;
+        break;
+    case IMU_ROTATION_FLIP:
+        _mpu.readings.accelerometer.y = -tempAccelY;
+        _mpu.readings.accelerometer.z = -tempAccelZ;
+        _mpu.readings.gyroscope.y = -tempGyroY;
+        _mpu.readings.gyroscope.z = -tempGyroZ;
+        break;
+    default:
+        // Should not happen, but handle gracefully
+        break;
+    }
 }
 
 // Performs MPU6050-specific calibration.

@@ -61,9 +61,6 @@ void FlightController::runLoop()
     // Start loop timer
     _loopTimer = micros();
 
-    // Update CommunicationManager first to handle any incoming commands
-    _comms->processCommunication();
-
     // When logging is enabled (API mode), we skip the main flight logic
     // to prevent stack overflows and ensure stable communication.
     // The attitude estimator is still updated to provide live data to clients.
@@ -149,7 +146,7 @@ void FlightController::_initializeImu()
     {
     case IMU_MPU6050:
         Serial.println("MPU6050");
-        _imuInterface = std::make_unique<Mpu6050Imu>(settings.imuLpfBandwidth);
+        _imuInterface = std::make_unique<Mpu6050Imu>(settings.imuLpfBandwidth, settings.imuRotation);
         break;
     default:
         _haltOnError("ERROR: Unknown IMU protocol! Halting.");
