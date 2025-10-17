@@ -58,6 +58,14 @@ void AttitudeEstimator::update(FlightState &state)
     float gy = _gyroPitchLpf->update(rawGy);
     float gz = _gyroYawLpf->update(rawGz);
 
+    // Apply gyroscope notch filters if enabled
+    if (_settings->filter.enableGyroNotchFilter)
+    {
+        gx = _gyroRollNotchFilter->update(gx);
+        gy = _gyroPitchNotchFilter->update(gy);
+        gz = _gyroYawNotchFilter->update(gz);
+    }
+
     // Get raw accelerometer data
     float rawAx = _imu->getAccelX();
     float rawAy = _imu->getAccelY();
@@ -98,6 +106,14 @@ void AttitudeEstimator::_initializeFilters()
     _gyroRollLpf = std::make_unique<MultiStageBiquadFilter>(_settings->filter.gyroLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroLpfStages);
     _gyroPitchLpf = std::make_unique<MultiStageBiquadFilter>(_settings->filter.gyroLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroLpfStages);
     _gyroYawLpf = std::make_unique<MultiStageBiquadFilter>(_settings->filter.gyroLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroLpfStages);
+
+    // Initialize gyroscope notch filters if enabled
+    if (_settings->filter.enableGyroNotchFilter)
+    {
+        _gyroRollNotchFilter = std::make_unique<MultiStageBiquadFilter>(_settings->filter.gyroNotchFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroNotchQ, NOTCH);
+        _gyroPitchNotchFilter = std::make_unique<MultiStageBiquadFilter>(_settings->filter.gyroNotchFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroNotchQ, NOTCH);
+        _gyroYawNotchFilter = std::make_unique<MultiStageBiquadFilter>(_settings->filter.gyroNotchFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroNotchQ, NOTCH);
+    }
 
     // Initialize accelerometer low-pass filters
     _accelRollLpf = std::make_unique<MultiStageBiquadFilter>(_settings->filter.accelLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.accelLpfStages);

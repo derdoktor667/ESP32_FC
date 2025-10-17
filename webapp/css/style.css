@@ -44,6 +44,27 @@ body {
     opacity: 0.9;
 }
 
+#saveSettingsButton {
+    background-color: #007bff; /* Blue for save */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+    margin-left: 10px; /* Add some spacing */
+}
+
+#saveSettingsButton:hover {
+    opacity: 0.9;
+}
+
+#saveSettingsButton:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
 /* Tabs Navigation */
 .tabs {
     display: flex;

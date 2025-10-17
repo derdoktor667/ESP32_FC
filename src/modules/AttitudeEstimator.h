@@ -57,6 +57,11 @@ private:
     std::unique_ptr<MultiStageBiquadFilter> _gyroPitchLpf;
     std::unique_ptr<MultiStageBiquadFilter> _gyroYawLpf;
 
+    // Multi-stage biquad notch filters for raw gyroscope data
+    std::unique_ptr<MultiStageBiquadFilter> _gyroRollNotchFilter;
+    std::unique_ptr<MultiStageBiquadFilter> _gyroPitchNotchFilter;
+    std::unique_ptr<MultiStageBiquadFilter> _gyroYawNotchFilter;
+
     // Multi-stage biquad low-pass filters for raw accelerometer data
     std::unique_ptr<MultiStageBiquadFilter> _accelRollLpf;
     std::unique_ptr<MultiStageBiquadFilter> _accelPitchLpf;

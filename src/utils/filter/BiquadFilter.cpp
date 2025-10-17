@@ -15,18 +15,36 @@
 // @param cutoffFreq The cutoff frequency in Hz.
 // @param sampleFreq The sample frequency in Hz.
 // @param Q The Q factor of the filter (typically 0.707 for Butterworth).
-BiquadFilter::BiquadFilter(float cutoffFreq, float sampleFreq, float Q)
+BiquadFilter::BiquadFilter(float cutoffFreq, float sampleFreq, float Q, FilterType type)
     : _x1(0.0f), _x2(0.0f), _y1(0.0f), _y2(0.0f)
 {
-    // Calculate coefficients for a low-pass Butterworth filter
-    // Based on: https://www.earlevel.com/main/2012/11/26/biquad-c-code/
     float K = tanf(PI * cutoffFreq / sampleFreq);
     float norm = 1.0f / (1.0f + K / Q + K * K);
-    _b0 = K * K * norm;
-    _b1 = 2.0f * _b0;
-    _b2 = _b0;
-    _a1 = 2.0f * (K * K - 1.0f) * norm;
-    _a2 = (1.0f - K / Q + K * K) * norm;
+
+    switch (type)
+    {
+    case LPF:
+        _b0 = K * K * norm;
+        _b1 = 2.0f * _b0;
+        _b2 = _b0;
+        _a1 = 2.0f * (K * K - 1.0f) * norm;
+        _a2 = (1.0f - K / Q + K * K) * norm;
+        break;
+    case HPF:
+        _b0 = norm;
+        _b1 = -2.0f * _b0;
+        _b2 = _b0;
+        _a1 = 2.0f * (K * K - 1.0f) * norm;
+        _a2 = (1.0f - K / Q + K * K) * norm;
+        break;
+    case NOTCH:
+        _b0 = (1.0f + K * K) * norm;
+        _b1 = 2.0f * (K * K - 1.0f) * norm;
+        _b2 = _b0;
+        _a1 = 2.0f * (K * K - 1.0f) * norm;
+        _a2 = (1.0f - K / Q + K * K) * norm;
+        break;
+    }
 }
 
 // Updates the filter with a new raw value and returns the filtered value.

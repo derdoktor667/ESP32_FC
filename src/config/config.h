@@ -50,6 +50,20 @@ enum ImuProtocol
     IMU_PROTOCOL_COUNT // Keep this last to count the number of protocols
 };
 
+// Supported IMU Rotations
+enum ImuRotation
+{
+    IMU_ROTATION_NONE,
+    IMU_ROTATION_90_DEG_CW,
+    IMU_ROTATION_180_DEG_CW,
+    IMU_ROTATION_270_DEG_CW,
+    IMU_ROTATION_90_DEG_CCW,
+    IMU_ROTATION_180_DEG_CCW,
+    IMU_ROTATION_270_DEG_CCW,
+    IMU_ROTATION_FLIP, // 180 degree roll
+    IMU_ROTATION_COUNT // Keep this last to count the number of rotations
+};
+
 // Flight Control Inputs
 enum FlightControlInput
 {
@@ -90,12 +104,16 @@ static constexpr float DEFAULT_MAX_RATE_ROLL_PITCH = 90.0f;
 static constexpr int DEFAULT_MPU_CALIBRATION_READINGS = 1000;
 static constexpr float DEFAULT_ACCEL_Z_GRAVITY = 1.0f;
 
-static constexpr float DEFAULT_COMPLEMENTARY_FILTER_TAU = 0.98f;
-static constexpr float DEFAULT_GYRO_LPF_CUTOFF_FREQ = 20.0f;
-static constexpr float DEFAULT_ACCEL_LPF_CUTOFF_FREQ = 10.0f;
+static constexpr float DEFAULT_COMPLEMENTARY_FILTER_TAU = 0.995f;
+static constexpr float DEFAULT_GYRO_LPF_CUTOFF_FREQ = 15.0f;
+static constexpr float DEFAULT_ACCEL_LPF_CUTOFF_FREQ = 5.0f;
 static constexpr uint8_t DEFAULT_GYRO_LPF_STAGES = 2;
 static constexpr uint8_t DEFAULT_ACCEL_LPF_STAGES = 2;
 static constexpr float DEFAULT_FILTER_SAMPLE_FREQ = 250.0f; // General filter sample frequency in Hz
+
+static constexpr bool DEFAULT_ENABLE_GYRO_NOTCH_FILTER = false;
+static constexpr float DEFAULT_GYRO_NOTCH_FREQ = 200.0f;
+static constexpr float DEFAULT_GYRO_NOTCH_Q = 1.0f;
 
 static constexpr int DEFAULT_IBUS_MIN_VALUE = 1000;
 static constexpr int DEFAULT_IBUS_MAX_VALUE = 2000;
@@ -106,7 +124,7 @@ static constexpr unsigned long DEFAULT_PRINT_INTERVAL_MS = 40;
 
 static constexpr float DEFAULT_MOTOR_IDLE_SPEED_PERCENT = 4.0f;
 static constexpr dshot_mode_t DEFAULT_DSHOT_MODE = DSHOT600;
-static constexpr LpfBandwidth DEFAULT_IMU_LPF_BANDWIDTH = LPF_20HZ_N_10MS;
+static constexpr LpfBandwidth DEFAULT_IMU_LPF_BANDWIDTH = LPF_256HZ_N_0MS;
 
 // iBUS Channel Mappings (0-indexed)
 static constexpr int IBUS_CHANNEL_THROTTLE = 1;
@@ -125,6 +143,7 @@ struct FlightControllerSettings
     // IMU Protocol Selection
     ImuProtocol imuProtocol = IMU_MPU6050;
     LpfBandwidth imuLpfBandwidth = DEFAULT_IMU_LPF_BANDWIDTH;
+    ImuRotation imuRotation = IMU_ROTATION_180_DEG_CW;
 
     // Receiver Channel Mapping
     struct
@@ -177,6 +196,11 @@ struct FlightControllerSettings
         uint8_t gyroLpfStages = DEFAULT_GYRO_LPF_STAGES; // Number of biquad filter stages for gyroscope
         uint8_t accelLpfStages = DEFAULT_ACCEL_LPF_STAGES; // Number of biquad filter stages for accelerometer
         float filterSampleFreq = DEFAULT_FILTER_SAMPLE_FREQ; // General filter sample frequency in Hz
+
+        // Gyroscope Notch Filter
+        bool enableGyroNotchFilter = DEFAULT_ENABLE_GYRO_NOTCH_FILTER;
+        float gyroNotchFreq = DEFAULT_GYRO_NOTCH_FREQ;
+        float gyroNotchQ = DEFAULT_GYRO_NOTCH_Q;
     } filter;
 
     // Receiver Settings

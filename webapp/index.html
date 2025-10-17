@@ -11,6 +11,7 @@
     <div class="header">
         <h1>ESP32 Flight Controller Configurator</h1>
         <button id="toggleConnectButton">Connect</button>
+        <button id="saveSettingsButton" disabled>Save Settings</button>
     </div>
 
     <div class="tabs">
@@ -36,17 +37,110 @@
 
     <div id="motorSettingsTab" class="tabcontent">
         <h2>Motor Settings</h2>
-        <div id="motorSettingsContainer"></div>
+        <div id="motorSettingsContainer">
+            <label for="motorIdleSpeedPercent">Idle Speed (%):</label>
+            <input type="number" id="motorIdleSpeedPercent" data-setting="motor.idle_speed" step="0.1"><br>
+
+            <label for="dshotMode">DShot Mode:</label>
+            <select id="dshotMode" data-setting="motor.dshot_mode">
+                <option value="DSHOT_OFF">DSHOT_OFF</option>
+                <option value="DSHOT150">DSHOT150</option>
+                <option value="DSHOT300">DSHOT300</option>
+                <option value="DSHOT600">DSHOT600</option>
+                <option value="DSHOT1200">DSHOT1200</option>
+            </select><br>
+        </div>
     </div>
 
     <div id="pidSettingsTab" class="tabcontent">
         <h2>PID Settings</h2>
         <div id="pidSettingsContainer"></div>
+
+        <h2>Filter Settings</h2>
+        <div id="filterSettingsContainer">
+            <h3>Gyroscope Low-Pass Filter</h3>
+            <label for="gyroLpfCutoffFreq">Cutoff Frequency (Hz):</label>
+            <input type="number" id="gyroLpfCutoffFreq" data-setting="gyro.lpf_cutoff_freq" step="0.1"><br>
+            <label for="gyroLpfStages">Stages:</label>
+            <input type="number" id="gyroLpfStages" data-setting="gyro.lpf_stages" min="1" max="5"><br>
+
+            <h3>Accelerometer Low-Pass Filter</h3>
+            <label for="accelLpfCutoffFreq">Cutoff Frequency (Hz):</label>
+            <input type="number" id="accelLpfCutoffFreq" data-setting="accel.lpf_cutoff_freq" step="0.1"><br>
+            <label for="accelLpfStages">Stages:</label>
+            <input type="number" id="accelLpfStages" data-setting="accel.lpf_stages" min="1" max="5"><br>
+
+            <h3>Complementary Filter</h3>
+            <label for="complementaryFilterTau">Tau:</label>
+            <input type="number" id="complementaryFilterTau" data-setting="filter.comp_tau" step="0.01"><br>
+
+            <h3>Gyroscope Notch Filter</h3>
+            <input type="checkbox" id="enableGyroNotchFilter" data-setting="gyro.notch.enable">
+            <label for="enableGyroNotchFilter">Enable Notch Filter</label><br>
+            <label for="gyroNotchFreq">Center Frequency (Hz):</label>
+            <input type="number" id="gyroNotchFreq" data-setting="gyro.notch.freq" step="1.0"><br>
+            <label for="gyroNotchQ">Q-Factor:</label>
+            <input type="number" id="gyroNotchQ" data-setting="gyro.notch.q" step="0.1"><br>
+        </div>
+
+        <h2>IMU Settings</h2>
+        <div id="imuSettingsContainer">
+            <label for="imuProtocol">IMU Protocol:</label>
+            <select id="imuProtocol" data-setting="imu.protocol">
+                <option value="MPU6050">MPU6050</option>
+            </select><br>
+
+            <label for="imuLpfBandwidth">IMU LPF Bandwidth:</label>
+            <select id="imuLpfBandwidth" data-setting="imu.lpf">
+                <option value="LPF_256HZ_N_0MS">LPF_256HZ_N_0MS</option>
+                <option value="LPF_188HZ_N_2MS">LPF_188HZ_N_2MS</option>
+                <option value="LPF_98HZ_N_3MS">LPF_98HZ_N_3MS</option>
+                <option value="LPF_42HZ_N_5MS">LPF_42HZ_N_5MS</option>
+                <option value="LPF_20HZ_N_10MS">LPF_20HZ_N_10MS</option>
+                <option value="LPF_10HZ_N_13MS">LPF_10HZ_N_13MS</option>
+                <option value="LPF_5HZ_N_18MS">LPF_5HZ_N_18MS</option>
+            </select><br>
+
+            <label for="imuRotation">IMU Rotation:</label>
+            <select id="imuRotation" data-setting="imu.rotation">
+                <option value="NONE">NONE</option>
+                <option value="90_CW">90_CW</option>
+                <option value="180_CW">180_CW</option>
+                <option value="270_CW">270_CW</option>
+                <option value="90_CCW">90_CCW</option>
+                <option value="180_CCW">180_CCW</option>
+                <option value="270_CCW">270_CCW</option>
+                <option value="FLIP">FLIP</option>
+            </select><br>
+        </div>
     </div>
 
     <div id="receiverTab" class="tabcontent">
         <h2>Receiver Settings & Live Data</h2>
-        <div id="receiverSettingsContainer"></div>
+        <div id="receiverSettingsContainer">
+            <h3>Protocol</h3>
+            <label for="receiverProtocol">Receiver Protocol:</label>
+            <select id="receiverProtocol" data-setting="rx.protocol">
+                <option value="IBUS">IBUS</option>
+                <option value="PPM">PPM</option>
+            </select><br>
+
+            <h3>Channel Mapping</h3>
+            <label for="rxMapThrottle">Throttle:</label>
+            <input type="number" id="rxMapThrottle" data-setting="rx.map.throttle" min="0" max="15"><br>
+            <label for="rxMapRoll">Roll:</label>
+            <input type="number" id="rxMapRoll" data-setting="rx.map.roll" min="0" max="15"><br>
+            <label for="rxMapPitch">Pitch:</label>
+            <input type="number" id="rxMapPitch" data-setting="rx.map.pitch" min="0" max="15"><br>
+            <label for="rxMapYaw">Yaw:</label>
+            <input type="number" id="rxMapYaw" data-setting="rx.map.yaw" min="0" max="15"><br>
+            <label for="rxMapArmSwitch">Arm Switch:</label>
+            <input type="number" id="rxMapArmSwitch" data-setting="rx.map.arm_switch" min="0" max="15"><br>
+            <label for="rxMapFailsafeSwitch">Failsafe Switch:</label>
+            <input type="number" id="rxMapFailsafeSwitch" data-setting="rx.map.failsafe_switch" min="0" max="15"><br>
+            <label for="rxMapFlightModeSwitch">Flight Mode Switch:</label>
+            <input type="number" id="rxMapFlightModeSwitch" data-setting="rx.map.flight_mode_switch" min="0" max="15"><br>
+        </div>
         <h3>Live Receiver Channels</h3>
         <div id="receiverChannelBars"></div>
     </div>

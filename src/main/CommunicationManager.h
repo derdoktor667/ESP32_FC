@@ -49,6 +49,7 @@ enum class SettingType
     STRING,
     ENUM_IBUS_PROTOCOL,
     ENUM_IMU_PROTOCOL,
+    ENUM_IMU_ROTATION, // New enum type for IMU rotation
     ENUM_DSHOT_MODE,
     ENUM_LPF_BANDWIDTH,
     ENUM_RX_CHANNEL_MAP
@@ -97,7 +98,7 @@ private:
     static constexpr size_t JSON_DOC_SMALL_SIZE = 64;
     static constexpr size_t JSON_DOC_MEDIUM_SIZE = 256;
     static constexpr size_t JSON_DOC_LARGE_SIZE = 512;
-    static constexpr size_t JSON_DOC_XLARGE_SIZE = 2048;
+    static constexpr size_t JSON_DOC_XLARGE_SIZE = 4096;
 
     // API Error Messages
     static constexpr const char *API_ERROR_UNKNOWN_COMMAND = "{\"error\":\"Unknown command\"}";
@@ -110,6 +111,7 @@ private:
     String _getLpfBandwidthString(LpfBandwidth bandwidth) const;
     String _getFlightControlInputString(FlightControlInput input) const;
     String _getDShotModeString(dshot_mode_t mode) const;
+    String _getImuRotationString(ImuRotation rotation) const; // New declaration
     String _getBoolString(bool value) const;
     String _getUint8String(uint8_t value) const;
 
@@ -121,10 +123,12 @@ private:
 
     // Helper functions for parsing and validating setting values
     SetResult _parseAndValidateFloat(const String &valueStr, float &outValue, float scaleFactor, String &expectedValue) const;
+    SetResult _parseAndValidateInt(const String &valueStr, int &outValue, String &expectedValue) const; // New declaration
     SetResult _parseAndValidateUint16(const String &valueStr, uint16_t &outValue, String &expectedValue) const;
     SetResult _parseAndValidateReceiverProtocol(const String &valueStr, ReceiverProtocol &outValue, String &expectedValue) const;
     SetResult _parseAndValidateImuProtocol(const String &valueStr, ImuProtocol &outValue, String &expectedValue) const;
     SetResult _parseAndValidateLpfBandwidth(const String &valueStr, LpfBandwidth &outValue, String &expectedValue) const;
+    SetResult _parseAndValidateImuRotation(const String &valueStr, ImuRotation &outValue, String &expectedValue) const; // New declaration
     SetResult _parseAndValidateDShotMode(const String &valueStr, dshot_mode_t &outValue, String &expectedValue) const;
     SetResult _parseAndValidateBool(const String &valueStr, bool &outValue, String &expectedValue) const;
     SetResult _parseAndValidateRxChannelMap(const String &param, const String &valueStr, int &outValue, String &expectedValue) const;

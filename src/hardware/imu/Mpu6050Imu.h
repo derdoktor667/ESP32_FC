@@ -12,13 +12,14 @@
 #define MPU6050_IMU_H
 
 #include "src/hardware/imu/ImuInterface.h"
+#include "src/config/config.h" // Include config.h for ImuRotation
 #include <ESP32_MPU6050.h>
 
 // Concrete implementation of ImuInterface for the MPU6050 sensor.
 class Mpu6050Imu : public ImuInterface
 {
 public:
-    Mpu6050Imu(LpfBandwidth lpfBandwidth);
+    Mpu6050Imu(LpfBandwidth lpfBandwidth, ImuRotation imuRotation);
 
     bool begin() override;
     void update() override;
@@ -37,6 +38,7 @@ public:
 private:
     ESP32_MPU6050 _mpu;
     LpfBandwidth _lpfBandwidth;
+    ImuRotation _imuRotation; // New member to store IMU rotation
 
     // Private helper method for logging calibration status
     void _logCalibrationStatus(const char* message);
