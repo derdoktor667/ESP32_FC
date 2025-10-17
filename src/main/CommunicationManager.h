@@ -123,6 +123,7 @@ private:
 
     // Helper functions for parsing and validating setting values
     SetResult _parseAndValidateFloat(const String &valueStr, float &outValue, float scaleFactor, String &expectedValue) const;
+    SetResult _parseAndValidateInt(const String &valueStr, int &outValue, String &expectedValue) const; // New declaration
     SetResult _parseAndValidateUint16(const String &valueStr, uint16_t &outValue, String &expectedValue) const;
     SetResult _parseAndValidateReceiverProtocol(const String &valueStr, ReceiverProtocol &outValue, String &expectedValue) const;
     SetResult _parseAndValidateImuProtocol(const String &valueStr, ImuProtocol &outValue, String &expectedValue) const;

@@ -51,6 +51,7 @@
 const toggleConnectButton = document.getElementById('toggleConnectButton');
 const log = document.getElementById('log');
 const calibrateImuButton = document.getElementById('calibrateImuButton');
+const saveSettingsButton = document.getElementById('saveSettingsButton');
 
 let port;
 let writer;
@@ -220,6 +221,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    if (saveSettingsButton) {
+        saveSettingsButton.addEventListener('click', async () => {
+            if (isConnected && writer) {
+                log.textContent += 'Sending command: save\n';
+                await writer.write(new TextEncoder().encode('save\n'));
+            } else {
+                log.textContent += 'Not connected to device. Cannot save settings.\n';
+            }
+        });
+    }
 });
 
 function enableTabs() {
@@ -243,6 +255,7 @@ toggleConnectButton.addEventListener('click', async () => {
 
             toggleConnectButton.textContent = 'Disconnect';
             isConnected = true;
+            saveSettingsButton.disabled = false; // Enable save button
 
             log.textContent += 'Connected to device.\n';
 
@@ -266,6 +279,7 @@ toggleConnectButton.addEventListener('click', async () => {
             log.textContent += `Error: ${error.message}\n`;
             toggleConnectButton.textContent = 'Connect';
             isConnected = false;
+            saveSettingsButton.disabled = true; // Disable save button on error
         }
     } else {
         // Disconnect logic
@@ -279,6 +293,7 @@ toggleConnectButton.addEventListener('click', async () => {
 
                 toggleConnectButton.textContent = 'Connect';
                 isConnected = false;
+                saveSettingsButton.disabled = true; // Disable save button on disconnect
 
                 log.textContent += 'Disconnected from device.\n';
             } catch (error) {
@@ -489,8 +504,7 @@ function populateSettings(settings) {
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.value = categoryData[subCategory][key];
-                input.dataset.category = categoryPrefix;
-                input.dataset.key = key;
+                input.dataset.setting = `${subCategory}.${key}`;
                 input.addEventListener('change', handleSettingChange);
 
                 valueCell.appendChild(input);
@@ -517,6 +531,7 @@ function populateSettings(settings) {
 async function handleSettingChange(event) {
     const input = event.target;
     const settingKey = input.dataset.setting; // Use data-setting attribute for full key
+    console.log("handleSettingChange called for:", input.id, settingKey);
     let value;
 
     if (input.type === 'checkbox') {

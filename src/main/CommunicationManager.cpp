@@ -135,15 +135,15 @@ String CommunicationManager::_getUint8String(uint8_t value) const
 // --- Refactoring: Settings Registry ---
 
 const Setting CommunicationManager::settingsRegistry[] = {
-    {"pid.roll.kp", SettingType::UINT16, &settings.pidRoll.kp, PID_SCALE_FACTOR},
-    {"pid.roll.ki", SettingType::UINT16, &settings.pidRoll.ki, PID_SCALE_FACTOR},
-    {"pid.roll.kd", SettingType::UINT16, &settings.pidRoll.kd, PID_SCALE_FACTOR},
-    {"pid.pitch.kp", SettingType::UINT16, &settings.pidPitch.kp, PID_SCALE_FACTOR},
-    {"pid.pitch.ki", SettingType::UINT16, &settings.pidPitch.ki, PID_SCALE_FACTOR},
-    {"pid.pitch.kd", SettingType::UINT16, &settings.pidPitch.kd, PID_SCALE_FACTOR},
-    {"pid.yaw.kp", SettingType::UINT16, &settings.pidYaw.kp, PID_SCALE_FACTOR},
-    {"pid.yaw.ki", SettingType::UINT16, &settings.pidYaw.ki, PID_SCALE_FACTOR},
-    {"pid.yaw.kd", SettingType::UINT16, &settings.pidYaw.kd, PID_SCALE_FACTOR},
+    {"pid.roll.kp", SettingType::INT, &settings.pidRoll.kp, PID_SCALE_FACTOR},
+    {"pid.roll.ki", SettingType::INT, &settings.pidRoll.ki, PID_SCALE_FACTOR},
+    {"pid.roll.kd", SettingType::INT, &settings.pidRoll.kd, PID_SCALE_FACTOR},
+    {"pid.pitch.kp", SettingType::INT, &settings.pidPitch.kp, PID_SCALE_FACTOR},
+    {"pid.pitch.ki", SettingType::INT, &settings.pidPitch.ki, PID_SCALE_FACTOR},
+    {"pid.pitch.kd", SettingType::INT, &settings.pidPitch.kd, PID_SCALE_FACTOR},
+    {"pid.yaw.kp", SettingType::INT, &settings.pidYaw.kp, PID_SCALE_FACTOR},
+    {"pid.yaw.ki", SettingType::INT, &settings.pidYaw.ki, PID_SCALE_FACTOR},
+    {"pid.yaw.kd", SettingType::INT, &settings.pidYaw.kd, PID_SCALE_FACTOR},
     {"pid.integral_limit", SettingType::FLOAT, &settings.pidIntegralLimit, DEFAULT_SCALE_FACTOR},
     {"rates.angle", SettingType::FLOAT, &settings.rates.maxAngleRollPitch, DEFAULT_SCALE_FACTOR},
     {"rates.yaw", SettingType::FLOAT, &settings.rates.maxRateYaw, DEFAULT_SCALE_FACTOR},
@@ -182,6 +182,20 @@ SetResult CommunicationManager::_parseAndValidateFloat(const String &valueStr, f
         return SetResult::INVALID_VALUE;
     }
     outValue = val * scaleFactor;
+    return SetResult::SUCCESS;
+}
+
+SetResult CommunicationManager::_parseAndValidateInt(const String &valueStr, int &outValue, String &expectedValue) const
+{
+    long val = valueStr.toInt();
+    if (valueStr.length() > 0 && val == 0 && valueStr != "0")
+    {
+        expectedValue = "integer";
+        return SetResult::INVALID_VALUE;
+    }
+    // No explicit range check for int, as it can be negative.
+    // If specific int ranges are needed, they should be added here.
+    outValue = (int)val;
     return SetResult::SUCCESS;
 }
 
@@ -915,11 +929,14 @@ void CommunicationManager::_handleGetCommand(String args, bool isApiMode)
             case SettingType::FLOAT:
                 valueStr = String(*(float *)s.value / s.scaleFactor, 4);
                 break;
-            case SettingType::UINT16:
-                valueStr = String(*(uint16_t *)s.value);
+            case SettingType::INT:
+                valueStr = String(*(int *)s.value);
                 break;
             case SettingType::UINT8:
                 valueStr = _getUint8String(*(uint8_t *)s.value);
+                break;
+            case SettingType::UINT16:
+                valueStr = String(*(uint16_t *)s.value);
                 break;
             case SettingType::ENUM_IBUS_PROTOCOL:
                 valueStr = _getReceiverProtocolString(*(ReceiverProtocol *)s.value);
@@ -989,12 +1006,47 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode)
                     *(float *)s.value = val;
                 break;
             }
+            case SettingType::INT:
+            {
+                int val;
+                result = _parseAndValidateInt(valueStr, val, expectedValue);
+                if (result == SetResult::SUCCESS)
+                    *(int *)s.value = val;
+                break;
+            }
+            case SettingType::UINT8:
+            {
+                uint8_t val;
+                long tempVal = valueStr.toInt();
+                if (valueStr.length() > 0 && tempVal == 0 && valueStr != "0") {
+                    expectedValue = "integer";
+                    result = SetResult::INVALID_VALUE;
+                } else if (tempVal < 0 || tempVal > 255) { // UINT8 range
+                    expectedValue = "0-255";
+                    result = SetResult::OUT_OF_RANGE;
+                } else {
+                    val = (uint8_t)tempVal;
+                    result = SetResult::SUCCESS;
+                }
+
+                if (result == SetResult::SUCCESS)
+                    *(uint8_t *)s.value = val;
+                break;
+            }
             case SettingType::UINT16:
             {
                 uint16_t val;
                 result = _parseAndValidateUint16(valueStr, val, expectedValue);
                 if (result == SetResult::SUCCESS)
                     *(uint16_t *)s.value = val;
+                break;
+            }
+            case SettingType::BOOL:
+            {
+                bool val;
+                result = _parseAndValidateBool(valueStr, val, expectedValue);
+                if (result == SetResult::SUCCESS)
+                    *(bool *)s.value = val;
                 break;
             }
             case SettingType::ENUM_IBUS_PROTOCOL:
@@ -1037,8 +1089,12 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode)
                     *(dshot_mode_t *)s.value = val;
                 break;
             }
+            case SettingType::STRING:
+            case SettingType::ENUM_RX_CHANNEL_MAP:
+                result = SetResult::UNKNOWN_PARAMETER; // Or a more specific error
+                break;
             }
-            _printSetResponse(param, valueStr, result, isApiMode, (s.type == SettingType::ENUM_DSHOT_MODE || s.type == SettingType::ENUM_IBUS_PROTOCOL || s.type == SettingType::ENUM_IMU_PROTOCOL || s.type == SettingType::ENUM_LPF_BANDWIDTH || s.type == SettingType::ENUM_IMU_ROTATION || s.type == SettingType::BOOL), expectedValue);
+            _printSetResponse(param, valueStr, result, isApiMode, (s.type == SettingType::ENUM_DSHOT_MODE || s.type == SettingType::ENUM_IBUS_PROTOCOL || s.type == SettingType::ENUM_IMU_PROTOCOL || s.type == SettingType::ENUM_LPF_BANDWIDTH || s.type == SettingType::ENUM_IMU_ROTATION || s.type == SettingType::BOOL || s.type == SettingType::INT), expectedValue);
             return;
         }
     }
