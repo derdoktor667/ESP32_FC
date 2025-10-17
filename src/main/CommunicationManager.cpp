@@ -203,13 +203,15 @@ CommunicationManager::SetResult CommunicationManager::_parseAndValidateRxChannel
 // Helper function to print a GET response to serial, formatted as JSON for API mode or plain text for CLI mode.
 void _printGetResponse(const String& param, const String& value, bool isApiMode, bool isString) {
     if (isApiMode) {
-        Serial.print("{\"get\":{\"");
-        Serial.print(param);
-        Serial.print("\":");
-        if (isString) Serial.print("\"");
-        Serial.print(value);
-        if (isString) Serial.print("\"");
-        Serial.println("}}");
+        StaticJsonDocument<256> doc;
+        JsonObject get = doc.createNestedObject("get");
+        if (isString) {
+            get[param] = value;
+        } else {
+            get[param] = serialized(value);
+        }
+        serializeJson(doc, Serial);
+        Serial.println();
     } else {
         Serial.println(value);
     }
@@ -219,21 +221,37 @@ void _printGetResponse(const String& param, const String& value, bool isApiMode,
 // Provides detailed error messages based on the SetResult enum.
 void _printSetResponse(const String& param, const String& value, CommunicationManager::SetResult result, bool isApiMode, bool isString, const String& expected) {
     if (isApiMode) {
-        Serial.print("{\"set\":{\"");
-        Serial.print(param);
-        Serial.print("\":");
-        if (isString) Serial.print("\"");
-        Serial.print(value);
-        if (isString) Serial.print("\"");
-        Serial.print(",\"status\":\"");
-        switch (result) {
-            case CommunicationManager::SetResult::SUCCESS: Serial.print("success"); break;
-            case CommunicationManager::SetResult::INVALID_FORMAT: Serial.print("error"); Serial.print(",\"message\":\"Invalid 'set' command format. Use: set <parameter> <value>\""); break;
-            case CommunicationManager::SetResult::UNKNOWN_PARAMETER: Serial.print("error"); Serial.print(",\"message\":\"Unknown parameter\""); break;
-            case CommunicationManager::SetResult::INVALID_VALUE: Serial.print("error"); Serial.print(",\"message\":\"Invalid value. Expected: "); Serial.print(expected); Serial.print("\""); break;
-            case CommunicationManager::SetResult::OUT_OF_RANGE: Serial.print("error"); Serial.print(",\"message\":\"Value out of range. Expected: "); Serial.print(expected); Serial.print("\""); break;
+        StaticJsonDocument<512> doc;
+        JsonObject set = doc.createNestedObject("set");
+        if (isString) {
+            set[param] = value;
+        } else {
+            set[param] = serialized(value);
         }
-        Serial.println("}}");
+
+        switch (result) {
+            case CommunicationManager::SetResult::SUCCESS:
+                set["status"] = "success";
+                break;
+            case CommunicationManager::SetResult::INVALID_FORMAT:
+                set["status"] = "error";
+                set["message"] = "Invalid 'set' command format. Use: set <parameter> <value>";
+                break;
+            case CommunicationManager::SetResult::UNKNOWN_PARAMETER:
+                set["status"] = "error";
+                set["message"] = "Unknown parameter";
+                break;
+            case CommunicationManager::SetResult::INVALID_VALUE:
+                set["status"] = "error";
+                set["message"] = "Invalid value. Expected: " + expected;
+                break;
+            case CommunicationManager::SetResult::OUT_OF_RANGE:
+                set["status"] = "error";
+                set["message"] = "Value out of range. Expected: " + expected;
+                break;
+        }
+        serializeJson(doc, Serial);
+        Serial.println();
     } else {
         switch (result) {
             case CommunicationManager::SetResult::SUCCESS:
@@ -257,37 +275,43 @@ void _printSetResponse(const String& param, const String& value, CommunicationMa
 
 // Helper function to print live flight status data to serial, formatted as JSON for API mode.
 void _printFlightStatus(const FlightState &state) {
+    StaticJsonDocument<512> doc;
+
     if (isnan(state.attitude.roll) || isnan(state.attitude.pitch) || isnan(state.attitude.yaw)) {
-        Serial.println("{\"error\":\"Attitude data is NaN. Check IMU connection.\"}");
+        doc["error"] = "Attitude data is NaN. Check IMU connection.";
+        serializeJson(doc, Serial);
+        Serial.println();
         return;
     }
-    Serial.print("{\"live_data\":{\"attitude\":{\"roll\":");
-    Serial.print(state.attitude.roll, 2);
-    Serial.print(",\"pitch\":");
-    Serial.print(state.attitude.pitch, 2);
-    Serial.print(",\"yaw\":");
-    Serial.print(state.attitude.yaw, 2);
-    Serial.print("},\"status\":{\"armed\":");
-    Serial.print(state.isArmed ? "true" : "false");
-    Serial.print(",\"failsafe\":");
-    Serial.print(state.isFailsafeActive ? "true" : "false");
-    Serial.print(",\"mode\":\"");
+
+    JsonObject live_data = doc.createNestedObject("live_data");
+
+    JsonObject attitude = live_data.createNestedObject("attitude");
+    attitude["roll"] = state.attitude.roll;
+    attitude["pitch"] = state.attitude.pitch;
+    attitude["yaw"] = state.attitude.yaw;
+
+    JsonObject status = live_data.createNestedObject("status");
+    status["armed"] = state.isArmed;
+    status["failsafe"] = state.isFailsafeActive;
     switch (state.currentFlightMode) {
-        case ACRO_MODE: Serial.print("ACRO"); break;
-        case ANGLE_MODE: Serial.print("ANGLE"); break;
-        default: Serial.print("UNKNOWN"); break;
+        case ACRO_MODE: status["mode"] = "ACRO"; break;
+        case ANGLE_MODE: status["mode"] = "ANGLE"; break;
+        default: status["mode"] = "UNKNOWN"; break;
     }
-    Serial.print("\"},\"motor_output\":[");
+
+    JsonArray motor_output = live_data.createNestedArray("motor_output");
     for (int i = 0; i < NUM_MOTORS; i++) {
-        Serial.print(state.motorOutputs[i]);
-        if (i < NUM_MOTORS - 1) Serial.print(",");
+        motor_output.add(state.motorOutputs[i]);
     }
-    Serial.print("],\"receiver_channels\":[");
+
+    JsonArray receiver_channels = live_data.createNestedArray("receiver_channels");
     for (int i = 0; i < RECEIVER_CHANNEL_COUNT; i++) {
-        Serial.print(state.receiverChannels[i]);
-        if (i < RECEIVER_CHANNEL_COUNT - 1) Serial.print(",");
+        receiver_channels.add(state.receiverChannels[i]);
     }
-    Serial.println("]}}");
+
+    serializeJson(doc, Serial);
+    Serial.println();
 }
 
 // --- Public Methods ---
@@ -389,8 +413,15 @@ void CommunicationManager::_executeCommand(String command, bool isApiMode) {
     } else if (commandName.equals("help") && !isApiMode) {
         _printCliHelp();
     } else {
-        if (isApiMode) Serial.println("{\"error\":\"Unknown command\"}");
-        else { Serial.print("Unknown command: "); Serial.println(commandName); }
+        if (isApiMode) {
+            StaticJsonDocument<64> doc;
+            doc["error"] = "Unknown command";
+            serializeJson(doc, Serial);
+            Serial.println();
+        } else {
+            Serial.print("Unknown command: ");
+            Serial.println(commandName);
+        }
     }
 }
 
@@ -637,9 +668,10 @@ void CommunicationManager::_handleStatusCommand() {
 
 void CommunicationManager::_handleVersionCommand() {
     if (_currentMode == OperatingMode::API) {
-        Serial.print("{\"version\":\"");
-        Serial.print(FIRMWARE_VERSION);
-        Serial.println("\"}");
+        StaticJsonDocument<64> doc;
+        doc["version"] = FIRMWARE_VERSION;
+        serializeJson(doc, Serial);
+        Serial.println();
     } else {
         Serial.print("Firmware Version: ");
         Serial.println(FIRMWARE_VERSION);
