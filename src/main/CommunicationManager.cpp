@@ -127,8 +127,8 @@ CommunicationManager::SetResult CommunicationManager::_parseAndValidateUint16(co
     if (valueStr.length() > 0 && val == 0 && valueStr != "0") {
         expectedValue = "integer";
         return SetResult::INVALID_VALUE;
-    } else if (val < 0 || val > 65535) { // uint16_t range
-        expectedValue = "0-65535";
+    } else if (val < 0 || val > MAX_UINT16_VALUE) { // uint16_t range
+        expectedValue = "0-" + String(MAX_UINT16_VALUE);
         return SetResult::OUT_OF_RANGE;
     }
     outValue = (uint16_t)val;
@@ -203,7 +203,7 @@ CommunicationManager::SetResult CommunicationManager::_parseAndValidateRxChannel
 // Helper function to print a GET response to serial, formatted as JSON for API mode or plain text for CLI mode.
 void _printGetResponse(const String& param, const String& value, bool isApiMode, bool isString) {
     if (isApiMode) {
-        StaticJsonDocument<256> doc;
+        StaticJsonDocument<CommunicationManager::JSON_DOC_MEDIUM_SIZE> doc;
         JsonObject get = doc.createNestedObject("get");
         if (isString) {
             get[param] = value;
@@ -221,7 +221,7 @@ void _printGetResponse(const String& param, const String& value, bool isApiMode,
 // Provides detailed error messages based on the SetResult enum.
 void _printSetResponse(const String& param, const String& value, CommunicationManager::SetResult result, bool isApiMode, bool isString, const String& expected) {
     if (isApiMode) {
-        StaticJsonDocument<512> doc;
+        StaticJsonDocument<CommunicationManager::JSON_DOC_LARGE_SIZE> doc;
         JsonObject set = doc.createNestedObject("set");
         if (isString) {
             set[param] = value;
@@ -274,10 +274,10 @@ void _printSetResponse(const String& param, const String& value, CommunicationMa
 }
 
 // Helper function to print live flight status data to serial, formatted as JSON for API mode.
-void _printFlightStatus(const FlightState &state) {
-    StaticJsonDocument<512> doc;
+void CommunicationManager::_printFlightStatus() {
+    StaticJsonDocument<CommunicationManager::JSON_DOC_LARGE_SIZE> doc;
 
-    if (isnan(state.attitude.roll) || isnan(state.attitude.pitch) || isnan(state.attitude.yaw)) {
+    if (isnan(_fc->state.attitude.roll) || isnan(_fc->state.attitude.pitch) || isnan(_fc->state.attitude.yaw)) {
         doc["error"] = "Attitude data is NaN. Check IMU connection.";
         serializeJson(doc, Serial);
         Serial.println();
@@ -287,14 +287,14 @@ void _printFlightStatus(const FlightState &state) {
     JsonObject live_data = doc.createNestedObject("live_data");
 
     JsonObject attitude = live_data.createNestedObject("attitude");
-    attitude["roll"] = state.attitude.roll;
-    attitude["pitch"] = state.attitude.pitch;
-    attitude["yaw"] = state.attitude.yaw;
+    attitude["roll"] = _fc->state.attitude.roll;
+    attitude["pitch"] = _fc->state.attitude.pitch;
+    attitude["yaw"] = _fc->state.attitude.yaw;
 
     JsonObject status = live_data.createNestedObject("status");
-    status["armed"] = state.isArmed;
-    status["failsafe"] = state.isFailsafeActive;
-    switch (state.currentFlightMode) {
+    status["armed"] = _fc->state.isArmed;
+    status["failsafe"] = _fc->state.isFailsafeActive;
+    switch (_fc->state.currentFlightMode) {
         case ACRO_MODE: status["mode"] = "ACRO"; break;
         case ANGLE_MODE: status["mode"] = "ANGLE"; break;
         default: status["mode"] = "UNKNOWN"; break;
@@ -302,12 +302,12 @@ void _printFlightStatus(const FlightState &state) {
 
     JsonArray motor_output = live_data.createNestedArray("motor_output");
     for (int i = 0; i < NUM_MOTORS; i++) {
-        motor_output.add(state.motorOutputs[i]);
+        motor_output.add(_fc->state.motorOutputs[i]);
     }
 
     JsonArray receiver_channels = live_data.createNestedArray("receiver_channels");
     for (int i = 0; i < RECEIVER_CHANNEL_COUNT; i++) {
-        receiver_channels.add(state.receiverChannels[i]);
+        receiver_channels.add(_fc->state.receiverChannels[i]);
     }
 
     serializeJson(doc, Serial);
@@ -320,10 +320,10 @@ CommunicationManager::CommunicationManager(FlightController* fc) : _fc(fc) {}
 
 void CommunicationManager::begin() {}
 
-void CommunicationManager::update(const FlightState &state) {
+void CommunicationManager::update() {
     _handleSerialInput();
     if (_currentMode == OperatingMode::API && !_isSendingSettings && settings.enableLogging && millis() - _lastSerialLogTime >= settings.printIntervalMs) {
-        _printFlightStatus(state);
+        _printFlightStatus();
         _lastSerialLogTime = millis();
     }
 }
@@ -368,7 +368,7 @@ void CommunicationManager::_handleFlightModeInput(const String& input) {
     } else if (input.equalsIgnoreCase("api")) {
         _currentMode = OperatingMode::API;
         settings.enableLogging = true;
-        Serial.println("{\"status\":\"api_mode_activated\"}");
+        Serial.println(CommunicationManager::API_MODE_ACTIVATED_JSON);
     }
 }
 
@@ -414,7 +414,7 @@ void CommunicationManager::_executeCommand(String command, bool isApiMode) {
         _printCliHelp();
     } else {
         if (isApiMode) {
-            StaticJsonDocument<64> doc;
+            StaticJsonDocument<CommunicationManager::JSON_DOC_SMALL_SIZE> doc;
             doc["error"] = "Unknown command";
             serializeJson(doc, Serial);
             Serial.println();
@@ -517,7 +517,7 @@ void CommunicationManager::_handleDumpCommand() {
 
 void CommunicationManager::_handleDumpJsonCommand() {
     _isSendingSettings = true;
-    StaticJsonDocument<2048> jsonDoc; // Use a suitable size for your settings
+    StaticJsonDocument<CommunicationManager::JSON_DOC_XLARGE_SIZE> jsonDoc; // Use a suitable size for your settings
 
     for (int i = 0; i < numSettings; ++i) {
         const Setting& s = settingsRegistry[i];
@@ -540,7 +540,7 @@ void CommunicationManager::_handleDumpJsonCommand() {
         key += inputName;
         jsonDoc[key] = settings.channelMapping.channel[i];
     }
-    StaticJsonDocument<2048> outputDoc;
+    StaticJsonDocument<CommunicationManager::JSON_DOC_XLARGE_SIZE> outputDoc;
     outputDoc["settings"] = jsonDoc;
     serializeJson(outputDoc, Serial);
     Serial.println();
@@ -567,7 +567,7 @@ void CommunicationManager::_handleGetCommand(String args, bool isApiMode) {
             return;
         }
     }
-    if (isApiMode) { Serial.println("{\"error\":\"Unknown parameter for get\"}"); } 
+    if (isApiMode) { Serial.println(CommunicationManager::API_ERROR_UNKNOWN_PARAMETER_GET); } 
     else { Serial.println("Unknown parameter for 'get'."); }
 }
 
@@ -668,7 +668,7 @@ void CommunicationManager::_handleStatusCommand() {
 
 void CommunicationManager::_handleVersionCommand() {
     if (_currentMode == OperatingMode::API) {
-        StaticJsonDocument<64> doc;
+        StaticJsonDocument<CommunicationManager::JSON_DOC_SMALL_SIZE> doc;
         doc["version"] = FIRMWARE_VERSION;
         serializeJson(doc, Serial);
         Serial.println();

@@ -39,8 +39,7 @@ public:
     void begin();
 
     // Updates the communication manager, handling serial input and output.
-    // @param state The current FlightState, used for logging and command processing.
-    void update(const FlightState &state);
+    void update();
 
 private:
     // Defines the operating mode of the serial interface.
@@ -91,6 +90,17 @@ public:
 
     static constexpr float DEFAULT_SCALE_FACTOR = 1.0f;
 
+    // JSON Document Sizes
+    static constexpr size_t JSON_DOC_SMALL_SIZE = 64;
+    static constexpr size_t JSON_DOC_MEDIUM_SIZE = 256;
+    static constexpr size_t JSON_DOC_LARGE_SIZE = 512;
+    static constexpr size_t JSON_DOC_XLARGE_SIZE = 2048;
+
+    // API Error Messages
+    static constexpr const char* API_ERROR_UNKNOWN_COMMAND = "{\"error\":\"Unknown command\"}";
+    static constexpr const char* API_ERROR_UNKNOWN_PARAMETER_GET = "{\"error\":\"Unknown parameter for get\"}";
+    static constexpr const char* API_MODE_ACTIVATED_JSON = "{\"status\":\"api_mode_activated\"}";
+
     // Helper functions for parsing and validating setting values
     SetResult _parseAndValidateFloat(const String& valueStr, float& outValue, float scaleFactor, String& expectedValue);
     SetResult _parseAndValidateUint16(const String& valueStr, uint16_t& outValue, String& expectedValue);
@@ -112,6 +122,8 @@ public:
 
     void _handleStatusCommand();
     void _handleVersionCommand();
+    void _printFlightStatus(); // Now a private member function
+
     void _handleFlightModeInput(const String& input);
 };
 

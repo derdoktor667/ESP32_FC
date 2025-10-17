@@ -117,7 +117,7 @@ void FlightController::runLoop()
     _loopTimer = micros();
 
     // Update CommunicationManager first to handle any incoming commands
-    _comms->update(state);
+    _comms->update();
 
     // When logging is enabled (API mode), we skip the main flight logic
     // to prevent stack overflows and ensure stable communication.

@@ -200,6 +200,8 @@ struct FlightControllerSettings
 
 static constexpr int PID_SCALE_FACTOR = 1000;
 
+static constexpr uint16_t MAX_UINT16_VALUE = 65535;
+
 // General Constants
 
 static constexpr int RECEIVER_CHANNEL_COUNT = 16;
@@ -208,6 +210,8 @@ static constexpr unsigned long CLI_REBOOT_DELAY_MS = 100;
 static constexpr unsigned long IMU_INIT_FAIL_DELAY_MS = 10;
 static constexpr unsigned long SERIAL_BAUD_RATE = 115200;
 static constexpr int RX_MAP_PREFIX_LENGTH = 7;
+static constexpr int RECEIVER_CHANNEL_OFFSET = 1; // Offset for receiver channel indexing (e.g., 0-indexed array to 1-indexed channel)
+static constexpr float SETPOINT_SCALING_FACTOR = 2.0f; // Factor used for scaling receiver input to setpoints
 static constexpr bool INFINITE_LOOP_CONDITION = true; // Used to halt execution on critical errors, preventing further processing.
 
 static constexpr int FLIGHT_MODE_ACRO_THRESHOLD = 1200;

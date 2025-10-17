@@ -38,5 +38,5 @@ void setup()
 void loop()
 {
     fc->runLoop();
-    comms->update(fc->state); // Pass current state to comms
+    comms->update(); // Call update without arguments
 }
