@@ -16,16 +16,9 @@
 // PID gains (Kp, Ki, Kd) are loaded from the global settings, scaled by PID_SCALE_FACTOR
 // to convert integer settings to floating-point PID gains.
 PidProcessor::PidProcessor(const FlightControllerSettings &settings)
-    : _pidRoll(nullptr), _pidPitch(nullptr), _pidYaw(nullptr), _settings(settings)
+    : _settings(settings)
 {
     _initializePidControllers();
-}
-
-PidProcessor::~PidProcessor()
-{
-    delete _pidRoll;
-    delete _pidPitch;
-    delete _pidYaw;
 }
 
 // Calculates the PID outputs for roll, pitch, and yaw axes based on current flight mode and state.
@@ -61,7 +54,7 @@ void PidProcessor::update(FlightState &state)
 
 void PidProcessor::_initializePidControllers()
 {
-    _pidRoll = new PIDController(_settings.pidRoll.kp / (float)PID_SCALE_FACTOR, _settings.pidRoll.ki / (float)PID_SCALE_FACTOR, _settings.pidRoll.kd / (float)PID_SCALE_FACTOR);
-    _pidPitch = new PIDController(_settings.pidPitch.kp / (float)PID_SCALE_FACTOR, _settings.pidPitch.ki / (float)PID_SCALE_FACTOR, _settings.pidPitch.kd / (float)PID_SCALE_FACTOR);
-    _pidYaw = new PIDController(_settings.pidYaw.kp / (float)PID_SCALE_FACTOR, _settings.pidYaw.ki / (float)PID_SCALE_FACTOR, _settings.pidYaw.kd / (float)PID_SCALE_FACTOR);
+    _pidRoll = std::make_unique<PIDController>(_settings.pidRoll.kp / (float)PID_SCALE_FACTOR, _settings.pidRoll.ki / (float)PID_SCALE_FACTOR, _settings.pidRoll.kd / (float)PID_SCALE_FACTOR);
+    _pidPitch = std::make_unique<PIDController>(_settings.pidPitch.kp / (float)PID_SCALE_FACTOR, _settings.pidPitch.ki / (float)PID_SCALE_FACTOR, _settings.pidPitch.kd / (float)PID_SCALE_FACTOR);
+    _pidYaw = std::make_unique<PIDController>(_settings.pidYaw.kp / (float)PID_SCALE_FACTOR, _settings.pidYaw.ki / (float)PID_SCALE_FACTOR, _settings.pidYaw.kd / (float)PID_SCALE_FACTOR);
 }

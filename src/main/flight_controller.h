@@ -21,6 +21,7 @@
 #include "src/modules/PidProcessor.h"
 #include "src/modules/MotorMixer.h"
 #include <DShotRMT.h>
+#include <memory> // Required for std::unique_ptr
 
 // Forward declaration to break circular dependency
 class CommunicationManager;
@@ -33,7 +34,7 @@ class FlightController
 {
 public:
     FlightController();
-    ~FlightController(); // Destructor to clean up dynamically allocated objects
+    // Destructor is no longer explicitly needed as std::unique_ptr handles cleanup
 
     // Initializes all hardware and modules.
     void initialize();
@@ -61,16 +62,16 @@ private:
     void _haltOnError(const char* message);
 
     // --- Hardware Objects ---
-    ImuInterface *_imuInterface = nullptr; // Pointer to the active IMU interface
-    ReceiverInterface *_receiver;
-    DShotRMT *_motor1 = nullptr, *_motor2 = nullptr, *_motor3 = nullptr, *_motor4 = nullptr;
+    std::unique_ptr<ImuInterface> _imuInterface; // Pointer to the active IMU interface
+    std::unique_ptr<ReceiverInterface> _receiver;
+    std::unique_ptr<DShotRMT> _motor1, _motor2, _motor3, _motor4;
 
     // --- Processing Modules ---
     AttitudeEstimator _attitudeEstimator;
-    SafetyManager *_safetyManager;
-    SetpointManager *_setpointManager;
+    std::unique_ptr<SafetyManager> _safetyManager;
+    std::unique_ptr<SetpointManager> _setpointManager;
     PidProcessor _pidProcessor;
-    MotorMixer *_motorMixer = nullptr;
+    std::unique_ptr<MotorMixer> _motorMixer;
 
     // --- Communication Manager ---
     CommunicationManager *_comms = nullptr; // Communication Manager instance (now a pointer)

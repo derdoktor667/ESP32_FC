@@ -23,29 +23,15 @@ FlightController::FlightController()
     // Pointers to interfaces and dependent modules are initialized to nullptr.
     // They will be dynamically allocated in the initialize() method after
     // settings have been loaded.
-    _imuInterface = nullptr;
-    _receiver = nullptr;
-    _safetyManager = nullptr;
-    _setpointManager = nullptr;
-    _motor1 = nullptr;
-    _motor2 = nullptr;
-    _motor3 = nullptr;
-    _motor4 = nullptr;
-    _motorMixer = nullptr;
-}
-
-// Destructor: Ensures all dynamically allocated objects are properly deleted.
-FlightController::~FlightController()
-{
-    delete _receiver;
-    delete _safetyManager;
-    delete _setpointManager;
-    delete _imuInterface;
-    delete _motor1;
-    delete _motor2;
-    delete _motor3;
-    delete _motor4;
-    delete _motorMixer;
+    // _imuInterface = nullptr; // Handled by std::unique_ptr default constructor
+    // _receiver = nullptr;     // Handled by std::unique_ptr default constructor
+    // _safetyManager = nullptr; // Handled by std::unique_ptr default constructor
+    // _setpointManager = nullptr; // Handled by std::unique_ptr default constructor
+    // _motor1 = nullptr;       // Handled by std::unique_ptr default constructor
+    // _motor2 = nullptr;       // Handled by std::unique_ptr default constructor
+    // _motor3 = nullptr;       // Handled by std::unique_ptr default constructor
+    // _motor4 = nullptr;       // Handled by std::unique_ptr default constructor
+    // _motorMixer = nullptr;   // Handled by std::unique_ptr default constructor
 }
 
 // Sets the CommunicationManager instance. This is used to break a circular dependency.
@@ -128,11 +114,11 @@ void FlightController::requestImuCalibration()
 void FlightController::_initializeMotors()
 {
     // Motors are initialized with their respective pins and DShot mode.
-    _motor1 = new DShotRMT(ESC_PIN_FRONT_RIGHT, settings.dshotMode, false);
-    _motor2 = new DShotRMT(ESC_PIN_FRONT_LEFT, settings.dshotMode, false);
-    _motor3 = new DShotRMT(ESC_PIN_REAR_RIGHT, settings.dshotMode, false);
-    _motor4 = new DShotRMT(ESC_PIN_REAR_LEFT, settings.dshotMode, false);
-    _motorMixer = new MotorMixer(_motor1, _motor2, _motor3, _motor4, settings);
+    _motor1 = std::make_unique<DShotRMT>(ESC_PIN_FRONT_RIGHT, settings.dshotMode, false);
+    _motor2 = std::make_unique<DShotRMT>(ESC_PIN_FRONT_LEFT, settings.dshotMode, false);
+    _motor3 = std::make_unique<DShotRMT>(ESC_PIN_REAR_RIGHT, settings.dshotMode, false);
+    _motor4 = std::make_unique<DShotRMT>(ESC_PIN_REAR_LEFT, settings.dshotMode, false);
+    _motorMixer = std::make_unique<MotorMixer>(_motor1.get(), _motor2.get(), _motor3.get(), _motor4.get(), settings);
     _motorMixer->begin();
 }
 
@@ -143,11 +129,11 @@ void FlightController::_initializeReceiver()
     {
     case PROTOCOL_IBUS:
         Serial.println("iBUS");
-        _receiver = new IbusReceiver(Serial2, IBUS_RX_PIN);
+        _receiver = std::make_unique<IbusReceiver>(Serial2, IBUS_RX_PIN);
         break;
     case PROTOCOL_PPM:
         Serial.println("PPM");
-        _receiver = new PpmReceiver(IBUS_RX_PIN);
+        _receiver = std::make_unique<PpmReceiver>(IBUS_RX_PIN);
         break;
     default:
         _haltOnError("ERROR: Unknown receiver protocol! Halting.");
@@ -163,7 +149,7 @@ void FlightController::_initializeImu()
     {
     case IMU_MPU6050:
         Serial.println("MPU6050");
-        _imuInterface = new Mpu6050Imu(settings.imuLpfBandwidth);
+        _imuInterface = std::make_unique<Mpu6050Imu>(settings.imuLpfBandwidth);
         break;
     default:
         _haltOnError("ERROR: Unknown IMU protocol! Halting.");
@@ -174,8 +160,8 @@ void FlightController::_initializeImu()
 
 void FlightController::_initializeModules()
 {
-    _safetyManager = new SafetyManager(*_receiver, settings);
-    _setpointManager = new SetpointManager(*_receiver, settings);
+    _safetyManager = std::make_unique<SafetyManager>(*_receiver, settings);
+    _setpointManager = std::make_unique<SetpointManager>(*_receiver, settings);
     _attitudeEstimator.init(*_imuInterface, settings);
     _attitudeEstimator.begin();
 }

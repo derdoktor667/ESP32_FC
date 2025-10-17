@@ -16,26 +16,15 @@
 // Default constructor: Initializes pointers to nullptr and Madgwick filter with dummy values.
 // Actual initialization happens in init() once settings are available.
 AttitudeEstimator::AttitudeEstimator()
-    : _imu(nullptr), _settings(nullptr),
-      _complementaryFilter(nullptr),
-      _gyroRollLpf(nullptr),
-      _gyroPitchLpf(nullptr),
-      _gyroYawLpf(nullptr),
-      _accelRollLpf(nullptr),
-      _accelPitchLpf(nullptr),
-      _accelYawLpf(nullptr)
+    : _imu(nullptr), _settings(nullptr)
 {
-}
-
-AttitudeEstimator::~AttitudeEstimator()
-{
-    delete _complementaryFilter;
-    delete _gyroRollLpf;
-    delete _gyroPitchLpf;
-    delete _gyroYawLpf;
-    delete _accelRollLpf;
-    delete _accelPitchLpf;
-    delete _accelYawLpf;
+    // _complementaryFilter = nullptr; // Handled by std::unique_ptr default constructor
+    // _gyroRollLpf = nullptr;       // Handled by std::unique_ptr default constructor
+    // _gyroPitchLpf = nullptr;      // Handled by std::unique_ptr default constructor
+    // _gyroYawLpf = nullptr;        // Handled by std::unique_ptr default constructor
+    // _accelRollLpf = nullptr;      // Handled by std::unique_ptr default constructor
+    // _accelPitchLpf = nullptr;     // Handled by std::unique_ptr default constructor
+    // _accelYawLpf = nullptr;       // Handled by std::unique_ptr default constructor
 }
 
 // Init method: Sets up references to IMU and settings, then properly initializes the filter.
@@ -103,15 +92,15 @@ void AttitudeEstimator::calibrate()
 void AttitudeEstimator::_initializeFilters()
 {
     // Initialize Complementary filter with actual settings from config.h
-    _complementaryFilter = new ComplementaryFilter(_settings->filter.complementaryFilterTau, _settings->filter.filterSampleFreq);
+    _complementaryFilter = std::make_unique<ComplementaryFilter>(_settings->filter.complementaryFilterTau, _settings->filter.filterSampleFreq);
 
     // Initialize gyroscope low-pass filters
-    _gyroRollLpf = new MultiStageBiquadFilter(_settings->filter.gyroLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroLpfStages);
-    _gyroPitchLpf = new MultiStageBiquadFilter(_settings->filter.gyroLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroLpfStages);
-    _gyroYawLpf = new MultiStageBiquadFilter(_settings->filter.gyroLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroLpfStages);
+    _gyroRollLpf = std::make_unique<MultiStageBiquadFilter>(_settings->filter.gyroLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroLpfStages);
+    _gyroPitchLpf = std::make_unique<MultiStageBiquadFilter>(_settings->filter.gyroLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroLpfStages);
+    _gyroYawLpf = std::make_unique<MultiStageBiquadFilter>(_settings->filter.gyroLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroLpfStages);
 
     // Initialize accelerometer low-pass filters
-    _accelRollLpf = new MultiStageBiquadFilter(_settings->filter.accelLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.accelLpfStages);
-    _accelPitchLpf = new MultiStageBiquadFilter(_settings->filter.accelLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.accelLpfStages);
-    _accelYawLpf = new MultiStageBiquadFilter(_settings->filter.accelLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.accelLpfStages);
+    _accelRollLpf = std::make_unique<MultiStageBiquadFilter>(_settings->filter.accelLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.accelLpfStages);
+    _accelPitchLpf = std::make_unique<MultiStageBiquadFilter>(_settings->filter.accelLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.accelLpfStages);
+    _accelYawLpf = std::make_unique<MultiStageBiquadFilter>(_settings->filter.accelLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.accelLpfStages);
 }
