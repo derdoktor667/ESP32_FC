@@ -9,4 +9,4 @@
 	url = https://github.com/derdoktor667/ESP32_MPU6050
 [submodule "libraries/ArduinoJson"]
 	path = libraries/ArduinoJson
-	url = https://github.com/bblanchon/ArduinoJson.git
+	url = https://github.com/bblanchon/ArduinoJson
