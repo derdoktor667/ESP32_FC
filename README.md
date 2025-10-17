@@ -6,49 +6,61 @@ An advanced, high-performance flight controller firmware for quadcopters, built 
 
 ---
 
-## ✨ Implemented
-- **Web Application Configurator**: Developed a comprehensive web-based UI in the `/webapp` directory that connects via the Web Serial API. It now features an 'Info' tab as the default, displaying general software and hardware information (firmware version, system status). Other tabs (3D View, Motor Settings, PID Settings, Receiver Settings, Raw Log) are initially disabled and become available only after data is successfully received from the ESP32. The web app is served locally via a Python HTTPS server using a self-signed certificate.
-  - **Web App Connection Fix**: Resolved an issue where the 'Connect' button in the web app was unresponsive due to a JavaScript syntax error and missing `releaseLock()` calls in the disconnect logic.
-  - **Improved 3D Quadcopter Representation**: Enhanced the 3D model in the web app to include a central body, arms, propellers, and a flight direction marker, providing a more realistic visual representation.
-  - **Web App Communication Fix (Settings JSON)**: Corrected the JSON output format for the `get_settings` command in `CommunicationManager.cpp` to properly wrap settings in a `{"settings": {...}}` object, ensuring the web app correctly receives and processes settings and activates all tabs.
-- **Permanent API Mode**: Removed the 2-second safety timeout from the `CommunicationManager`. Once activated via the `api` command, the firmware now remains in API mode until the next reboot, simplifying client interaction.
-- **Firmware Versioning**: Added `FIRMWARE_VERSION` constant and corresponding CLI/API commands to retrieve the current firmware version (0.2.6).
-- **Major API Refactoring (Settings Registry)**: Overhauled the `CommunicationManager` to use a data-driven 'Settings Registry' for handling `get`/`set` commands. This major refactoring replaced large, hard-to-maintain `if-else` blocks with a centralized, iterable registry, dramatically improving code clarity, reducing redundancy, and making the addition of new settings trivial.
-  - **Settings Registry Refinements**:
-    - Consolidated the `Setting` struct definition into `CommunicationManager.h` to ensure global accessibility.
-    - Integrated the `ArduinoJson` library (`ArduinoJson.h`) for robust JSON serialization and deserialization.
-    - Corrected the scope and definition of `settingsRegistry` and `numSettings` by moving them to `CommunicationManager.cpp` and explicitly prefixing them with `CommunicationManager::`.
-    - Replaced `s.valuePtr` with `s.value` in `CommunicationManager.cpp` for consistency with the `Setting` struct definition.
-    - Ensured correct handling of `SettingType::UINT8` across all communication functions (`_printGetResponse`, `_printSetResponse`, `_handleDumpCommand`, `_handleDumpJsonCommand`).
-- **Enhanced CLI/API Error Handling**: Implemented a more robust error handling mechanism for `set` commands in both CLI and API modes. Error responses now provide specific details about invalid formats, unknown parameters, invalid values, and out-of-range inputs, significantly improving user feedback and programmatic client integration.
-- **API Stability Enhancement**: The `get_settings` command handler was refactored to prevent a critical race condition. A mutex flag now temporarily pauses the high-frequency `live_data` stream while the settings are being transmitted, preventing the two streams from corrupting each other and crashing the device. This ensures a robust and stable API connection, especially when fetching the initial configuration.
-- **Calibrate IMU Button in Web App**: Added a 'Calibrate IMU' button to the 3D view in the web application. This button sends a `calibrate_imu` command to the ESP32 and simultaneously resets the 3D model's orientation to zero, providing a convenient way to re-calibrate and visualize the IMU data.
-- **IMU Initialization Fix**: Corrected a redundant IMU initialization that occurred during startup, streamlining the boot process.
-- **Robust Settings Persistence**: The logic for loading and saving settings has been completely overhauled. The firmware now correctly loads saved settings from flash, and if none are found (e.g., on first boot), it generates and saves a default configuration. This makes the initial setup and configuration management much more reliable.
-- **Enhanced CLI Help**: The `help` command in the CLI has been significantly improved. It now displays a well-structured, categorized list of all available settings, making the CLI more user-friendly and self-documenting.
-- **Comprehensive Project Cleanup and Professionalization**: Extensive cleanup performed across the codebase, including:
-  - **Standardized Programmer Headers**: All relevant `.h` and `.cpp` files now include a consistent programmer header with author, date, and license information.
-  - **Improved Code Comments**: Enhanced clarity and consistency of inline comments throughout the project, adhering to the `//` style.
-  - **Removal of Redundant Comments**: Eliminated self-explanatory or outdated comments.
-  - **Consistent Logging**: Standardized informational `Serial.println` messages with an "INFO: " prefix.
-  - **Magic Number Elimination**: Replaced hardcoded numerical literals with named `static constexpr` constants for improved readability and maintainability. This includes defining NVS keys as `static constexpr const char*` and introducing constants for invalid receiver channel values, and a constant for microseconds to seconds conversion.
-  - **Removal of Unused Variables and Redundant Includes**: Further optimization of the codebase.
-  - **Elimination of Duplicate Code**: Ensured no redundant code blocks exist.
-  - **Corrected JSON String Escaping**: Fixed all JSON string literal escaping issues in `CommunicationManager.cpp` for robust API communication.
-  - **Corrected `Serial.readStringUntil` Usage**: Ensured proper character literal usage.
-- **DShot Mode Persistence Fix**: Resolved an issue where the DShot mode setting (`dshotMode`) was not correctly persisting across reboots. The fix involved changing the internal NVS key name from `motor.dshot_mode` to `dshot_mode_val` to avoid a subtle conflict within the Preferences library, while maintaining the original CLI command interface.
-- **Major Refactoring**: The entire project has been refactored to separate flight logic from communication. The new `CommunicationManager` class now handles all serial CLI and API interactions, while `FlightController` focuses solely on flight tasks.
-- **Robust JSON-based API**: A dedicated, machine-readable API mode (`api`) provides clean, JSON-only communication.
-- **Tri-Mode Serial Interface**: The `CommunicationManager` manages three modes (`FLIGHT`, `CLI`, `API`).
-- **Automatic JSON Live Data Stream**: In `api` mode, the firmware automatically streams lean JSON objects with live flight data.
-- **Robust Web App API Parsing**: Enhanced the web application's `main.js` to include explicit documentation of expected JSON API structures and implemented robust runtime checks within `handleIncomingData` to ensure reliable parsing of incoming data, improving the web app's stability and user experience.
-- **MPU6050 LPF Status**: Confirmed that the MPU6050's Digital Low-Pass Filter (DLPF) is not explicitly configured in the `Mpu6050Imu` class. The `ESP32_MPU6050` library provides internal mechanisms to configure the DLPF via register access, but lacks a direct public method for this purpose.
-- **Stack Overflow Prevention**: The `FlightController` pauses the main flight pipeline when the API mode is active to ensure stable communication.
-- **MPU6050 LPF Configuration**: Integrated Digital Low-Pass Filter (DLPF) bandwidth setting into `FlightControllerSettings` and `Mpu6050Imu`, allowing configurable filtering for IMU data.
-- **IMU Calibration Zeroing**: Modified the IMU calibration process to set the current orientation as the "horizontal zero position" by resetting the Complementary filter after sensor calibration.
-- **CommunicationManager Refactoring for Readability**: Simplified `_handleSetCommand` and `_handleSerialInput` in `CommunicationManager.cpp` by extracting parsing, validation, and mode-specific logic into dedicated helper functions, significantly reducing nesting and improving clarity.
-- **Complementary Filter for Attitude Estimation**: Replaced the Madgwick filter with a Complementary filter for robust attitude estimation, combining gyroscope and accelerometer data.
-- **Betaflight-like Filtering with Biquad Filters**: Implemented multi-stage filtering using `BiquadFilter` for both gyroscope and accelerometer data, allowing for more effective noise reduction and improved attitude stability. A general `filterSampleFreq` parameter was introduced for all filters.
+## ✨ Features
+
+*   **Clean Architectural Separation**: The project is divided into two main components: `FlightController` for pure flight logic and `CommunicationManager` for all serial I/O.
+*   **Modular Object-Oriented Architecture**: Core flight logic is encapsulated in dedicated classes, promoting clear responsibilities and explicit data flow.
+*   **Highly Efficient API**: A single `get_settings` command allows a client to fetch all configuration parameters. Live data is streamed as a separate, lean JSON object (`live_data`) for maximum performance.
+*   **MPU6050 IMU Integration**
+*   **Flexible Receiver Support**: A standardized interface allows for interchangeable RC receiver protocols (currently iBUS, PPM).
+*   **DShot ESC Control**
+*   **Centralized Settings**: All user-tunable parameters are consolidated into a single `FlightControllerSettings` struct in `src/config.h`.
+*   **System Status and Versioning**: CLI and API commands to retrieve detailed system status (loop time, memory, CPU load) and firmware version.
+*   **Web Application Configurator**: A comprehensive web-based UI in the `/webapp` directory that connects via the Web Serial API. It features an 'Info' tab as the default, displaying general software and hardware information (firmware version, system status). Other tabs (3D View, Motor Settings, PID Settings, Receiver Settings, Raw Log) are initially disabled and become available only after data is successfully received from the ESP32. The web app is served locally via a Python HTTPS server using a self-signed certificate.
+    *   **Web App Connection Fix**: Resolved an issue where the 'Connect' button in the web app was unresponsive due to a JavaScript syntax error and missing `releaseLock()` calls in the disconnect logic.
+    *   **Improved 3D Quadcopter Representation**: Enhanced the 3D model in the web app to include a central body, arms, propellers, and a flight direction marker, providing a more realistic visual representation.
+    *   **Web App Communication Fix (Settings JSON)**: Corrected the JSON output format for the `get_settings` command in `CommunicationManager.cpp` to properly wrap settings in a `{"settings": {...}}` object, ensuring the web app correctly receives and processes settings and activates all tabs.
+*   **Permanent API Mode**: Removed the 2-second safety timeout from the `CommunicationManager`. Once activated via the `api` command, the firmware now remains in API mode until the next reboot, simplifying client interaction.
+*   **Sensor Stability Tuning**: Adjusted the default Madgwick filter `beta` value from 0.1 to 0.3 to provide faster correction of gyroscope drift and improve the recovery time of the attitude estimation after movement.
+*   **Firmware Versioning**: Added `FIRMWARE_VERSION` constant and corresponding CLI/API commands to retrieve the current firmware version (0.2.6).
+*   **Major API Refactoring (Settings Registry)**: Overhauled the `CommunicationManager` to use a data-driven 'Settings Registry' for handling `get`/`set` commands. This major refactoring replaced large, hard-to-maintain `if-else` blocks with a centralized, iterable registry, dramatically improving code clarity, reducing redundancy, and making the addition of new settings trivial.
+    *   **Settings Registry Refinements**:
+        *   Consolidated the `Setting` struct definition into `CommunicationManager.h` to ensure global accessibility.
+        *   Integrated the `ArduinoJson` library (`ArduinoJson.h`) for robust JSON serialization and deserialization.
+        *   Corrected the scope and definition of `settingsRegistry` and `numSettings` by moving them to `CommunicationManager.cpp` and explicitly prefixing them with `CommunicationManager::`.
+        *   Replaced `s.valuePtr` with `s.value` in `CommunicationManager.cpp` for consistency with the `Setting` struct definition.
+        *   Ensured correct handling of `SettingType::UINT8` across all communication functions (`_printGetResponse`, `_printSetResponse`, `_handleDumpCommand`, `_handleDumpJsonCommand`).
+*   **Enhanced CLI/API Error Handling**: Implemented a more robust error handling mechanism for `set` commands in both CLI and API modes. Error responses now provide specific details about invalid formats, unknown parameters, invalid values, and out-of-range inputs, significantly improving user feedback and programmatic client integration.
+*   **API Stability Enhancement**: The `get_settings` command handler was refactored to prevent a critical race condition. A mutex flag now temporarily pauses the high-frequency `live_data` stream while the settings are being transmitted, preventing the two streams from corrupting each other and crashing the device. This ensures a robust and stable API connection, especially when fetching the initial configuration.
+*   **Calibrate IMU Button in Web App**: Added a 'Calibrate IMU' button to the 3D view in the web application. This button sends a `calibrate_imu` command to the ESP32 and simultaneously resets the 3D model's orientation to zero, providing a convenient way to re-calibrate and visualize the IMU data.
+*   **IMU Initialization Fix**: Corrected a redundant IMU initialization that occurred during startup, streamlining the boot process.
+*   **Robust Settings Persistence**: The logic for loading and saving settings has been completely overhauled. The firmware now correctly loads saved settings from flash, and if none are found (e.g., on first boot), it generates and saves a default configuration. This makes the initial setup and configuration management much more reliable.
+*   **Enhanced CLI Help**: The `help` command in the CLI has been significantly improved. It now displays a well-structured, categorized list of all available settings, making the CLI more user-friendly and self-documenting.
+*   **Comprehensive Project Cleanup and Professionalization**: Extensive cleanup performed across the codebase, including:
+    *   **Standardized Programmer Headers**: All relevant `.h` and `.cpp` files now include a consistent programmer header with author, date, and license information.
+    *   **Improved Code Comments**: Enhanced clarity and consistency of inline comments throughout the project, adhering to the `//` style.
+    *   **Removal of Redundant Comments**: Eliminated self-explanatory or outdated comments.
+    *   **Consistent Logging**: Standardized informational `Serial.println` messages with an "INFO: " prefix.
+    *   **Magic Number Elimination**: Replaced hardcoded numerical literals with named `static constexpr` constants for improved readability and maintainability. This includes defining NVS keys as `static constexpr const char*` and introducing constants for invalid receiver channel values, and a constant for microseconds to seconds conversion.
+    *   **Removal of Unused Variables and Redundant Includes**: Further optimization of the codebase.
+    *   **Elimination of Duplicate Code**: Ensured no redundant code blocks exist.
+    *   **Corrected JSON String Escaping**: Fixed all JSON string literal escaping issues in `CommunicationManager.cpp` for robust API communication.
+    *   **Corrected `Serial.readStringUntil` Usage**: Ensured proper character literal usage.
+*   **DShot Mode Persistence Fix**: Resolved an issue where the DShot mode setting (`dshotMode`) was not correctly persisting across reboots. The fix involved changing the internal NVS key name from `motor.dshot_mode` to `dshot_mode_val` to avoid a subtle conflict within the Preferences library, while maintaining the original CLI command interface.
+*   **Major Refactoring**: The entire project has been refactored to separate flight logic from communication. The new `CommunicationManager` class now handles all serial CLI and API interactions, while `FlightController` focuses solely on flight tasks.
+*   **Robust JSON-based API**: A dedicated, machine-readable API mode (`api`) provides clean, JSON-only communication.
+*   **Tri-Mode Serial Interface**: The `CommunicationManager` manages three modes (`FLIGHT`, `CLI`, `API`).
+*   **Automatic JSON Live Data Stream**: In `api` mode, the firmware automatically streams lean JSON objects with live flight data.
+*   **Robust Web App API Parsing**: Enhanced the web application's `main.js` to include explicit documentation of expected JSON API structures and implemented robust runtime checks within `handleIncomingData` to ensure reliable parsing of incoming data, improving the web app's stability and user experience.
+*   **MPU6050 LPF Status**: Confirmed that the MPU6050's Digital Low-Pass Filter (DLPF) is not explicitly configured in the `Mpu6050Imu` class. The `ESP32_MPU6050` library provides internal mechanisms to configure the DLPF via register access, but lacks a direct public method for this purpose.
+*   **Stack Overflow Prevention**: The `FlightController` pauses the main flight pipeline when the API mode is active to ensure stable communication.
+*   **MPU6050 LPF Configuration**: Integrated Digital Low-Pass Filter (DLPF) bandwidth setting into `FlightControllerSettings` and `Mpu6050Imu`, allowing configurable filtering for IMU data.
+*   **IMU Calibration Zeroing**: Modified the IMU calibration process to set the current orientation as the "horizontal zero position" by resetting the Complementary filter after sensor calibration.
+*   **CommunicationManager Refactoring for Readability**: Simplified `_handleSetCommand` and `_handleSerialInput` in `CommunicationManager.cpp` by extracting parsing, validation, and mode-specific logic into dedicated helper functions, significantly reducing nesting and improving clarity.
+*   **Complementary Filter for Attitude Estimation**: Replaced the Madgwick filter with a Complementary filter for robust attitude estimation, combining gyroscope and accelerometer data.
+*   **Betaflight-like Filtering with Biquad Filters**: Implemented multi-stage filtering using `BiquadFilter` for both gyroscope and accelerometer data, allowing for more effective noise reduction and improved attitude stability. A general `filterSampleFreq` parameter was introduced for all filters.
+*   **Magic Number Elimination**: Replaced hardcoded numerical literals with named `static constexpr` constants for improved readability and maintainability across the codebase. This includes JSON document sizes, API error messages, `uint16_t` range checks, receiver channel offsets, and setpoint scaling factors.
+*   **CommunicationManager Interface Simplification**: Optimized the `CommunicationManager::update()` method by removing the redundant `FlightState` parameter, simplifying its interface and clarifying data flow, as `CommunicationManager` already holds a reference to `FlightController`'s state.
 
 ---
 
@@ -155,7 +167,8 @@ This mode is for manual debugging and configuration via a serial monitor.
 Use the `help` command in the CLI to see a full, up-to-date list of commands and available settings. The output will look like this:
 
 ```
---- Flight Controller CLI Help ---
+---
+Flight Controller CLI Help ---
 
 [ General Commands ]
   help                 - Display this help message.
@@ -210,7 +223,8 @@ Use the `help` command in the CLI to see a full, up-to-date list of commands and
     motor.dshot_mode (DSHOT_OFF, DSHOT150, DSHOT300, DSHOT600, DSHOT1200)
 
 
---- End of Help ---
+---
+End of Help ---
 ```
 
 ---
