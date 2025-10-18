@@ -185,17 +185,17 @@ SetResult CommunicationManager::_parseAndValidateFloat(const String &valueStr, f
     return SetResult::SUCCESS;
 }
 
-SetResult CommunicationManager::_parseAndValidateInt(const String &valueStr, int &outValue, float scaleFactor, String &expectedValue) const
+SetResult CommunicationManager::_parseAndValidateInt(const String &valueStr, int &outValue, String &expectedValue) const
 {
-    float val = valueStr.toFloat(); // Parse as float to handle decimal inputs
-    if (valueStr.length() > 0 && val == 0.0f && valueStr != "0" && valueStr != "0.0")
+    long val = valueStr.toInt();
+    if (valueStr.length() > 0 && val == 0 && valueStr != "0")
     {
-        expectedValue = "integer or float";
+        expectedValue = "integer";
         return SetResult::INVALID_VALUE;
     }
     // No explicit range check for int, as it can be negative.
     // If specific int ranges are needed, they should be added here.
-    outValue = (int)(val * scaleFactor);
+    outValue = (int)val;
     return SetResult::SUCCESS;
 }
 
@@ -586,7 +586,6 @@ void CommunicationManager::_handleFlightModeInput(const String &input)
 
 void CommunicationManager::_executeCommand(String command, bool isApiMode)
 {
-    command.toLowerCase();
     String commandName = "";
     String commandArgs = "";
     int firstSpace = command.indexOf(' ');
@@ -599,6 +598,7 @@ void CommunicationManager::_executeCommand(String command, bool isApiMode)
     {
         commandName = command;
     }
+    commandName.toLowerCase(); // Only lowercase the command name itself
 
     if (commandName.equals("get") || commandName.equals("set") || commandName.equals("dump") || commandName.equals("get_settings"))
     {
@@ -866,7 +866,11 @@ void CommunicationManager::_handleDumpCommand()
             Serial.println(*(float *)s.value / s.scaleFactor, 4);
             break;
         case SettingType::INT:
-            Serial.println((float)*(int *)s.value / s.scaleFactor, 4);
+            if (s.scaleFactor == PID_SCALE_FACTOR) {
+                Serial.println(*(int *)s.value / 10);
+            } else {
+                Serial.println(*(int *)s.value);
+            }
             break;
         case SettingType::UINT8:
             Serial.println(*(uint8_t *)s.value);
@@ -919,7 +923,11 @@ void CommunicationManager::_handleDumpJsonCommand()
             jsonDoc[s.name] = *(float *)s.value / s.scaleFactor;
             break;
         case SettingType::INT:
-            jsonDoc[s.name] = *(int *)s.value;
+            if (s.scaleFactor == PID_SCALE_FACTOR) {
+                jsonDoc[s.name] = *(int *)s.value / 10;
+            } else {
+                jsonDoc[s.name] = *(int *)s.value;
+            }
             break;
         case SettingType::UINT8:
             jsonDoc[s.name] = *(uint8_t *)s.value;
@@ -977,7 +985,11 @@ void CommunicationManager::_handleGetCommand(String args, bool isApiMode)
                 valueStr = String(*(float *)s.value / s.scaleFactor, 4);
                 break;
             case SettingType::INT:
-                valueStr = String(*(int *)s.value);
+                if (s.scaleFactor == PID_SCALE_FACTOR) {
+                    valueStr = String(*(int *)s.value / 10);
+                } else {
+                    valueStr = String(*(int *)s.value);
+                }
                 break;
             case SettingType::UINT8:
                 valueStr = _getUint8String(*(uint8_t *)s.value);
@@ -1056,9 +1068,14 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode)
             case SettingType::INT:
             {
                 int val;
-                result = _parseAndValidateInt(valueStr, val, s.scaleFactor, expectedValue);
-                if (result == SetResult::SUCCESS)
-                    *(int *)s.value = val;
+                result = _parseAndValidateInt(valueStr, val, expectedValue);
+                if (result == SetResult::SUCCESS) {
+                    if (s.scaleFactor == PID_SCALE_FACTOR) {
+                        *(int *)s.value = val * 10;
+                    } else {
+                        *(int *)s.value = val;
+                    }
+                }
                 break;
             }
             case SettingType::UINT8:

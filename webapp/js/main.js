@@ -142,6 +142,9 @@ function init3D() {
     marker.position.set(0, 0.25, 1.1); // Position on the front of the central body
     quadcopter.add(marker);
 
+    // Set initial rotation to face away from the camera
+    quadcopter.rotation.y = Math.PI;
+
     scene.add(quadcopter);
 
     animate();
@@ -506,7 +509,6 @@ function populateSettings(settings) {
                 input.type = 'text';
                 input.value = categoryData[subCategory][key];
                 input.dataset.setting = `${subCategory}.${key}`;
-                input.addEventListener('change', handleSettingChange);
 
                 valueCell.appendChild(input);
                 row.appendChild(nameCell);
@@ -531,11 +533,16 @@ function populateSettings(settings) {
 
 function initializeSettingEventListeners() {
     const settingsTabs = document.querySelectorAll('#motorSettingsTab, #pidSettingsTab, #receiverTab');
+    log.textContent += `DEBUG: Found ${settingsTabs.length} tabs to attach listeners to.\n`;
     settingsTabs.forEach(tab => {
+        log.textContent += `DEBUG: Attaching listener to #${tab.id}\n`;
         tab.addEventListener('change', (event) => {
-            // Delegate event handling to the function that sends the command
+            log.textContent += `DEBUG: Change event detected on #${tab.id}. Target: ${event.target.id}\n`;
             if (event.target.dataset.setting) {
+                log.textContent += `DEBUG: Target has data-setting. Calling handleSettingChange.\n`;
                 handleSettingChange(event);
+            } else {
+                log.textContent += `DEBUG: Target does NOT have data-setting.\n`;
             }
         });
     });
@@ -543,9 +550,13 @@ function initializeSettingEventListeners() {
 
 async function handleSettingChange(event) {
     const input = event.target;
-    const settingKey = input.dataset.setting; // Use data-setting attribute for full key
-    console.log("handleSettingChange called for:", input.id, settingKey);
+    const settingKey = input.dataset.setting;
     let value;
+
+    if (!writer) {
+        log.textContent += 'ERROR: Serial writer not available. Cannot send command.\n';
+        return;
+    }
 
     if (input.type === 'checkbox') {
         value = input.checked;
@@ -554,8 +565,13 @@ async function handleSettingChange(event) {
     }
 
     const command = `set ${settingKey} ${value}\n`;
-    log.textContent += `Sending command: ${command}`;
-    await writer.write(new TextEncoder().encode(command));
+    log.textContent += `Attempting to send command: ${command}`;
+    try {
+        await writer.write(new TextEncoder().encode(command));
+        log.textContent += `Command sent successfully.\n`;
+    } catch (error) {
+        log.textContent += `ERROR sending command: ${error.message}\n`;
+    }
 }
 
 function updateFilterSettingsUI(settings) {

@@ -102,6 +102,20 @@ The firmware boots into a silent `FLIGHT` mode. To interact with it, activate on
 
 ---
 
+## ⚙️ Configuration & Tuning
+
+All flight parameters can be tuned in real-time via the CLI or the Web App.
+
+#### PID Tuning Scale
+
+To simplify PID tuning without requiring decimal points, all PID gain values (`kp`, `ki`, `kd`) are set and displayed on an integer scale.
+
+*   **Rule**: A displayed value of `80` corresponds to a real-world gain of `0.8`.
+*   **Example**: To set a P-gain of 0.8, use the command `set pid.roll.kp 80`.
+*   The firmware automatically handles the conversion to its internal high-precision format.
+
+---
+
 ## 🛠️ Code Structure
 
 The firmware is organized into a clean, modular, object-oriented structure within the `src/` directory.
