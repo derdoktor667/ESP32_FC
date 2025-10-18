@@ -160,7 +160,7 @@ function animate() {
 
     // Smoothly interpolate the quadcopter's rotation towards the target
     if (quadcopter && !quadcopter.quaternion.equals(targetQuaternion)) {
-        quadcopter.quaternion.slerp(targetQuaternion, 0.5); // Increased factor for responsiveness
+        quadcopter.quaternion.slerp(targetQuaternion, 0.2); // Adjusted factor for balance
     }
 
     if (renderer) {
