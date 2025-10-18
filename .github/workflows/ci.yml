@@ -1,137 +1,51 @@
-# This GitHub Actions workflow is designed to ensure code quality and
-# successful compilation for an ESP32 Arduino library.
-# It runs on every push to any branch.
+# File: .github/workflows/build.yml
+# This workflow uses a Docker container to ensure a consistent and reproducible build environment.
 
-name: ESP32 Build & Quality Check
+name: Docker-based ESP32 Build
 
-# Set permissions for the GitHub token.
-# 'contents: read' is required to checkout the repository.
-permissions:
-  contents: read
-
-# Define the trigger for the workflow.
-# It runs on any push to any branch.
+# Trigger the workflow on every push to any branch.
 on:
   push:
     branches: [ '*' ]
 
-# Concurrency control ensures that only the latest commit for a branch
-# runs, canceling any workflows already in progress for the same branch.
+# Cancel in-progress runs for the same branch on a new push.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # ============================================================================
-  # Prepare Environment & Cache
-  # This job installs the Arduino core and libraries and saves them to a cache
-  # for later jobs to use.
-  # ============================================================================
-  prepare-cache:
-    name: Prepare Cache (Linux)
+  build-with-docker:
+    name: Build Project (Docker)
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          submodules: 'true'
 
-      - name: Setup Arduino CLI
-        uses: arduino/setup-arduino-cli@v2
-
-      - name: Restore Arduino Core & Libraries Cache
-        id: cache-arduino
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.arduino15/packages
-            ~/.arduino15/cache
-            ~/Arduino/libraries
-            ~/.arduino-cli
-          key: ${{ runner.os }}-arduino-esp32-cli-fixed-cache-v1
-          restore-keys: |
-            ${{ runner.os }}-arduino-esp32-cli-fixed-cache-v1-
-
-      - name: Install ESP32 Core and Libraries
-        if: steps.cache-arduino.outputs.cache-hit != 'true'
-        shell: bash
+      - name: Build Docker image
         run: |
-          arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
-          arduino-cli core install esp32:esp32
-          arduino-cli lib install "ArduinoJson"
+          docker build \
+            --build-arg SOURCE_REPO_URL="https://github.com/${{ github.repository }}.git" \
+            --build-arg SKETCH_NAME="ESP32_FC" \
+            -t esp32-builder .
 
-      - name: Save Arduino Core & Libraries Cache
-        uses: actions/cache@v4
-        if: always()
-        with:
-          path: |
-            ~/.arduino15/packages
-            ~/.arduino15/cache
-            ~/Arduino/libraries
-            ~/.arduino-cli
-          key: ${{ runner.os }}-arduino-esp32-cli-fixed-cache-v1
-
-  # ============================================================================
-  # Compilation Test
-  # This job compiles all example sketches.
-  # ============================================================================
-  compile-sketches:
-    name: Compile ${{ matrix.sketch }} (Linux)
-    needs: prepare-cache
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        sketch:
-          - ESP32_FC.ino
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          submodules: 'true'
-
-      - name: Restore Arduino Core & Libraries Cache
-        uses: actions/cache@v4
-        id: cache-arduino-compile
-        with:
-          path: |
-            ~/.arduino15/packages
-            ~/.arduino15/cache
-            ~/Arduino/libraries
-            ~/.arduino-cli
-          key: ${{ runner.os }}-arduino-esp32-cli-fixed-cache-v1
-          restore-keys: |
-            ${{ runner.os }}-arduino-esp32-cli-fixed-cache-v1-
-
-      - name: Setup Arduino CLI
-        uses: arduino/setup-arduino-cli@v2
-
-      - name: Compile sketch
-        run: arduino-cli compile --fqbn esp32:esp32:esp32 --libraries ${{ github.workspace }}/libraries ${{ github.workspace }}/${{ matrix.sketch }}
-
-  # ============================================================================
-  # Build Status Report
-  # This job runs last and provides a summary of the build status.
-  # ============================================================================
+  # This optional job provides a clean summary of the build result.
+  # It runs after the build job, regardless of whether it succeeded or failed.
   build-summary:
     name: Build Summary
     runs-on: ubuntu-latest
-    if: always() # This ensures the job runs even if previous jobs fail
-    needs:
-      - compile-sketches
+    if: always()
+    needs: build-with-docker
       
     steps:
       - name: Create Build Summary
         run: |
-          echo "# 🔧 DShotRMT Build Report" >> $GITHUB_STEP_SUMMARY
+          echo "# 🔧 ESP32 Docker Build Report" >> $GITHUB_STEP_SUMMARY
           echo "| Check | Status | Details |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|---------|" >> $GITHUB_STEP_SUMMARY
-          if [[ "${{ needs.compile-sketches.result }}" == "success" ]]; then
-            echo "| 🔨 Compilation | ✅ Passed | All examples compiled successfully |" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.build-with-docker.result }}" == "success" ]]; then
+            echo "| 🔨 Docker Build & Compile | ✅ Passed | The project was successfully compiled in the defined Docker environment. |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| 🔨 Compilation | ❌ Failed | One or more examples failed to compile |" >> $GITHUB_STEP_SUMMARY
+            echo "| 🔨 Docker Build & Compile | ❌ Failed | The Docker build failed. Check the logs of the 'Build Project (Docker)' job for details. |" >> $GITHUB_STEP_SUMMARY
           fi
           
