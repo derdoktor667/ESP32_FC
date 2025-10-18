@@ -151,6 +151,6 @@ private:
 
     void _handleFlightModeInput(const String &input);
 
-}; // Closing brace for CommunicationManager class
+};
 
 #endif // COMMUNICATION_MANAGER_H

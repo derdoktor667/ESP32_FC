@@ -48,8 +48,8 @@
  *    {"error":"<error_message>"}
  */
 
-const toggleConnectButton = document.getElementById('toggleConnectButton');
 const log = document.getElementById('log');
+const toggleConnectButton = document.getElementById('toggleConnectButton');
 const calibrateImuButton = document.getElementById('calibrateImuButton');
 const saveSettingsButton = document.getElementById('saveSettingsButton');
 
@@ -66,6 +66,70 @@ const receiverChannelNames = [
 // --- 3D View ---
 let scene, camera, renderer, quadcopter;
 
+function createQuadcopterModel() {
+    const model = new THREE.Group();
+
+    // Central Body
+    const bodyGeometry = new THREE.BoxGeometry(2, 0.5, 3); // Slightly longer body
+    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.7 });
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    model.add(body);
+
+    // Flight Direction Marker
+    const markerGeometry = new THREE.ConeGeometry(0.3, 0.5, 32);
+    const markerMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+    marker.position.set(0, 0.25, -1.75); // Position on the front of the central body
+    marker.rotation.x = Math.PI / 2; // Point it forward
+    model.add(marker);
+
+    // Function to create a single propeller (Cylinder)
+    const createPropeller = (color) => {
+        const propGeometry = new THREE.CylinderGeometry(0.7, 0.7, 0.1, 32);
+        const propMaterial = new THREE.MeshStandardMaterial({ color: color });
+        const propeller = new THREE.Mesh(propGeometry, propMaterial);
+        return propeller;
+    };
+
+    // Function to create a motor arm assembly
+    const createMotorArm = (position, propColor) => {
+        const armLength = position.length();
+
+        // Arm
+        const armGeometry = new THREE.BoxGeometry(0.2, 0.2, armLength);
+        const armMaterial = new THREE.MeshStandardMaterial({ color: 0x777777 });
+        const arm = new THREE.Mesh(armGeometry, armMaterial);
+
+        // Position the arm halfway along the vector to the motor and point it outwards
+        arm.position.copy(position).multiplyScalar(0.5);
+        arm.lookAt(position);
+        model.add(arm);
+
+        // Propeller
+        const propeller = createPropeller(propColor);
+        propeller.position.copy(position);
+        propeller.position.y = 0.35; // Slightly above the body plane
+        model.add(propeller);
+    };
+
+    // Define motor positions
+    const motorPositions = [
+        { x: 1.5, y: 0, z: -1.5 }, // Front-Right
+        { x: -1.5, y: 0, z: -1.5 }, // Front-Left
+        { x: -1.5, y: 0, z: 1.5 },  // Rear-Left
+        { x: 1.5, y: 0, z: 1.5 }   // Rear-Right
+    ];
+
+    // Create arms and propellers, all propellers are grey
+    motorPositions.forEach(pos => createMotorArm(new THREE.Vector3(pos.x, pos.y, pos.z), 0xaaaaaa));
+
+    // The model's default orientation (0,0,0) has it facing away from the camera.
+    // No initial rotation is needed.
+
+    return model;
+}
+
+
 function init3D() {
     // Scene
     scene = new THREE.Scene();
@@ -73,78 +137,18 @@ function init3D() {
 
     // Camera
     camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000); // Initial aspect ratio
-    camera.position.z = 10; // Move camera further away
+    camera.position.set(0, 5, 10); // Elevated and further back view
+    camera.lookAt(0, 0, 0);
 
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0x404040);
+    const ambientLight = new THREE.AmbientLight(0x606060);
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
 
     // Quadcopter Model
-    quadcopter = new THREE.Group();
-
-    // Central Body (e.g., a larger box)
-    const bodyGeometry = new THREE.BoxGeometry(2, 0.5, 2);
-    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
-    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-    quadcopter.add(body);
-
-    // Arms (4 arms extending from the body)
-    const armGeometry = new THREE.BoxGeometry(0.2, 0.2, 3);
-    const armMaterial = new THREE.MeshStandardMaterial({ color: 0x666666 });
-
-    const arm1 = new THREE.Mesh(armGeometry, armMaterial); // Front-Right
-    arm1.position.set(1, 0, 1);
-    arm1.rotation.y = Math.PI / 4; // Rotate to align with diagonal
-    quadcopter.add(arm1);
-
-    const arm2 = new THREE.Mesh(armGeometry, armMaterial); // Front-Left
-    arm2.position.set(-1, 0, 1);
-    arm2.rotation.y = -Math.PI / 4; // Rotate to align with diagonal
-    quadcopter.add(arm2);
-
-    const arm3 = new THREE.Mesh(armGeometry, armMaterial); // Rear-Left
-    arm3.position.set(-1, 0, -1);
-    arm3.rotation.y = Math.PI / 4; // Rotate to align with diagonal
-    quadcopter.add(arm3);
-
-    const arm4 = new THREE.Mesh(armGeometry, armMaterial); // Rear-Right
-    arm4.position.set(1, 0, -1);
-    arm4.rotation.y = -Math.PI / 4; // Rotate to align with diagonal
-    quadcopter.add(arm4);
-
-    // Propellers (simple cylinders at the end of each arm)
-    const propGeometry = new THREE.CylinderGeometry(0.5, 0.5, 0.1, 32);
-    const propMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
-
-    const prop1 = new THREE.Mesh(propGeometry, propMaterial);
-    prop1.position.set(2.5, 0.2, 2.5); // Position relative to arm end
-    quadcopter.add(prop1);
-
-    const prop2 = new THREE.Mesh(propGeometry, propMaterial);
-    prop2.position.set(-2.5, 0.2, 2.5);
-    quadcopter.add(prop2);
-
-    const prop3 = new THREE.Mesh(propGeometry, propMaterial);
-    prop3.position.set(-2.5, 0.2, -2.5);
-    quadcopter.add(prop3);
-
-    const prop4 = new THREE.Mesh(propGeometry, propMaterial);
-    prop4.position.set(2.5, 0.2, -2.5);
-    quadcopter.add(prop4);
-
-    // Flight Direction Marker (a small red box on the front of the body)
-    const markerGeometry = new THREE.BoxGeometry(0.5, 0.2, 0.2);
-    const markerMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-    const marker = new THREE.Mesh(markerGeometry, markerMaterial);
-    marker.position.set(0, 0.25, 1.1); // Position on the front of the central body
-    quadcopter.add(marker);
-
-    // Set initial rotation to face away from the camera
-    quadcopter.rotation.y = Math.PI;
-
+    quadcopter = createQuadcopterModel();
     scene.add(quadcopter);
 
     animate();
@@ -152,6 +156,9 @@ function init3D() {
 
 function animate() {
     requestAnimationFrame(animate);
+
+    // Propeller animation removed
+
     if (renderer) {
         renderer.render(scene, camera);
     }
@@ -217,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Reset 3D model orientation
                 if (quadcopter) {
                     quadcopter.rotation.x = 0;
-                    quadcopter.rotation.y = 0;
+                    quadcopter.rotation.y = 0; // Reset to initial orientation
                     quadcopter.rotation.z = 0;
                 }
             } else {
@@ -295,7 +302,7 @@ toggleConnectButton.addEventListener('click', async () => {
                 writer.releaseLock();
                 await port.close();
 
-                toggleConnectButton.textContent = 'Connect';
+                toggleConnectButton.textContent = 'Disconnect';
                 isConnected = false;
                 saveSettingsButton.disabled = true; // Disable save button on disconnect
 
@@ -323,7 +330,7 @@ async function readLoop() {
                 if (line) {
                     log.textContent += line + '\n';
                     log.scrollTop = log.scrollHeight;
-                    
+
                     if (line.startsWith('{') && line.endsWith('}')) {
                         try {
                             const data = JSON.parse(line);
@@ -340,217 +347,204 @@ async function readLoop() {
     }
 }
 
+function _handleSettingsData(settings) {
+    try {
+        populateSettings(settings);
+        enableTabs(); // Enable tabs once settings are received
+    } catch (e) {
+        console.error("Error populating settings or enabling tabs:", e);
+    }
+}
+
+function _handleVersionData(version) {
+    const infoContainer = document.getElementById('infoContainer');
+    let versionDiv = document.getElementById('firmwareVersion'); // More robust selection
+    if (!versionDiv) {
+        versionDiv = document.createElement('div');
+        versionDiv.id = 'firmwareVersion';
+        infoContainer.appendChild(versionDiv);
+    }
+    versionDiv.innerHTML = `<h3>Firmware Version: ${version}</h3>`;
+}
+
+function _handleStatusData(status) {
+    const infoContainer = document.getElementById('infoContainer');
+    let statusDiv = document.getElementById('systemStatus'); // More robust selection
+    if (!statusDiv) {
+        statusDiv = document.createElement('div');
+        statusDiv.id = 'systemStatus';
+        infoContainer.appendChild(statusDiv);
+    }
+    let statusHtml = '<h3>System Status:</h3><ul>';
+    for (const key in status) {
+        statusHtml += `<li>${key}: ${status[key]}</li>`;
+    }
+    statusHtml += `</ul>`;
+    statusDiv.innerHTML = statusHtml;
+}
+
+function _updateReceiverBars(receiverChannels) {
+    const receiverChannelBarsDiv = document.getElementById('receiverChannelBars');
+    if (!receiverChannelBarsDiv) return;
+
+    receiverChannelBarsDiv.innerHTML = ''; // Clear previous bars
+    receiverChannels.forEach((channelValue, i) => {
+        const channelName = receiverChannelNames[i] || `Channel ${i}`;
+        const barContainer = document.createElement('div');
+        barContainer.className = 'channel-bar-container';
+
+        const label = document.createElement('span');
+        label.className = 'channel-label';
+        label.textContent = `${channelName}: ${channelValue}`;
+        barContainer.appendChild(label);
+
+        const bar = document.createElement('div');
+        bar.className = 'channel-bar';
+        // Assuming channel values are between 1000 and 2000 for scaling
+        const percentage = ((channelValue - 1000) / 1000) * 100;
+        bar.style.width = `${Math.max(0, Math.min(100, percentage))}%`;
+        barContainer.appendChild(bar);
+
+        receiverChannelBarsDiv.appendChild(barContainer);
+    });
+}
+
+function _update3DModel(attitude) {
+    if (!quadcopter) return;
+
+    const roll = parseFloat(attitude.roll);
+    const pitch = parseFloat(attitude.pitch);
+    const yaw = parseFloat(attitude.yaw);
+
+    // Update 3D model rotation
+    // The flight controller's coordinate system for pitch and roll is inverted
+    // relative to the Three.js coordinate system. We negate the values here
+    // to ensure the model's rotation visually matches the physical drone's movement.
+    if (!isNaN(pitch)) quadcopter.rotation.x = THREE.MathUtils.degToRad(-pitch);
+    if (!isNaN(yaw)) quadcopter.rotation.y = THREE.MathUtils.degToRad(yaw);
+    if (!isNaN(roll)) quadcopter.rotation.z = THREE.MathUtils.degToRad(-roll);
+
+    // Update numerical display
+    const attitudeDisplay = document.getElementById('attitude-display');
+    if (attitudeDisplay) {
+        attitudeDisplay.innerHTML = `Roll: ${!isNaN(roll) ? roll.toFixed(2) : 'N/A'}&deg; | Pitch: ${!isNaN(pitch) ? pitch.toFixed(2) : 'N/A'}&deg; | Yaw: ${!isNaN(yaw) ? yaw.toFixed(2) : 'N/A'}&deg;`;
+    }
+}
+
+
+function _handleLiveData(liveData) {
+    // Check which tab is active to avoid unnecessary DOM updates
+    const receiverTabVisible = document.getElementById('receiverTab').style.display === 'block';
+    const threeDViewTabVisible = document.getElementById('3dViewTab').style.display === 'block';
+
+    if (receiverTabVisible && liveData.receiver_channels) {
+        _updateReceiverBars(liveData.receiver_channels);
+    }
+
+    if (threeDViewTabVisible && liveData.attitude) {
+        _update3DModel(liveData.attitude);
+    }
+}
+
+
 function handleIncomingData(data) {
-    if (data && typeof data === 'object') {
-        if (data.settings) {
-            try {
-                populateSettings(data.settings);
-                enableTabs(); // Enable tabs once settings are received
-            } catch (e) {
-                console.error("Error populating settings or enabling tabs:", e);
-            }
-        }
-
-        if (data.version) {
-            const infoContainer = document.getElementById('infoContainer');
-            let versionDiv = document.createElement('div');
-            if (!versionDiv) {
-                versionDiv = document.createElement('div');
-                versionDiv.id = 'firmwareVersion';
-                infoContainer.appendChild(versionDiv);
-            }
-            versionDiv.innerHTML = `<h3>Firmware Version: ${data.version}</h3>`;
-        }
-
-        if (data.status) {
-            const infoContainer = document.getElementById('infoContainer');
-            let statusDiv = document.createElement('div');
-            if (!statusDiv) {
-                statusDiv = document.createElement('div');
-                statusDiv.id = 'systemStatus';
-                infoContainer.appendChild(statusDiv);
-            }
-            let statusHtml = '<h3>System Status:</h3>';
-            statusHtml += `<ul>`;
-            for (const key in data.status) {
-                statusHtml += `<li>${key}: ${data.status[key]}</li>`;
-            }
-            statusHtml += `</ul>`;
-            statusDiv.innerHTML = statusHtml;
-        }
-
-        // Update receiver live data bars
-        const receiverTab = document.getElementById('receiverTab');
-        if (receiverTab && receiverTab.style.display === 'block' && data.live_data && data.live_data.receiver_channels) {
-            const receiverChannels = data.live_data.receiver_channels;
-            const receiverChannelBarsDiv = document.getElementById('receiverChannelBars');
-            if (receiverChannelBarsDiv) {
-                receiverChannelBarsDiv.innerHTML = ''; // Clear previous bars
-                for (let i = 0; i < receiverChannels.length; i++) {
-                    const channelName = receiverChannelNames[i] || `Channel ${i}`;
-                    const channelValue = receiverChannels[i];
-                    const barContainer = document.createElement('div');
-                    barContainer.className = 'channel-bar-container';
-
-                    const label = document.createElement('span');
-                    label.className = 'channel-label';
-                    label.textContent = `${channelName}: ${channelValue}`;
-                    barContainer.appendChild(label);
-
-                    const bar = document.createElement('div');
-                    bar.className = 'channel-bar';
-                    // Assuming channel values are between 1000 and 2000 for scaling
-                    const percentage = ((channelValue - 1000) / 1000) * 100; 
-                    bar.style.width = `${Math.max(0, Math.min(100, percentage))}%`;
-                    barContainer.appendChild(bar);
-
-                    receiverChannelBarsDiv.appendChild(barContainer);
-                }
-            }
-        }
-
-        const threeDViewTab = document.getElementById('3dViewTab');
-        if (threeDViewTab && threeDViewTab.style.display === 'block' && data.live_data && data.live_data.attitude && quadcopter) {
-            const attitude = data.live_data.attitude;
-            const roll = parseFloat(attitude.roll);
-            const pitch = parseFloat(attitude.pitch);
-            const yaw = parseFloat(attitude.yaw);
-            
-            // Update 3D model
-            if (!isNaN(pitch)) quadcopter.rotation.x = THREE.MathUtils.degToRad(pitch);
-            if (!isNaN(yaw)) quadcopter.rotation.y = THREE.MathUtils.degToRad(yaw);
-            if (!isNaN(roll)) quadcopter.rotation.z = THREE.MathUtils.degToRad(roll);
-
-            // Update numerical display
-            const attitudeDisplay = document.getElementById('attitude-display');
-            if (attitudeDisplay) {
-                attitudeDisplay.innerHTML = `Roll: ${!isNaN(roll) ? roll : 'N/A'}&deg; | Pitch: ${!isNaN(pitch) ? pitch : 'N/A'}&deg; | Yaw: ${!isNaN(yaw) ? yaw : 'N/A'}&deg;`;
-            }
-        }
-    } else {
+    if (!data || typeof data !== 'object') {
         console.warn("Received non-object data or empty data:", data);
+        return;
+    }
+
+    if (data.settings) {
+        _handleSettingsData(data.settings);
+    }
+    if (data.version) {
+        _handleVersionData(data.version);
+    }
+    if (data.status) {
+        // The firmware sends 'status' for both system status and set command responses.
+        // We check for a known key from the system status object to differentiate.
+        if ("Loop Time (us)" in data.status) {
+            _handleStatusData(data.status);
+        }
+    }
+    if (data.live_data) {
+        _handleLiveData(data.live_data);
     }
 }
 
 function populateSettings(settings) {
-    const motorSettingsContainer = document.getElementById('motorSettingsContainer');
-    const pidSettingsContainer = document.getElementById('pidSettingsContainer');
-    const receiverSettingsContainer = document.getElementById('receiverSettingsContainer');
-
-    // Clear previous settings
-    // motorSettingsContainer.innerHTML = ''; // Now static content
-    pidSettingsContainer.innerHTML = '';
-    // receiverSettingsContainer.innerHTML = ''; // Now static content
-
-    // Update filter settings UI directly
-    updateFilterSettingsUI(settings);
-    // Update IMU settings UI directly
-    updateImuSettingsUI(settings);
-    // Update motor settings UI directly
-    updateMotorSettingsUI(settings);
-    // Update receiver settings UI directly
-    updateReceiverSettingsUI(settings);
-
-    // Group settings by category
-    const groupedSettings = {};
+    // Update all settings by iterating through elements with a data-setting attribute
     for (const key in settings) {
-        const parts = key.split('.');
-        const value = settings[key];
-        // Skip filter, IMU, motor, and receiver settings as they are handled by dedicated update functions
-        if (parts[0] === 'filter' || parts[0] === 'gyro' || parts[0] === 'accel' || parts[0] === 'imu' || parts[0] === 'motor' || parts[0] === 'rx') {
-            continue;
-        }
-        if (parts.length > 1) {
-            const category = parts[0]; // Use the first part for the main category
-            const subCategory = parts.slice(0, -1).join('.'); // Keep full category for display
-            const settingName = parts[parts.length - 1];
-
-            if (!groupedSettings[category]) {
-                groupedSettings[category] = {};
+        const element = document.querySelector(`[data-setting="${key}"]`);
+        if (element) {
+            if (element.type === 'checkbox') {
+                element.checked = settings[key];
+            } else {
+                element.value = settings[key];
             }
-            if (!groupedSettings[category][subCategory]) {
-                groupedSettings[category][subCategory] = {};
-            }
-            groupedSettings[category][subCategory][settingName] = value;
-        } else {
-            // Handle settings without a category (e.g., top-level settings)
-            if (!groupedSettings['general']) {
-                groupedSettings['general'] = {};
-            }
-            if (!groupedSettings['general']['general']) {
-                groupedSettings['general']['general'] = {};
-            }
-            groupedSettings['general']['general'][key] = value;
         }
     }
 
-    // Function to create and append settings table to a container
-    const createSettingsTable = (container, categoryData, categoryPrefix) => {
-        for (const subCategory in categoryData) {
-            const subCategoryTitle = document.createElement('h3');
-            subCategoryTitle.textContent = subCategory.charAt(0).toUpperCase() + subCategory.slice(1);
-            container.appendChild(subCategoryTitle);
+    // Dynamically create PID settings table (as it's more complex)
+    const pidSettingsContainer = document.getElementById('pidSettingsContainer');
+    pidSettingsContainer.innerHTML = ''; // Clear previous content
 
-            const table = document.createElement('table');
-            const thead = document.createElement('thead');
-            const tbody = document.createElement('tbody');
+    const groupedPidSettings = {};
+    for (const key in settings) {
+        if (key.startsWith('pid.')) {
+            const parts = key.split('.');
+            const subCategory = parts.slice(0, -1).join('.'); // e.g., "pid.roll"
+            const settingName = parts[parts.length - 1]; // e.g., "kp"
 
-            thead.innerHTML = '<tr><th>Name</th><th>Value</th></tr>';
-            table.appendChild(thead);
-
-            for (const key in categoryData[subCategory]) {
-                const row = document.createElement('tr');
-                const nameCell = document.createElement('td');
-                const valueCell = document.createElement('td');
-
-                nameCell.textContent = key;
-                
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.value = categoryData[subCategory][key];
-                input.dataset.setting = `${subCategory}.${key}`;
-
-                valueCell.appendChild(input);
-                row.appendChild(nameCell);
-                row.appendChild(valueCell);
-                tbody.appendChild(row);
+            if (!groupedPidSettings[subCategory]) {
+                groupedPidSettings[subCategory] = {};
             }
-
-            table.appendChild(tbody);
-            container.appendChild(table);
+            groupedPidSettings[subCategory][settingName] = settings[key];
         }
-    };
-
-    if (groupedSettings.pid) {
-        createSettingsTable(pidSettingsContainer, groupedSettings.pid, 'pid');
     }
-    // Handle general settings if any, though current structure implies all are categorized
-    if (groupedSettings.general) {
-        // Decide where to put general settings, for now, let's put them in motor tab as an example
-        createSettingsTable(motorSettingsContainer, groupedSettings.general, 'general');
+
+    for (const subCategory in groupedPidSettings) {
+        const subCategoryTitle = document.createElement('h3');
+        subCategoryTitle.textContent = subCategory;
+        pidSettingsContainer.appendChild(subCategoryTitle);
+
+        const table = document.createElement('table');
+        table.innerHTML = '<thead><tr><th>Name</th><th>Value</th></tr></thead>';
+        const tbody = document.createElement('tbody');
+
+        for (const key in groupedPidSettings[subCategory]) {
+            const row = document.createElement('tr');
+            const nameCell = document.createElement('td');
+            const valueCell = document.createElement('td');
+
+            nameCell.textContent = key;
+
+            const input = document.createElement('input');
+            input.type = 'text'; // Use text to allow for float values from user
+            input.value = groupedPidSettings[subCategory][key];
+            input.dataset.setting = `${subCategory}.${key}`;
+
+            valueCell.appendChild(input);
+            row.appendChild(nameCell);
+            row.appendChild(valueCell);
+            tbody.appendChild(row);
+        }
+        table.appendChild(tbody);
+        pidSettingsContainer.appendChild(table);
     }
 }
 
 function initializeSettingEventListeners() {
-    const settingsTabs = document.querySelectorAll('#motorSettingsTab, #pidSettingsTab, #receiverTab');
-    log.textContent += `DEBUG: Found ${settingsTabs.length} tabs to attach listeners to.\n`;
-    settingsTabs.forEach(tab => {
-        log.textContent += `DEBUG: Attaching listener to #${tab.id}\n`;
-        tab.addEventListener('change', (event) => {
-            log.textContent += `DEBUG: Change event detected on #${tab.id}. Target: ${event.target.id}\n`;
-            if (event.target.dataset.setting) {
-                log.textContent += `DEBUG: Target has data-setting. Calling handleSettingChange.\n`;
-                handleSettingChange(event);
-            } else {
-                log.textContent += `DEBUG: Target does NOT have data-setting.\n`;
-            }
-        });
+    // Use event delegation on the document to handle all setting changes
+    document.addEventListener('change', (event) => {
+        const target = event.target;
+        if (target && target.dataset.setting) {
+            handleSettingChange(target);
+        }
     });
 }
 
-async function handleSettingChange(event) {
-    const input = event.target;
-    const settingKey = input.dataset.setting;
+async function handleSettingChange(inputElement) {
+    const settingKey = inputElement.dataset.setting;
     let value;
 
     if (!writer) {
@@ -558,10 +552,10 @@ async function handleSettingChange(event) {
         return;
     }
 
-    if (input.type === 'checkbox') {
-        value = input.checked;
+    if (inputElement.type === 'checkbox') {
+        value = inputElement.checked;
     } else {
-        value = input.value;
+        value = inputElement.value;
     }
 
     const command = `set ${settingKey} ${value}\n`;
@@ -572,52 +566,4 @@ async function handleSettingChange(event) {
     } catch (error) {
         log.textContent += `ERROR sending command: ${error.message}\n`;
     }
-}
-
-function updateFilterSettingsUI(settings) {
-    // Gyroscope Low-Pass Filter
-    document.getElementById('gyroLpfCutoffFreq').value = settings['gyro.lpf_cutoff_freq'];
-    document.getElementById('gyroLpfStages').value = settings['gyro.lpf_stages'];
-
-    // Accelerometer Low-Pass Filter
-    document.getElementById('accelLpfCutoffFreq').value = settings['accel.lpf_cutoff_freq'];
-    document.getElementById('accelLpfStages').value = settings['accel.lpf_stages'];
-
-    // Complementary Filter
-    document.getElementById('complementaryFilterTau').value = settings['filter.comp_tau'];
-
-    // Gyroscope Notch Filter
-    document.getElementById('enableGyroNotchFilter').checked = settings['gyro.notch.enable'];
-    document.getElementById('gyroNotchFreq').value = settings['gyro.notch.freq'];
-    document.getElementById('gyroNotchQ').value = settings['gyro.notch.q'];
-}
-
-function updateImuSettingsUI(settings) {
-    // IMU Protocol
-    document.getElementById('imuProtocol').value = settings['imu.protocol'];
-    // IMU LPF Bandwidth
-    document.getElementById('imuLpfBandwidth').value = settings['imu.lpf'];
-    // IMU Rotation
-    document.getElementById('imuRotation').value = settings['imu.rotation'];
-}
-
-function updateMotorSettingsUI(settings) {
-    // Motor Idle Speed
-    document.getElementById('motorIdleSpeedPercent').value = settings['motor.idle_speed'];
-    // DShot Mode
-    document.getElementById('dshotMode').value = settings['motor.dshot_mode'];
-}
-
-function updateReceiverSettingsUI(settings) {
-    // Receiver Protocol
-    document.getElementById('receiverProtocol').value = settings['rx.protocol'];
-
-    // Channel Mapping
-    document.getElementById('rxMapThrottle').value = settings['rx.map.throttle'];
-    document.getElementById('rxMapRoll').value = settings['rx.map.roll'];
-    document.getElementById('rxMapPitch').value = settings['rx.map.pitch'];
-    document.getElementById('rxMapYaw').value = settings['rx.map.yaw'];
-    document.getElementById('rxMapArmSwitch').value = settings['rx.map.arm_switch'];
-    document.getElementById('rxMapFailsafeSwitch').value = settings['rx.map.failsafe_switch'];
-    document.getElementById('rxMapFlightModeSwitch').value = settings['rx.map.flight_mode_switch'];
 }
