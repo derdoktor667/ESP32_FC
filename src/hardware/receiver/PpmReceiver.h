@@ -34,9 +34,9 @@ public:
     bool hasFailsafe() const override;
 
 private:
-    gpio_num_t _ppmPin; // The GPIO pin used for PPM input
+    gpio_num_t _ppmPin;                                         // The GPIO pin used for PPM input
     static constexpr unsigned long PPM_SIGNAL_TIMEOUT_MS = 500; // Milliseconds before signal is considered lost
-    static constexpr uint16_t PPM_INVALID_CHANNEL_VALUE = 0; // Value indicating an invalid channel
+    static constexpr uint16_t PPM_INVALID_CHANNEL_VALUE = 0;    // Value indicating an invalid channel
 };
 
 #endif // PPM_RECEIVER_H

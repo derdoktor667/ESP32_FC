@@ -34,7 +34,7 @@ private:
     const FlightControllerSettings &_settings; // Reference to global flight controller settings
 
     // Private helper method for logging safety status changes
-    void _logSafetyStatus(const char* message);
+    void _logSafetyStatus(const char *message);
 };
 
 #endif // SAFETY_MANAGER_MODULE_H

@@ -41,7 +41,7 @@ private:
     ImuRotation _imuRotation; // New member to store IMU rotation
 
     // Private helper method for logging calibration status
-    void _logCalibrationStatus(const char* message);
+    void _logCalibrationStatus(const char *message);
 };
 
 #endif // MPU6050_IMU_H

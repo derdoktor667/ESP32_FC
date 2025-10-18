@@ -743,12 +743,15 @@ void CommunicationManager::_handleUtilityCommand(String commandName, bool isApiM
 void CommunicationManager::_printCliHelp()
 {
     // --- Helper function to print a formatted line ---
-    auto printFormattedLine = [](const String &item, const String &description) {
+    auto printFormattedLine = [](const String &item, const String &description)
+    {
         int itemPadding = 25 - item.length();
-        if (itemPadding < 1) itemPadding = 1;
+        if (itemPadding < 1)
+            itemPadding = 1;
         Serial.print("  ");
         Serial.print(item);
-        for (int i = 0; i < itemPadding; ++i) Serial.print(" ");
+        for (int i = 0; i < itemPadding; ++i)
+            Serial.print(" ");
         Serial.print("- ");
         Serial.println(description);
     };
@@ -756,7 +759,7 @@ void CommunicationManager::_printCliHelp()
     // --- Header ---
     Serial.println("\n--- ESP32 Flight Controller CLI Help ---");
     Serial.println("Provides commands to get, set, and manage flight controller settings.");
-    
+
     // --- Commands ---
     Serial.println("\n--- Commands ---");
     printFormattedLine("get <param>", "Get the current value of a setting.");
@@ -779,11 +782,12 @@ void CommunicationManager::_printCliHelp()
     {
         const Setting &s = settingsRegistry[i];
         String settingName(s.name);
-        
+
         // Print group header if it changes
         int dotIndex = settingName.indexOf('.');
         String group = (dotIndex != -1) ? settingName.substring(0, dotIndex) : settingName;
-        if (group != currentGroup) {
+        if (group != currentGroup)
+        {
             currentGroup = group;
             String groupHeader = "\n  " + group + " Settings:";
             groupHeader.toUpperCase();
@@ -795,54 +799,66 @@ void CommunicationManager::_printCliHelp()
         String expectedValue = "";
         switch (s.type)
         {
-            case SettingType::FLOAT:  description += "[float] "; break;
-            case SettingType::INT:    description += "[int]   "; break;
-            case SettingType::UINT8:  description += "[uint8] "; break;
-            case SettingType::UINT16: description += "[uint16]"; break;
-            case SettingType::BOOL:   description += "[bool]  "; description += "Values: true, false"; break;
-            case SettingType::ENUM_IBUS_PROTOCOL:
-            {
-                description += "[enum]  ";
-                ReceiverProtocol dummy;
-                _parseAndValidateReceiverProtocol("invalid", dummy, expectedValue);
-                description += "Values: " + expectedValue;
-                break;
-            }
-            case SettingType::ENUM_IMU_PROTOCOL:
-            {
-                description += "[enum]  ";
-                ImuProtocol dummy;
-                _parseAndValidateImuProtocol("invalid", dummy, expectedValue);
-                description += "Values: " + expectedValue;
-                break;
-            }
-            case SettingType::ENUM_LPF_BANDWIDTH:
-            {
-                description += "[enum]  ";
-                LpfBandwidth dummy;
-                _parseAndValidateLpfBandwidth("invalid", dummy, expectedValue);
-                description += "Values: " + expectedValue;
-                break;
-            }
-            case SettingType::ENUM_IMU_ROTATION:
-            {
-                description += "[enum]  ";
-                ImuRotation dummy;
-                _parseAndValidateImuRotation("invalid", dummy, expectedValue);
-                description += "Values: " + expectedValue;
-                break;
-            }
-            case SettingType::ENUM_DSHOT_MODE:
-            {
-                description += "[enum]  ";
-                dshot_mode_t dummy;
-                _parseAndValidateDShotMode("invalid", dummy, expectedValue);
-                description += "Values: " + expectedValue;
-                break;
-            }
-            default: break;
+        case SettingType::FLOAT:
+            description += "[float] ";
+            break;
+        case SettingType::INT:
+            description += "[int]   ";
+            break;
+        case SettingType::UINT8:
+            description += "[uint8] ";
+            break;
+        case SettingType::UINT16:
+            description += "[uint16]";
+            break;
+        case SettingType::BOOL:
+            description += "[bool]  ";
+            description += "Values: true, false";
+            break;
+        case SettingType::ENUM_IBUS_PROTOCOL:
+        {
+            description += "[enum]  ";
+            ReceiverProtocol dummy;
+            _parseAndValidateReceiverProtocol("invalid", dummy, expectedValue);
+            description += "Values: " + expectedValue;
+            break;
         }
-        
+        case SettingType::ENUM_IMU_PROTOCOL:
+        {
+            description += "[enum]  ";
+            ImuProtocol dummy;
+            _parseAndValidateImuProtocol("invalid", dummy, expectedValue);
+            description += "Values: " + expectedValue;
+            break;
+        }
+        case SettingType::ENUM_LPF_BANDWIDTH:
+        {
+            description += "[enum]  ";
+            LpfBandwidth dummy;
+            _parseAndValidateLpfBandwidth("invalid", dummy, expectedValue);
+            description += "Values: " + expectedValue;
+            break;
+        }
+        case SettingType::ENUM_IMU_ROTATION:
+        {
+            description += "[enum]  ";
+            ImuRotation dummy;
+            _parseAndValidateImuRotation("invalid", dummy, expectedValue);
+            description += "Values: " + expectedValue;
+            break;
+        }
+        case SettingType::ENUM_DSHOT_MODE:
+        {
+            description += "[enum]  ";
+            dshot_mode_t dummy;
+            _parseAndValidateDShotMode("invalid", dummy, expectedValue);
+            description += "Values: " + expectedValue;
+            break;
+        }
+        default:
+            break;
+        }
+
         printFormattedLine("  " + settingName, description);
     }
 
@@ -866,9 +882,12 @@ void CommunicationManager::_handleDumpCommand()
             Serial.println(*(float *)s.value / s.scaleFactor, 4);
             break;
         case SettingType::INT:
-            if (s.scaleFactor == PID_SCALE_FACTOR) {
+            if (s.scaleFactor == PID_SCALE_FACTOR)
+            {
                 Serial.println(*(int *)s.value / 10);
-            } else {
+            }
+            else
+            {
                 Serial.println(*(int *)s.value);
             }
             break;
@@ -923,9 +942,12 @@ void CommunicationManager::_handleDumpJsonCommand()
             jsonDoc[s.name] = *(float *)s.value / s.scaleFactor;
             break;
         case SettingType::INT:
-            if (s.scaleFactor == PID_SCALE_FACTOR) {
+            if (s.scaleFactor == PID_SCALE_FACTOR)
+            {
                 jsonDoc[s.name] = *(int *)s.value / 10;
-            } else {
+            }
+            else
+            {
                 jsonDoc[s.name] = *(int *)s.value;
             }
             break;
@@ -985,9 +1007,12 @@ void CommunicationManager::_handleGetCommand(String args, bool isApiMode)
                 valueStr = String(*(float *)s.value / s.scaleFactor, 4);
                 break;
             case SettingType::INT:
-                if (s.scaleFactor == PID_SCALE_FACTOR) {
+                if (s.scaleFactor == PID_SCALE_FACTOR)
+                {
                     valueStr = String(*(int *)s.value / 10);
-                } else {
+                }
+                else
+                {
                     valueStr = String(*(int *)s.value);
                 }
                 break;
@@ -1069,10 +1094,14 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode)
             {
                 int val;
                 result = _parseAndValidateInt(valueStr, val, expectedValue);
-                if (result == SetResult::SUCCESS) {
-                    if (s.scaleFactor == PID_SCALE_FACTOR) {
+                if (result == SetResult::SUCCESS)
+                {
+                    if (s.scaleFactor == PID_SCALE_FACTOR)
+                    {
                         *(int *)s.value = val * 10;
-                    } else {
+                    }
+                    else
+                    {
                         *(int *)s.value = val;
                     }
                 }
@@ -1082,13 +1111,18 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode)
             {
                 uint8_t val;
                 long tempVal = valueStr.toInt();
-                if (valueStr.length() > 0 && tempVal == 0 && valueStr != "0") {
+                if (valueStr.length() > 0 && tempVal == 0 && valueStr != "0")
+                {
                     expectedValue = "integer";
                     result = SetResult::INVALID_VALUE;
-                } else if (tempVal < 0 || tempVal > 255) { // UINT8 range
+                }
+                else if (tempVal < 0 || tempVal > 255)
+                { // UINT8 range
                     expectedValue = "0-255";
                     result = SetResult::OUT_OF_RANGE;
-                } else {
+                }
+                else
+                {
                     val = (uint8_t)tempVal;
                     result = SetResult::SUCCESS;
                 }

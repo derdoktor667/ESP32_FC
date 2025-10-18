@@ -35,9 +35,9 @@ public:
     void reset();
 
 private:
-    float _tau;         // Time constant for the filter
-    float _alpha;       // Filter coefficient derived from tau and sample frequency
-    float _dt;          // Time step (1/sampleFreq)
+    float _tau;   // Time constant for the filter
+    float _alpha; // Filter coefficient derived from tau and sample frequency
+    float _dt;    // Time step (1/sampleFreq)
 
     float _roll, _pitch, _yaw; // Estimated angles
 

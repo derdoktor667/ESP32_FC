@@ -15,7 +15,7 @@
 // Volatile is crucial here, as these variables are modified by an ISR and read in the main loop.
 static volatile uint16_t _ppm_channel_values[PPM_CHANNEL_COUNT] = {0};
 static volatile int _ppm_current_channel = 0;
-static volatile unsigned long _ppm_last_valid_pulse_time = 0; // Stores the microsecond timestamp of the last valid pulse edge.
+static volatile unsigned long _ppm_last_valid_pulse_time = 0;   // Stores the microsecond timestamp of the last valid pulse edge.
 static volatile unsigned long _ppm_last_valid_frame_millis = 0; // Stores the millisecond timestamp of the last valid PPM frame sync.
 
 // The minimum time (in microseconds) for a pulse to be considered a sync pulse.
@@ -60,7 +60,7 @@ void PpmReceiver::begin()
 {
     pinMode(_ppmPin, INPUT_PULLUP); // Use a pull-up to ensure a stable line if the receiver is disconnected
     attachInterrupt(digitalPinToInterrupt(_ppmPin), _handle_ppm_interrupt, RISING);
-    _ppm_last_valid_pulse_time = micros(); // Initialize with current time, assuming signal is present at startup
+    _ppm_last_valid_pulse_time = micros();   // Initialize with current time, assuming signal is present at startup
     _ppm_last_valid_frame_millis = millis(); // Initialize for failsafe detection
 }
 

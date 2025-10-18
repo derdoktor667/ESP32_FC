@@ -14,7 +14,7 @@
 MultiStageBiquadFilter::MultiStageBiquadFilter(float cutoffFreq, float sampleFreq, uint8_t numStages, float Q)
     : _numStages(numStages)
 {
-    _filters = new BiquadFilter*[_numStages];
+    _filters = new BiquadFilter *[_numStages];
     for (uint8_t i = 0; i < _numStages; ++i)
     {
         _filters[i] = new BiquadFilter(cutoffFreq, sampleFreq, Q);

@@ -163,7 +163,7 @@ void FlightController::_initializeModules()
     _attitudeEstimator.begin();
 }
 
-void FlightController::_haltOnError(const char* message)
+void FlightController::_haltOnError(const char *message)
 {
     Serial.println(message);
     while (INFINITE_LOOP_CONDITION)

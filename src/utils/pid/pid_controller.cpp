@@ -40,7 +40,8 @@ float PIDController::calculate(float setpoint, float current_value, float integr
   // Derivative term
   // Avoid division by zero if dt is very small
   float d_term = 0.0f;
-  if (dt > 0) {
+  if (dt > 0)
+  {
     d_term = Kd * (error - _previousError) / dt;
   }
   _previousError = error;

@@ -150,7 +150,6 @@ private:
     void _printFlightStatus() const;
 
     void _handleFlightModeInput(const String &input);
-
 };
 
 #endif // COMMUNICATION_MANAGER_H

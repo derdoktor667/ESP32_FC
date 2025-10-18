@@ -25,9 +25,8 @@ const gpio_num_t IBUS_RX_PIN = GPIO_NUM_16;
 // Define ESC pins
 const gpio_num_t ESC_PIN_FRONT_RIGHT = GPIO_NUM_27; // Front-Right motor
 const gpio_num_t ESC_PIN_FRONT_LEFT = GPIO_NUM_25;  // Front-Left motor
-const gpio_num_t ESC_PIN_REAR_RIGHT = GPIO_NUM_26; // Rear-Right motor
-const gpio_num_t ESC_PIN_REAR_LEFT = GPIO_NUM_33;  // Rear-Left motor
-
+const gpio_num_t ESC_PIN_REAR_RIGHT = GPIO_NUM_26;  // Rear-Right motor
+const gpio_num_t ESC_PIN_REAR_LEFT = GPIO_NUM_33;   // Rear-Left motor
 
 // =================================================================================
 // Flight Controller Settings (user-adjustable parameters)
@@ -81,8 +80,8 @@ enum FlightControlInput
 // Flight Modes
 enum FlightMode
 {
-  ACRO_MODE,
-  ANGLE_MODE,
+    ACRO_MODE,
+    ANGLE_MODE,
 };
 
 // Default values for FlightControllerSettings
@@ -157,9 +156,7 @@ struct FlightControllerSettings
             [YAW] = IBUS_CHANNEL_YAW,
             [ARM_SWITCH] = IBUS_CHANNEL_ARM_SWITCH,
             [FAILSAFE_SWITCH] = IBUS_CHANNEL_FAILSAFE_SWITCH,
-            [FLIGHT_MODE_SWITCH] = IBUS_CHANNEL_FLIGHT_MODE_SWITCH
-        }
-    };
+            [FLIGHT_MODE_SWITCH] = IBUS_CHANNEL_FLIGHT_MODE_SWITCH}};
 
     // PID Controller Gains
     struct
@@ -191,11 +188,11 @@ struct FlightControllerSettings
     struct
     {
         float complementaryFilterTau = DEFAULT_COMPLEMENTARY_FILTER_TAU; // Complementary filter time constant (tau)
-        float gyroLpfCutoffFreq = DEFAULT_GYRO_LPF_CUTOFF_FREQ; // Gyroscope low-pass filter cutoff frequency in Hz
-        float accelLpfCutoffFreq = DEFAULT_ACCEL_LPF_CUTOFF_FREQ; // Accelerometer low-pass filter cutoff frequency in Hz
-        uint8_t gyroLpfStages = DEFAULT_GYRO_LPF_STAGES; // Number of biquad filter stages for gyroscope
-        uint8_t accelLpfStages = DEFAULT_ACCEL_LPF_STAGES; // Number of biquad filter stages for accelerometer
-        float filterSampleFreq = DEFAULT_FILTER_SAMPLE_FREQ; // General filter sample frequency in Hz
+        float gyroLpfCutoffFreq = DEFAULT_GYRO_LPF_CUTOFF_FREQ;          // Gyroscope low-pass filter cutoff frequency in Hz
+        float accelLpfCutoffFreq = DEFAULT_ACCEL_LPF_CUTOFF_FREQ;        // Accelerometer low-pass filter cutoff frequency in Hz
+        uint8_t gyroLpfStages = DEFAULT_GYRO_LPF_STAGES;                 // Number of biquad filter stages for gyroscope
+        uint8_t accelLpfStages = DEFAULT_ACCEL_LPF_STAGES;               // Number of biquad filter stages for accelerometer
+        float filterSampleFreq = DEFAULT_FILTER_SAMPLE_FREQ;             // General filter sample frequency in Hz
 
         // Gyroscope Notch Filter
         bool enableGyroNotchFilter = DEFAULT_ENABLE_GYRO_NOTCH_FILTER;
@@ -214,7 +211,7 @@ struct FlightControllerSettings
 
     // Serial Logging
     unsigned long printIntervalMs = DEFAULT_PRINT_INTERVAL_MS;
-    bool enableLogging = false; // Global flag to enable/disable all logging output
+    bool enableLogging = false;  // Global flag to enable/disable all logging output
     bool enforceLoopTime = true; // Enforce target loop time with delayMicroseconds
 
     // Motor Settings
@@ -234,15 +231,15 @@ static constexpr unsigned long CLI_REBOOT_DELAY_MS = 100;
 static constexpr unsigned long IMU_INIT_FAIL_DELAY_MS = 10;
 static constexpr unsigned long SERIAL_BAUD_RATE = 115200;
 static constexpr int RX_MAP_PREFIX_LENGTH = 7;
-static constexpr int RECEIVER_CHANNEL_OFFSET = 1; // Offset for receiver channel indexing (e.g., 0-indexed array to 1-indexed channel)
+static constexpr int RECEIVER_CHANNEL_OFFSET = 1;      // Offset for receiver channel indexing (e.g., 0-indexed array to 1-indexed channel)
 static constexpr float SETPOINT_SCALING_FACTOR = 2.0f; // Factor used for scaling receiver input to setpoints
-static constexpr bool INFINITE_LOOP_CONDITION = true; // Used to halt execution on critical errors, preventing further processing.
+static constexpr bool INFINITE_LOOP_CONDITION = true;  // Used to halt execution on critical errors, preventing further processing.
 
 static constexpr int FLIGHT_MODE_ACRO_THRESHOLD = 1200;
 static constexpr int FLIGHT_MODE_ANGLE_THRESHOLD = 1800;
 
 // DShot Motor Constants
-static constexpr int DSHOT_MIN_THROTTLE = 48;  // Minimum DShot throttle value (e.g., for motor idle)
+static constexpr int DSHOT_MIN_THROTTLE = 48;   // Minimum DShot throttle value (e.g., for motor idle)
 static constexpr int DSHOT_MAX_THROTTLE = 2047; // Maximum DShot throttle value
 
 // Flight Loop Timing
@@ -252,6 +249,6 @@ static constexpr unsigned long TARGET_LOOP_TIME_US = 500; // Target loop time in
 static constexpr size_t ATTITUDE_BUFFER_SIZE = 16; // Buffer size for attitude float to string conversion
 
 // Firmware Version
-static constexpr const char* FIRMWARE_VERSION = "0.2.6"; // Updated for release
+static constexpr const char *FIRMWARE_VERSION = "0.2.6"; // Updated for release
 
 #endif
