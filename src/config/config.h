@@ -105,7 +105,7 @@ static constexpr int DEFAULT_MPU_CALIBRATION_READINGS = 1000;
 static constexpr float DEFAULT_ACCEL_Z_GRAVITY = 1.0f;
 
 static constexpr float DEFAULT_COMPLEMENTARY_FILTER_TAU = 0.995f;
-static constexpr float DEFAULT_GYRO_LPF_CUTOFF_FREQ = 15.0f;
+static constexpr float DEFAULT_GYRO_LPF_CUTOFF_FREQ = 10.0f;
 static constexpr float DEFAULT_ACCEL_LPF_CUTOFF_FREQ = 5.0f;
 static constexpr uint8_t DEFAULT_GYRO_LPF_STAGES = 2;
 static constexpr uint8_t DEFAULT_ACCEL_LPF_STAGES = 2;

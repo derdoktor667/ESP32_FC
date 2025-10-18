@@ -65,6 +65,7 @@ const receiverChannelNames = [
 
 // --- 3D View ---
 let scene, camera, renderer, quadcopter;
+let targetQuaternion = new THREE.Quaternion();
 
 function createQuadcopterModel() {
     const model = new THREE.Group();
@@ -157,7 +158,10 @@ function init3D() {
 function animate() {
     requestAnimationFrame(animate);
 
-    // Propeller animation removed
+    // Smoothly interpolate the quadcopter's rotation towards the target
+    if (quadcopter && !quadcopter.quaternion.equals(targetQuaternion)) {
+        quadcopter.quaternion.slerp(targetQuaternion, 0.5); // Increased factor for responsiveness
+    }
 
     if (renderer) {
         renderer.render(scene, camera);
@@ -223,9 +227,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 await writer.write(new TextEncoder().encode('calibrate_imu\n'));
                 // Reset 3D model orientation
                 if (quadcopter) {
-                    quadcopter.rotation.x = 0;
-                    quadcopter.rotation.y = 0; // Reset to initial orientation
-                    quadcopter.rotation.z = 0;
+                    targetQuaternion.set(0, 0, 0, 1); // Reset target to no rotation
+                    quadcopter.quaternion.set(0, 0, 0, 1); // Snap model to no rotation
                 }
             } else {
                 log.textContent += 'Not connected to device. Cannot calibrate IMU.\n';
@@ -416,15 +419,18 @@ function _update3DModel(attitude) {
     const pitch = parseFloat(attitude.pitch);
     const yaw = parseFloat(attitude.yaw);
 
-    // Update 3D model rotation
-    // The flight controller's coordinate system for pitch and roll is inverted
-    // relative to the Three.js coordinate system. We negate the values here
-    // to ensure the model's rotation visually matches the physical drone's movement.
-    if (!isNaN(pitch)) quadcopter.rotation.x = THREE.MathUtils.degToRad(-pitch);
-    if (!isNaN(yaw)) quadcopter.rotation.y = THREE.MathUtils.degToRad(yaw);
-    if (!isNaN(roll)) quadcopter.rotation.z = THREE.MathUtils.degToRad(-roll);
+    // Create a new Euler angle object with the corrected rotations
+    const euler = new THREE.Euler(
+        THREE.MathUtils.degToRad(-pitch),
+        THREE.MathUtils.degToRad(yaw),
+        THREE.MathUtils.degToRad(-roll),
+        'YXZ'
+    );
 
-    // Update numerical display
+    // Convert the Euler angles to a quaternion and set it as the target
+    targetQuaternion.setFromEuler(euler);
+
+    // Update numerical display with the RAW values
     const attitudeDisplay = document.getElementById('attitude-display');
     if (attitudeDisplay) {
         attitudeDisplay.innerHTML = `Roll: ${!isNaN(roll) ? roll.toFixed(2) : 'N/A'}&deg; | Pitch: ${!isNaN(pitch) ? pitch.toFixed(2) : 'N/A'}&deg; | Yaw: ${!isNaN(yaw) ? yaw.toFixed(2) : 'N/A'}&deg;`;
