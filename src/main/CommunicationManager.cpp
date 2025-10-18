@@ -185,17 +185,17 @@ SetResult CommunicationManager::_parseAndValidateFloat(const String &valueStr, f
     return SetResult::SUCCESS;
 }
 
-SetResult CommunicationManager::_parseAndValidateInt(const String &valueStr, int &outValue, String &expectedValue) const
+SetResult CommunicationManager::_parseAndValidateInt(const String &valueStr, int &outValue, float scaleFactor, String &expectedValue) const
 {
-    long val = valueStr.toInt();
-    if (valueStr.length() > 0 && val == 0 && valueStr != "0")
+    float val = valueStr.toFloat(); // Parse as float to handle decimal inputs
+    if (valueStr.length() > 0 && val == 0.0f && valueStr != "0" && valueStr != "0.0")
     {
-        expectedValue = "integer";
+        expectedValue = "integer or float";
         return SetResult::INVALID_VALUE;
     }
     // No explicit range check for int, as it can be negative.
     // If specific int ranges are needed, they should be added here.
-    outValue = (int)val;
+    outValue = (int)(val * scaleFactor);
     return SetResult::SUCCESS;
 }
 
@@ -742,70 +742,114 @@ void CommunicationManager::_handleUtilityCommand(String commandName, bool isApiM
 
 void CommunicationManager::_printCliHelp()
 {
-    Serial.println("Available Commands:");
-    Serial.println("  get <parameter>    - Get the current value of a setting.");
-    Serial.println("  set <parameter> <value> - Set a new value for a setting.");
-    Serial.println("  dump             - Display all current settings and their values.");
-    Serial.println("  get_settings       - (API only) Get all settings as JSON.");
-    Serial.println("  save             - Save current settings to flash and reboot.");
-    Serial.println("  reset            - Reset all settings to default and reboot.");
-    Serial.println("  reboot           - Reboot the ESP32.");
-    Serial.println("  calibrate_imu    - Request IMU calibration.");
-    Serial.println("  status           - Display system status and metrics.");
-    Serial.println("  version          - Display firmware version."); // New command
-    Serial.println("  help             - Display this help message.");
-    Serial.println("  exit             - Exit CLI mode.");
-    Serial.println("");
-    Serial.println("Available Settings (parameter names for 'get' and 'set'):");
+    // --- Helper function to print a formatted line ---
+    auto printFormattedLine = [](const String &item, const String &description) {
+        int itemPadding = 25 - item.length();
+        if (itemPadding < 1) itemPadding = 1;
+        Serial.print("  ");
+        Serial.print(item);
+        for (int i = 0; i < itemPadding; ++i) Serial.print(" ");
+        Serial.print("- ");
+        Serial.println(description);
+    };
 
-    // Group settings by category for better readability
-    Serial.println("  PID Gains:");
-    Serial.println("    pid.roll.kp, pid.roll.ki, pid.roll.kd");
-    Serial.println("    pid.pitch.kp, pid.pitch.ki, pid.pitch.kd");
-    Serial.println("    pid.yaw.kp, pid.yaw.ki, pid.yaw.kd");
-    Serial.println("    pid.integral_limit");
+    // --- Header ---
+    Serial.println("\n--- ESP32 Flight Controller CLI Help ---");
+    Serial.println("Provides commands to get, set, and manage flight controller settings.");
+    
+    // --- Commands ---
+    Serial.println("\n--- Commands ---");
+    printFormattedLine("get <param>", "Get the current value of a setting.");
+    printFormattedLine("set <param> <value>", "Set a new value for a setting.");
+    printFormattedLine("dump", "Display all current settings.");
+    printFormattedLine("save", "Save current settings to flash and reboot.");
+    printFormattedLine("reset", "Reset all settings to default and reboot.");
+    printFormattedLine("reboot", "Reboot the ESP32.");
+    printFormattedLine("calibrate_imu", "Start IMU calibration sequence.");
+    printFormattedLine("status", "Display system status and metrics.");
+    printFormattedLine("version", "Display firmware version.");
+    printFormattedLine("help", "Display this help message.");
+    printFormattedLine("exit", "Exit CLI mode and return to flight mode.");
 
-    Serial.println("  Rates & Angles:");
-    Serial.println("    rates.angle (Max Roll/Pitch Angle in Angle Mode)");
-    Serial.println("    rates.yaw (Max Yaw Rate)");
-    Serial.println("    rates.acro (Max Roll/Pitch Rate in Acro Mode)");
+    // --- Settings ---
+    Serial.println("\n--- Available Settings ---");
+    String currentGroup = "";
 
-    Serial.println("  Complementary Filter:");
-    Serial.println("    filter.comp_tau (Complementary Filter Time Constant)");
-    Serial.println("    gyro.lpf_cutoff_freq (Gyroscope Low-Pass Filter Cutoff Frequency in Hz)");
-    Serial.println("    accel.lpf_cutoff_freq (Accelerometer Low-Pass Filter Cutoff Frequency in Hz)");
-    Serial.println("    gyro.lpf_stages (Number of Gyroscope LPF Stages, 1-5)");
-    Serial.println("    accel.lpf_stages (Number of Accelerometer LPF Stages, 1-5)");
-    Serial.println("    filter.sample_freq (Filter Sample Frequency in Hz)");
+    for (int i = 0; i < numSettings; ++i)
+    {
+        const Setting &s = settingsRegistry[i];
+        String settingName(s.name);
+        
+        // Print group header if it changes
+        int dotIndex = settingName.indexOf('.');
+        String group = (dotIndex != -1) ? settingName.substring(0, dotIndex) : settingName;
+        if (group != currentGroup) {
+            currentGroup = group;
+            String groupHeader = "\n  " + group + " Settings:";
+            groupHeader.toUpperCase();
+            Serial.println(groupHeader);
+        }
 
-    Serial.println("  Gyroscope Notch Filter:");
-    Serial.println("    gyro.notch.enable (Enable/Disable Gyroscope Notch Filter)");
-    Serial.println("    gyro.notch.freq (Gyroscope Notch Filter Center Frequency in Hz)");
-    Serial.println("    gyro.notch.q (Gyroscope Notch Filter Q-Factor)");
+        // Prepare description string with type and valid values
+        String description = "";
+        String expectedValue = "";
+        switch (s.type)
+        {
+            case SettingType::FLOAT:  description += "[float] "; break;
+            case SettingType::INT:    description += "[int]   "; break;
+            case SettingType::UINT8:  description += "[uint8] "; break;
+            case SettingType::UINT16: description += "[uint16]"; break;
+            case SettingType::BOOL:   description += "[bool]  "; description += "Values: true, false"; break;
+            case SettingType::ENUM_IBUS_PROTOCOL:
+            {
+                description += "[enum]  ";
+                ReceiverProtocol dummy;
+                _parseAndValidateReceiverProtocol("invalid", dummy, expectedValue);
+                description += "Values: " + expectedValue;
+                break;
+            }
+            case SettingType::ENUM_IMU_PROTOCOL:
+            {
+                description += "[enum]  ";
+                ImuProtocol dummy;
+                _parseAndValidateImuProtocol("invalid", dummy, expectedValue);
+                description += "Values: " + expectedValue;
+                break;
+            }
+            case SettingType::ENUM_LPF_BANDWIDTH:
+            {
+                description += "[enum]  ";
+                LpfBandwidth dummy;
+                _parseAndValidateLpfBandwidth("invalid", dummy, expectedValue);
+                description += "Values: " + expectedValue;
+                break;
+            }
+            case SettingType::ENUM_IMU_ROTATION:
+            {
+                description += "[enum]  ";
+                ImuRotation dummy;
+                _parseAndValidateImuRotation("invalid", dummy, expectedValue);
+                description += "Values: " + expectedValue;
+                break;
+            }
+            case SettingType::ENUM_DSHOT_MODE:
+            {
+                description += "[enum]  ";
+                dshot_mode_t dummy;
+                _parseAndValidateDShotMode("invalid", dummy, expectedValue);
+                description += "Values: " + expectedValue;
+                break;
+            }
+            default: break;
+        }
+        
+        printFormattedLine("  " + settingName, description);
+    }
 
-    Serial.println("  Receiver:");
-    Serial.println("    rx.min, rx.max (Min/Max raw receiver values)");
-    Serial.println("    rx.arming_threshold, rx.failsafe_threshold");
-    Serial.println("    rx.protocol (IBUS, PPM)");
-    Serial.print("    rx.map.<input> (e.g., rx.map.");
-    String throttleInput = _getFlightControlInputString(THROTTLE);
-    throttleInput.toLowerCase();
-    Serial.print(throttleInput);
-    Serial.println(" 1)");
-
-    Serial.println("  IMU:");
-    Serial.println("    imu.protocol (MPU6050)");
-    Serial.println("    imu.lpf (LPF_256HZ_N_0MS, LPF_188HZ_N_2MS, LPF_98HZ_N_3MS, LPF_42HZ_N_5MS, LPF_20HZ_N_10MS, LPF_10HZ_N_13MS, LPF_5HZ_N_18MS)");
-    Serial.println("    imu.rotation (NONE, 90_CW, 180_CW, 270_CW, 90_CCW, 180_CCW, 270_CCW, FLIP)");
-
-    Serial.println("  Motor:");
-    Serial.println("    motor.idle_speed (Percent)");
-    Serial.println("    motor.dshot_mode (DSHOT_OFF, DSHOT150, DSHOT300, DSHOT600, DSHOT1200)");
-
-    Serial.println("  Logging:");
-    Serial.println("    printIntervalMs (Interval for serial logging in ms)");
-    Serial.println("    enableLogging (true/false)");
-    Serial.println("    enforce_loop_time (true/false) - Enforce target loop time with delayMicroseconds");
+    // Manual entry for channel mapping
+    Serial.println("\n  RX Settings (Channel Mapping):");
+    printFormattedLine("  rx.map.<input> <ch>", "[int]   Map a flight control input to a receiver channel (0-15).");
+    Serial.println("\n----------------------------------------\n");
 }
 
 void CommunicationManager::_handleDumpCommand()
@@ -822,10 +866,13 @@ void CommunicationManager::_handleDumpCommand()
             Serial.println(*(float *)s.value / s.scaleFactor, 4);
             break;
         case SettingType::INT:
-            Serial.print(*static_cast<int *>(s.value));
+            Serial.println((float)*(int *)s.value / s.scaleFactor, 4);
             break;
         case SettingType::UINT8:
-            Serial.print(*static_cast<uint8_t *>(s.value));
+            Serial.println(*(uint8_t *)s.value);
+            break;
+        case SettingType::UINT16:
+            Serial.println(*(uint16_t *)s.value);
             break;
         case SettingType::ENUM_IBUS_PROTOCOL:
             Serial.println(_getReceiverProtocolString(*(ReceiverProtocol *)s.value));
@@ -1009,7 +1056,7 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode)
             case SettingType::INT:
             {
                 int val;
-                result = _parseAndValidateInt(valueStr, val, expectedValue);
+                result = _parseAndValidateInt(valueStr, val, s.scaleFactor, expectedValue);
                 if (result == SetResult::SUCCESS)
                     *(int *)s.value = val;
                 break;
@@ -1094,7 +1141,7 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode)
                 result = SetResult::UNKNOWN_PARAMETER; // Or a more specific error
                 break;
             }
-            _printSetResponse(param, valueStr, result, isApiMode, (s.type == SettingType::ENUM_DSHOT_MODE || s.type == SettingType::ENUM_IBUS_PROTOCOL || s.type == SettingType::ENUM_IMU_PROTOCOL || s.type == SettingType::ENUM_LPF_BANDWIDTH || s.type == SettingType::ENUM_IMU_ROTATION || s.type == SettingType::BOOL || s.type == SettingType::INT), expectedValue);
+            _printSetResponse(param, valueStr, result, isApiMode, (s.type == SettingType::ENUM_DSHOT_MODE || s.type == SettingType::ENUM_IBUS_PROTOCOL || s.type == SettingType::ENUM_IMU_PROTOCOL || s.type == SettingType::ENUM_LPF_BANDWIDTH || s.type == SettingType::ENUM_IMU_ROTATION || s.type == SettingType::BOOL), expectedValue);
             return;
         }
     }

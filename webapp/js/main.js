@@ -204,6 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
         infoButton.classList.add('active');
     }
     init3D();
+    initializeSettingEventListeners(); // Add this call
 
     if (calibrateImuButton) {
         calibrateImuButton.addEventListener('click', async () => {
@@ -528,6 +529,18 @@ function populateSettings(settings) {
     }
 }
 
+function initializeSettingEventListeners() {
+    const settingsTabs = document.querySelectorAll('#motorSettingsTab, #pidSettingsTab, #receiverTab');
+    settingsTabs.forEach(tab => {
+        tab.addEventListener('change', (event) => {
+            // Delegate event handling to the function that sends the command
+            if (event.target.dataset.setting) {
+                handleSettingChange(event);
+            }
+        });
+    });
+}
+
 async function handleSettingChange(event) {
     const input = event.target;
     const settingKey = input.dataset.setting; // Use data-setting attribute for full key
@@ -561,16 +574,6 @@ function updateFilterSettingsUI(settings) {
     document.getElementById('enableGyroNotchFilter').checked = settings['gyro.notch.enable'];
     document.getElementById('gyroNotchFreq').value = settings['gyro.notch.freq'];
     document.getElementById('gyroNotchQ').value = settings['gyro.notch.q'];
-
-    // Add event listeners
-    document.getElementById('gyroLpfCutoffFreq').addEventListener('change', handleSettingChange);
-    document.getElementById('gyroLpfStages').addEventListener('change', handleSettingChange);
-    document.getElementById('accelLpfCutoffFreq').addEventListener('change', handleSettingChange);
-    document.getElementById('accelLpfStages').addEventListener('change', handleSettingChange);
-    document.getElementById('complementaryFilterTau').addEventListener('change', handleSettingChange);
-    document.getElementById('enableGyroNotchFilter').addEventListener('change', handleSettingChange);
-    document.getElementById('gyroNotchFreq').addEventListener('change', handleSettingChange);
-    document.getElementById('gyroNotchQ').addEventListener('change', handleSettingChange);
 }
 
 function updateImuSettingsUI(settings) {
@@ -580,11 +583,6 @@ function updateImuSettingsUI(settings) {
     document.getElementById('imuLpfBandwidth').value = settings['imu.lpf'];
     // IMU Rotation
     document.getElementById('imuRotation').value = settings['imu.rotation'];
-
-    // Add event listeners
-    document.getElementById('imuProtocol').addEventListener('change', handleSettingChange);
-    document.getElementById('imuLpfBandwidth').addEventListener('change', handleSettingChange);
-    document.getElementById('imuRotation').addEventListener('change', handleSettingChange);
 }
 
 function updateMotorSettingsUI(settings) {
@@ -592,10 +590,6 @@ function updateMotorSettingsUI(settings) {
     document.getElementById('motorIdleSpeedPercent').value = settings['motor.idle_speed'];
     // DShot Mode
     document.getElementById('dshotMode').value = settings['motor.dshot_mode'];
-
-    // Add event listeners
-    document.getElementById('motorIdleSpeedPercent').addEventListener('change', handleSettingChange);
-    document.getElementById('dshotMode').addEventListener('change', handleSettingChange);
 }
 
 function updateReceiverSettingsUI(settings) {
@@ -610,14 +604,4 @@ function updateReceiverSettingsUI(settings) {
     document.getElementById('rxMapArmSwitch').value = settings['rx.map.arm_switch'];
     document.getElementById('rxMapFailsafeSwitch').value = settings['rx.map.failsafe_switch'];
     document.getElementById('rxMapFlightModeSwitch').value = settings['rx.map.flight_mode_switch'];
-
-    // Add event listeners
-    document.getElementById('receiverProtocol').addEventListener('change', handleSettingChange);
-    document.getElementById('rxMapThrottle').addEventListener('change', handleSettingChange);
-    document.getElementById('rxMapRoll').addEventListener('change', handleSettingChange);
-    document.getElementById('rxMapPitch').addEventListener('change', handleSettingChange);
-    document.getElementById('rxMapYaw').addEventListener('change', handleSettingChange);
-    document.getElementById('rxMapArmSwitch').addEventListener('change', handleSettingChange);
-    document.getElementById('rxMapFailsafeSwitch').addEventListener('change', handleSettingChange);
-    document.getElementById('rxMapFlightModeSwitch').addEventListener('change', handleSettingChange);
 }
