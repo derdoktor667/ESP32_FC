@@ -58,7 +58,7 @@ namespace NVSKeys
 
     static constexpr const char *MOTOR_IDLE_SPEED = "motor.idle_spd";
     static constexpr const char *DSHOT_MODE_VAL = "motor.dshot_m";
-    static constexpr const char *ENFORCE_LOOP_TIME = "enforce.loop";
+    static constexpr const char *ENFORCE_LOOP_TIME = "log.enforce_l"; // Moved to logging settings
 
     // Calibration Settings
     static constexpr const char *CALIBRATION_MPU_READINGS = "cal.mpu_read";

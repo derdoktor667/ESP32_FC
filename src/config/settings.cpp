@@ -38,16 +38,16 @@ void saveSettings()
     preferences.putBool(INIT_KEY, true);
 
     // Save all settings from the struct
-    preferences.putInt(NVSKeys::PID_ROLL_KP, settings.pidRoll.kp);
-    preferences.putInt(NVSKeys::PID_ROLL_KI, settings.pidRoll.ki);
-    preferences.putInt(NVSKeys::PID_ROLL_KD, settings.pidRoll.kd);
-    preferences.putInt(NVSKeys::PID_PITCH_KP, settings.pidPitch.kp);
-    preferences.putInt(NVSKeys::PID_PITCH_KI, settings.pidPitch.ki);
-    preferences.putInt(NVSKeys::PID_PITCH_KD, settings.pidPitch.kd);
-    preferences.putInt(NVSKeys::PID_YAW_KP, settings.pidYaw.kp);
-    preferences.putInt(NVSKeys::PID_YAW_KI, settings.pidYaw.ki);
-    preferences.putInt(NVSKeys::PID_YAW_KD, settings.pidYaw.kd);
-    preferences.putFloat(NVSKeys::PID_INTEGRAL_LIMIT, settings.pidIntegralLimit);
+    preferences.putInt(NVSKeys::PID_ROLL_KP, settings.pid.roll.kp);
+    preferences.putInt(NVSKeys::PID_ROLL_KI, settings.pid.roll.ki);
+    preferences.putInt(NVSKeys::PID_ROLL_KD, settings.pid.roll.kd);
+    preferences.putInt(NVSKeys::PID_PITCH_KP, settings.pid.pitch.kp);
+    preferences.putInt(NVSKeys::PID_PITCH_KI, settings.pid.pitch.ki);
+    preferences.putInt(NVSKeys::PID_PITCH_KD, settings.pid.pitch.kd);
+    preferences.putInt(NVSKeys::PID_YAW_KP, settings.pid.yaw.kp);
+    preferences.putInt(NVSKeys::PID_YAW_KI, settings.pid.yaw.ki);
+    preferences.putInt(NVSKeys::PID_YAW_KD, settings.pid.yaw.kd);
+    preferences.putFloat(NVSKeys::PID_INTEGRAL_LIMIT, settings.pid.integralLimit);
 
     preferences.putFloat(NVSKeys::RATES_MAX_ANGLE_ROLL_PITCH, settings.rates.maxAngleRollPitch);
     preferences.putFloat(NVSKeys::RATES_MAX_RATE_YAW, settings.rates.maxRateYaw);
@@ -64,37 +64,37 @@ void saveSettings()
     preferences.putFloat(NVSKeys::FILTER_GYRO_NOTCH_Q, settings.filter.gyroNotchQ);
 
     // Receiver Settings
-    preferences.putInt(NVSKeys::RX_PROTOCOL, (int)settings.receiverProtocol);
-    preferences.putInt(NVSKeys::RX_MIN_VALUE, settings.receiver.ibusMinValue);
-    preferences.putInt(NVSKeys::RX_MAX_VALUE, settings.receiver.ibusMaxValue);
+    preferences.putInt(NVSKeys::RX_PROTOCOL, (int)settings.receiver.protocol);
+    preferences.putInt(NVSKeys::RX_MIN_VALUE, settings.receiver.minValue);
+    preferences.putInt(NVSKeys::RX_MAX_VALUE, settings.receiver.maxValue);
     preferences.putInt(NVSKeys::RX_ARMING_THRESHOLD, settings.receiver.armingThreshold);
     preferences.putInt(NVSKeys::RX_FAILSAFE_THRESHOLD, settings.receiver.failsafeThreshold);
 
     // IMU Settings
-    preferences.putInt(NVSKeys::IMU_PROTOCOL, (int)settings.imuProtocol);
-    preferences.putInt(NVSKeys::IMU_LPF_BANDWIDTH, (int)settings.imuLpfBandwidth);
-    preferences.putInt(NVSKeys::IMU_ROTATION, (int)settings.imuRotation);
+    preferences.putInt(NVSKeys::IMU_PROTOCOL, (int)settings.imu.protocol);
+    preferences.putInt(NVSKeys::IMU_LPF_BANDWIDTH, (int)settings.imu.lpfBandwidth);
+    preferences.putInt(NVSKeys::IMU_ROTATION, (int)settings.imu.rotation);
 
     // Save channel mapping
     for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)
     {
         String key = String(NVSKeys::RX_CHANNEL_MAP_PREFIX) + String(i);
-        preferences.putInt(key.c_str(), settings.channelMapping.channel[i]);
+        preferences.putInt(key.c_str(), settings.receiver.channelMapping.channel[i]);
     }
 
     // Motor Settings
-    preferences.putFloat(NVSKeys::MOTOR_IDLE_SPEED, settings.motorIdleSpeedPercent);
-    preferences.putInt(NVSKeys::DSHOT_MODE_VAL, (int)settings.dshotMode);
-    preferences.putBool(NVSKeys::ENFORCE_LOOP_TIME, settings.enforceLoopTime);
+    preferences.putFloat(NVSKeys::MOTOR_IDLE_SPEED, settings.motor.idleSpeedPercent);
+    preferences.putInt(NVSKeys::DSHOT_MODE_VAL, (int)settings.motor.dshotMode);
+    preferences.putBool(NVSKeys::ENFORCE_LOOP_TIME, settings.logging.enforceLoopTime);
 
     // Calibration Settings
     preferences.putInt(NVSKeys::CALIBRATION_MPU_READINGS, settings.calibration.mpuCalibrationReadings);
     preferences.putFloat(NVSKeys::CALIBRATION_ACCEL_Z_GRAVITY, settings.calibration.accelZGravity);
 
     // Logging Settings
-    preferences.putULong(NVSKeys::LOGGING_PRINT_INTERVAL_MS, settings.printIntervalMs);
-    preferences.putBool(NVSKeys::LOGGING_ENABLE, settings.enableLogging);
-    preferences.putBool(NVSKeys::BENCH_RUN_MODE_ENABLE, settings.enableBenchRunMode); // Save bench run mode
+    preferences.putULong(NVSKeys::LOGGING_PRINT_INTERVAL_MS, settings.logging.printIntervalMs);
+    preferences.putBool(NVSKeys::LOGGING_ENABLE, settings.logging.enableLogging);
+    preferences.putBool(NVSKeys::BENCH_RUN_MODE_ENABLE, settings.logging.enableBenchRunMode); // Save bench run mode
     preferences.putUShort(NVSKeys::FIRMWARE_BUILD_ID, FIRMWARE_BUILD_ID); // Save firmware build ID as UShort
 
     _logSettingsStatus("Settings saved.");
@@ -119,16 +119,16 @@ void loadSettings()
     {
         _logSettingsStatus("Saved settings found. Loading...");
         // Load all settings into the struct
-        settings.pidRoll.kp = preferences.getInt(NVSKeys::PID_ROLL_KP, settings.pidRoll.kp);
-        settings.pidRoll.ki = preferences.getInt(NVSKeys::PID_ROLL_KI, settings.pidRoll.ki);
-        settings.pidRoll.kd = preferences.getInt(NVSKeys::PID_ROLL_KD, settings.pidRoll.kd);
-        settings.pidPitch.kp = preferences.getInt(NVSKeys::PID_PITCH_KP, settings.pidPitch.kp);
-        settings.pidPitch.ki = preferences.getInt(NVSKeys::PID_PITCH_KI, settings.pidPitch.ki);
-        settings.pidPitch.kd = preferences.getInt(NVSKeys::PID_PITCH_KD, settings.pidPitch.kd);
-        settings.pidYaw.kp = preferences.getInt(NVSKeys::PID_YAW_KP, settings.pidYaw.kp);
-        settings.pidYaw.ki = preferences.getInt(NVSKeys::PID_YAW_KI, settings.pidYaw.ki);
-        settings.pidYaw.kd = preferences.getInt(NVSKeys::PID_YAW_KD, settings.pidYaw.kd);
-        settings.pidIntegralLimit = preferences.getFloat(NVSKeys::PID_INTEGRAL_LIMIT, settings.pidIntegralLimit);
+        settings.pid.roll.kp = preferences.getInt(NVSKeys::PID_ROLL_KP, settings.pid.roll.kp);
+        settings.pid.roll.ki = preferences.getInt(NVSKeys::PID_ROLL_KI, settings.pid.roll.ki);
+        settings.pid.roll.kd = preferences.getInt(NVSKeys::PID_ROLL_KD, settings.pid.roll.kd);
+        settings.pid.pitch.kp = preferences.getInt(NVSKeys::PID_PITCH_KP, settings.pid.pitch.kp);
+        settings.pid.pitch.ki = preferences.getInt(NVSKeys::PID_PITCH_KI, settings.pid.pitch.ki);
+        settings.pid.pitch.kd = preferences.getInt(NVSKeys::PID_PITCH_KD, settings.pid.pitch.kd);
+        settings.pid.yaw.kp = preferences.getInt(NVSKeys::PID_YAW_KP, settings.pid.yaw.kp);
+        settings.pid.yaw.ki = preferences.getInt(NVSKeys::PID_YAW_KI, settings.pid.yaw.ki);
+        settings.pid.yaw.kd = preferences.getInt(NVSKeys::PID_YAW_KD, settings.pid.yaw.kd);
+        settings.pid.integralLimit = preferences.getFloat(NVSKeys::PID_INTEGRAL_LIMIT, settings.pid.integralLimit);
 
         settings.rates.maxAngleRollPitch = preferences.getFloat(NVSKeys::RATES_MAX_ANGLE_ROLL_PITCH, settings.rates.maxAngleRollPitch);
         settings.rates.maxRateYaw = preferences.getFloat(NVSKeys::RATES_MAX_RATE_YAW, settings.rates.maxRateYaw);
@@ -145,36 +145,36 @@ void loadSettings()
         settings.filter.gyroNotchQ = preferences.getFloat(NVSKeys::FILTER_GYRO_NOTCH_Q, settings.filter.gyroNotchQ);
 
         // Receiver Settings
-        settings.receiverProtocol = (ReceiverProtocol)preferences.getInt(NVSKeys::RX_PROTOCOL, (int)settings.receiverProtocol);
-        settings.receiver.ibusMinValue = preferences.getInt(NVSKeys::RX_MIN_VALUE, settings.receiver.ibusMinValue);
-        settings.receiver.ibusMaxValue = preferences.getInt(NVSKeys::RX_MAX_VALUE, settings.receiver.ibusMaxValue);
+        settings.receiver.protocol = (ReceiverProtocol)preferences.getInt(NVSKeys::RX_PROTOCOL, (int)settings.receiver.protocol);
+        settings.receiver.minValue = preferences.getInt(NVSKeys::RX_MIN_VALUE, settings.receiver.minValue);
+        settings.receiver.maxValue = preferences.getInt(NVSKeys::RX_MAX_VALUE, settings.receiver.maxValue);
         settings.receiver.armingThreshold = preferences.getInt(NVSKeys::RX_ARMING_THRESHOLD, settings.receiver.armingThreshold);
         settings.receiver.failsafeThreshold = preferences.getInt(NVSKeys::RX_FAILSAFE_THRESHOLD, settings.receiver.failsafeThreshold);
 
         // IMU Settings
-        settings.imuProtocol = (ImuProtocol)preferences.getInt(NVSKeys::IMU_PROTOCOL, (int)settings.imuProtocol);
-        settings.imuLpfBandwidth = (LpfBandwidth)preferences.getInt(NVSKeys::IMU_LPF_BANDWIDTH, (int)settings.imuLpfBandwidth);
-        settings.imuRotation = (ImuRotation)preferences.getInt(NVSKeys::IMU_ROTATION, (int)settings.imuRotation);
+        settings.imu.protocol = (ImuProtocol)preferences.getInt(NVSKeys::IMU_PROTOCOL, (int)settings.imu.protocol);
+        settings.imu.lpfBandwidth = (LpfBandwidth)preferences.getInt(NVSKeys::IMU_LPF_BANDWIDTH, (int)settings.imu.lpfBandwidth);
+        settings.imu.rotation = (ImuRotation)preferences.getInt(NVSKeys::IMU_ROTATION, (int)settings.imu.rotation);
 
         // Motor Settings
-        settings.motorIdleSpeedPercent = preferences.getFloat(NVSKeys::MOTOR_IDLE_SPEED, settings.motorIdleSpeedPercent);
-        settings.dshotMode = (dshot_mode_t)preferences.getInt(NVSKeys::DSHOT_MODE_VAL, (int)settings.dshotMode);
-        settings.enforceLoopTime = preferences.getBool(NVSKeys::ENFORCE_LOOP_TIME, settings.enforceLoopTime);
+        settings.motor.idleSpeedPercent = preferences.getFloat(NVSKeys::MOTOR_IDLE_SPEED, settings.motor.idleSpeedPercent);
+        settings.motor.dshotMode = (dshot_mode_t)preferences.getInt(NVSKeys::DSHOT_MODE_VAL, (int)settings.motor.dshotMode);
+        settings.logging.enforceLoopTime = preferences.getBool(NVSKeys::ENFORCE_LOOP_TIME, settings.logging.enforceLoopTime);
 
         // Calibration Settings
         settings.calibration.mpuCalibrationReadings = preferences.getInt(NVSKeys::CALIBRATION_MPU_READINGS, settings.calibration.mpuCalibrationReadings);
         settings.calibration.accelZGravity = preferences.getFloat(NVSKeys::CALIBRATION_ACCEL_Z_GRAVITY, settings.calibration.accelZGravity);
 
         // Logging Settings
-        settings.printIntervalMs = preferences.getULong(NVSKeys::LOGGING_PRINT_INTERVAL_MS, settings.printIntervalMs);
-        settings.enableLogging = preferences.getBool(NVSKeys::LOGGING_ENABLE, settings.enableLogging);
-        settings.enableBenchRunMode = preferences.getBool(NVSKeys::BENCH_RUN_MODE_ENABLE, settings.enableBenchRunMode); // Load bench run mode
+        settings.logging.printIntervalMs = preferences.getULong(NVSKeys::LOGGING_PRINT_INTERVAL_MS, settings.logging.printIntervalMs);
+        settings.logging.enableLogging = preferences.getBool(NVSKeys::LOGGING_ENABLE, settings.logging.enableLogging);
+        settings.logging.enableBenchRunMode = preferences.getBool(NVSKeys::BENCH_RUN_MODE_ENABLE, settings.logging.enableBenchRunMode); // Load bench run mode
 
         // Load channel mapping
         for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)
         {
             String key = String(NVSKeys::RX_CHANNEL_MAP_PREFIX) + String(i);
-            settings.channelMapping.channel[i] = preferences.getInt(key.c_str(), settings.channelMapping.channel[i]);
+            settings.receiver.channelMapping.channel[i] = preferences.getInt(key.c_str(), settings.receiver.channelMapping.channel[i]);
         }
         _logSettingsStatus("Settings loaded.");
     }

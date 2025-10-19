@@ -108,12 +108,6 @@ String CommunicationManager::_getImuRotationString(ImuRotation rotation) const
         return "180_CW";
     case IMU_ROTATION_270_DEG_CW:
         return "270_CW";
-    case IMU_ROTATION_90_DEG_CCW:
-        return "90_CCW";
-    case IMU_ROTATION_180_DEG_CCW:
-        return "180_CCW";
-    case IMU_ROTATION_270_DEG_CCW:
-        return "270_CCW";
     case IMU_ROTATION_FLIP:
         return "FLIP";
     default:
@@ -139,16 +133,16 @@ String CommunicationManager::_getULongString(unsigned long value) const
 // --- Refactoring: Settings Registry ---
 
 const Setting CommunicationManager::settingsRegistry[] = {
-    {"pid.roll.kp", SettingType::INT, &settings.pidRoll.kp, PID_SCALE_FACTOR},
-    {"pid.roll.ki", SettingType::INT, &settings.pidRoll.ki, PID_SCALE_FACTOR},
-    {"pid.roll.kd", SettingType::INT, &settings.pidRoll.kd, PID_SCALE_FACTOR},
-    {"pid.pitch.kp", SettingType::INT, &settings.pidPitch.kp, PID_SCALE_FACTOR},
-    {"pid.pitch.ki", SettingType::INT, &settings.pidPitch.ki, PID_SCALE_FACTOR},
-    {"pid.pitch.kd", SettingType::INT, &settings.pidPitch.kd, PID_SCALE_FACTOR},
-    {"pid.yaw.kp", SettingType::INT, &settings.pidYaw.kp, PID_SCALE_FACTOR},
-    {"pid.yaw.ki", SettingType::INT, &settings.pidYaw.ki, PID_SCALE_FACTOR},
-    {"pid.yaw.kd", SettingType::INT, &settings.pidYaw.kd, PID_SCALE_FACTOR},
-    {"pid.integral_limit", SettingType::FLOAT, &settings.pidIntegralLimit, DEFAULT_SCALE_FACTOR},
+    {"pid.roll.kp", SettingType::INT, &settings.pid.roll.kp, PID_SCALE_FACTOR},
+    {"pid.roll.ki", SettingType::INT, &settings.pid.roll.ki, PID_SCALE_FACTOR},
+    {"pid.roll.kd", SettingType::INT, &settings.pid.roll.kd, PID_SCALE_FACTOR},
+    {"pid.pitch.kp", SettingType::INT, &settings.pid.pitch.kp, PID_SCALE_FACTOR},
+    {"pid.pitch.ki", SettingType::INT, &settings.pid.pitch.ki, PID_SCALE_FACTOR},
+    {"pid.pitch.kd", SettingType::INT, &settings.pid.pitch.kd, PID_SCALE_FACTOR},
+    {"pid.yaw.kp", SettingType::INT, &settings.pid.yaw.kp, PID_SCALE_FACTOR},
+    {"pid.yaw.ki", SettingType::INT, &settings.pid.yaw.ki, PID_SCALE_FACTOR},
+    {"pid.yaw.kd", SettingType::INT, &settings.pid.yaw.kd, PID_SCALE_FACTOR},
+    {"pid.integral_limit", SettingType::FLOAT, &settings.pid.integralLimit, DEFAULT_SCALE_FACTOR},
     {"rates.angle", SettingType::FLOAT, &settings.rates.maxAngleRollPitch, DEFAULT_SCALE_FACTOR},
     {"rates.yaw", SettingType::FLOAT, &settings.rates.maxRateYaw, DEFAULT_SCALE_FACTOR},
     {"rates.acro", SettingType::FLOAT, &settings.rates.maxRateRollPitch, DEFAULT_SCALE_FACTOR},
@@ -161,24 +155,23 @@ const Setting CommunicationManager::settingsRegistry[] = {
     {"gyro.notch.enable", SettingType::BOOL, &settings.filter.enableGyroNotchFilter, DEFAULT_SCALE_FACTOR},
     {"gyro.notch.freq", SettingType::FLOAT, &settings.filter.gyroNotchFreq, DEFAULT_SCALE_FACTOR},
     {"gyro.notch.q", SettingType::FLOAT, &settings.filter.gyroNotchQ, DEFAULT_SCALE_FACTOR},
-    {"rx.min", SettingType::UINT16, &settings.receiver.ibusMinValue, DEFAULT_SCALE_FACTOR},
-    {"rx.max", SettingType::UINT16, &settings.receiver.ibusMaxValue, DEFAULT_SCALE_FACTOR},
+    {"rx.min", SettingType::UINT16, &settings.receiver.minValue, DEFAULT_SCALE_FACTOR},
+    {"rx.max", SettingType::UINT16, &settings.receiver.maxValue, DEFAULT_SCALE_FACTOR},
     {"rx.arming_threshold", SettingType::UINT16, &settings.receiver.armingThreshold, DEFAULT_SCALE_FACTOR},
     {"rx.failsafe_threshold", SettingType::UINT16, &settings.receiver.failsafeThreshold, DEFAULT_SCALE_FACTOR},
-    {"rx.protocol", SettingType::ENUM_IBUS_PROTOCOL, &settings.receiverProtocol, DEFAULT_SCALE_FACTOR},
-    {"imu.protocol", SettingType::ENUM_IMU_PROTOCOL, &settings.imuProtocol, DEFAULT_SCALE_FACTOR},
-    {"imu.lpf", SettingType::ENUM_LPF_BANDWIDTH, &settings.imuLpfBandwidth, DEFAULT_SCALE_FACTOR},
-    {"imu.rotation", SettingType::ENUM_IMU_ROTATION, &settings.imuRotation, DEFAULT_SCALE_FACTOR},
-    {"motor.idle_speed", SettingType::FLOAT, &settings.motorIdleSpeedPercent, DEFAULT_SCALE_FACTOR},
-    {"motor.dshot_mode", SettingType::ENUM_DSHOT_MODE, &settings.dshotMode, DEFAULT_SCALE_FACTOR},
-    {"enforce_loop_time", SettingType::BOOL, &settings.enforceLoopTime, DEFAULT_SCALE_FACTOR},
+    {"rx.protocol", SettingType::ENUM_IBUS_PROTOCOL, &settings.receiver.protocol, DEFAULT_SCALE_FACTOR},
+    {"imu.protocol", SettingType::ENUM_IMU_PROTOCOL, &settings.imu.protocol, DEFAULT_SCALE_FACTOR},
+    {"imu.lpf", SettingType::ENUM_LPF_BANDWIDTH, &settings.imu.lpfBandwidth, DEFAULT_SCALE_FACTOR},
+    {"imu.rotation", SettingType::ENUM_IMU_ROTATION, &settings.imu.rotation, DEFAULT_SCALE_FACTOR},
+    {"motor.idle_speed", SettingType::FLOAT, &settings.motor.idleSpeedPercent, DEFAULT_SCALE_FACTOR},
+    {"motor.dshot_mode", SettingType::ENUM_DSHOT_MODE, &settings.motor.dshotMode, DEFAULT_SCALE_FACTOR},
+    {"enforce_loop_time", SettingType::BOOL, &settings.logging.enforceLoopTime, DEFAULT_SCALE_FACTOR},
     {"cal.mpu_readings", SettingType::INT, &settings.calibration.mpuCalibrationReadings, DEFAULT_SCALE_FACTOR},
     {"cal.accel_z_g", SettingType::FLOAT, &settings.calibration.accelZGravity, DEFAULT_SCALE_FACTOR},
-    {"log.print_interval", SettingType::ULONG, &settings.printIntervalMs, DEFAULT_SCALE_FACTOR},
-    {"log.enable", SettingType::BOOL, &settings.enableLogging, DEFAULT_SCALE_FACTOR},
-    {"bench.run.en", SettingType::BOOL, &settings.enableBenchRunMode, DEFAULT_SCALE_FACTOR},
-};
-const int CommunicationManager::numSettings = sizeof(CommunicationManager::settingsRegistry) / sizeof(Setting);
+    {"log.print_interval", SettingType::ULONG, &settings.logging.printIntervalMs, DEFAULT_SCALE_FACTOR},
+    {"log.enable", SettingType::BOOL, &settings.logging.enableLogging, DEFAULT_SCALE_FACTOR},
+    {"bench.run.en", SettingType::BOOL, &settings.logging.enableBenchRunMode, DEFAULT_SCALE_FACTOR},
+};const int CommunicationManager::numSettings = sizeof(CommunicationManager::settingsRegistry) / sizeof(Setting);
 
 // --- Helper Functions for Parsing and Validation ---
 
@@ -299,17 +292,11 @@ SetResult CommunicationManager::_parseAndValidateImuRotation(const String &value
         outValue = IMU_ROTATION_180_DEG_CW;
     else if (valueStr.equalsIgnoreCase("270_CW"))
         outValue = IMU_ROTATION_270_DEG_CW;
-    else if (valueStr.equalsIgnoreCase("90_CCW"))
-        outValue = IMU_ROTATION_90_DEG_CCW;
-    else if (valueStr.equalsIgnoreCase("180_CCW"))
-        outValue = IMU_ROTATION_180_DEG_CCW;
-    else if (valueStr.equalsIgnoreCase("270_CCW"))
-        outValue = IMU_ROTATION_270_DEG_CCW;
     else if (valueStr.equalsIgnoreCase("FLIP"))
         outValue = IMU_ROTATION_FLIP;
     else
     {
-        expectedValue = "NONE, 90_CW, 180_CW, 270_CW, 90_CCW, 180_CCW, 270_CCW, FLIP";
+        expectedValue = "NONE, 90_CW, 180_CW, 270_CW, FLIP";
         return SetResult::INVALID_VALUE;
     }
     return SetResult::SUCCESS;
@@ -546,7 +533,7 @@ void CommunicationManager::initializeCommunication() {}
 void CommunicationManager::processCommunication()
 {
     _handleSerialInput();
-    if (_currentMode == OperatingMode::API && !_isSendingSettings && settings.enableLogging && millis() - _lastSerialLogTime >= settings.printIntervalMs)
+    if (_currentMode == OperatingMode::API && !_isSendingSettings && settings.logging.enableLogging && millis() - _lastSerialLogTime >= settings.logging.printIntervalMs)
     {
         _printFlightStatus();
         _lastSerialLogTime = millis();
@@ -596,14 +583,14 @@ void CommunicationManager::_handleFlightModeInput(const String &input)
     if (input.equalsIgnoreCase("cli"))
     {
         _currentMode = OperatingMode::CLI;
-        settings.enableLogging = false;
+        settings.logging.enableLogging = false;
         Serial.println("--- CLI  Activated ---");
         Serial.print("ESP32_FC > ");
     }
     else if (input.equalsIgnoreCase("api"))
     {
         _currentMode = OperatingMode::API;
-        settings.enableLogging = true;
+        settings.logging.enableLogging = true;
         Serial.println(API_MODE_ACTIVATED_JSON);
     }
 }
@@ -950,7 +937,7 @@ void CommunicationManager::_handleDumpCommand()
         Serial.print("  ");
         Serial.print(_getFlightControlInputString((FlightControlInput)i));
         Serial.print(": ");
-        Serial.println(settings.channelMapping.channel[i]);
+        Serial.println(settings.receiver.channelMapping.channel[i]);
     }
     Serial.println("----------------------------------------");
 }
@@ -1013,7 +1000,7 @@ void CommunicationManager::_handleDumpJsonCommand()
         String inputName = _getFlightControlInputString((FlightControlInput)i);
         inputName.toLowerCase();
         key += inputName;
-        jsonDoc[key] = settings.channelMapping.channel[i];
+        jsonDoc[key] = settings.receiver.channelMapping.channel[i];
     }
     StaticJsonDocument<JSON_DOC_XLARGE_SIZE> outputDoc;
     outputDoc["settings"] = jsonDoc;
@@ -1259,7 +1246,7 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode)
             {
                 if (inputName.equalsIgnoreCase(_getFlightControlInputString((FlightControlInput)i)))
                 {
-                    settings.channelMapping.channel[i] = channelValue;
+                    settings.receiver.channelMapping.channel[i] = channelValue;
                     break;
                 }
             }

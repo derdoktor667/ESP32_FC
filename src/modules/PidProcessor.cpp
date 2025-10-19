@@ -15,8 +15,8 @@
 // Constructor: Initializes the PID controllers for Roll, Pitch, and Yaw axes.
 // PID gains (Kp, Ki, Kd) are loaded from the global settings, scaled by PID_SCALE_FACTOR
 // to convert integer settings to floating-point PID gains.
-PidProcessor::PidProcessor(const FlightControllerSettings &settings)
-    : _settings(settings)
+PidProcessor::PidProcessor(const PidSettings &pidSettings)
+    : _pidSettings(pidSettings)
 {
     _initializePidControllers();
 }
@@ -46,15 +46,15 @@ void PidProcessor::update(FlightState &state)
 
     // Calculate PID outputs for each axis.
     // The calculate method takes (setpoint, current_value, integral_limit).
-    state.pidOutput.roll = _pidRoll->calculate(state.setpoints.roll, roll_input_for_pid, _settings.pidIntegralLimit);
-    state.pidOutput.pitch = _pidPitch->calculate(state.setpoints.pitch, pitch_input_for_pid, _settings.pidIntegralLimit);
+    state.pidOutput.roll = _pidRoll->calculate(state.setpoints.roll, roll_input_for_pid, _pidSettings.integralLimit);
+    state.pidOutput.pitch = _pidPitch->calculate(state.setpoints.pitch, pitch_input_for_pid, _pidSettings.integralLimit);
     // Yaw control is typically always rate-based, so its input is always the gyro yaw rate.
-    state.pidOutput.yaw = _pidYaw->calculate(state.setpoints.yaw, state.gyroRates.yaw, _settings.pidIntegralLimit);
+    state.pidOutput.yaw = _pidYaw->calculate(state.setpoints.yaw, state.gyroRates.yaw, _pidSettings.integralLimit);
 }
 
 void PidProcessor::_initializePidControllers()
 {
-    _pidRoll = std::make_unique<PIDController>(_settings.pidRoll.kp / (float)PID_SCALE_FACTOR, _settings.pidRoll.ki / (float)PID_SCALE_FACTOR, _settings.pidRoll.kd / (float)PID_SCALE_FACTOR);
-    _pidPitch = std::make_unique<PIDController>(_settings.pidPitch.kp / (float)PID_SCALE_FACTOR, _settings.pidPitch.ki / (float)PID_SCALE_FACTOR, _settings.pidPitch.kd / (float)PID_SCALE_FACTOR);
-    _pidYaw = std::make_unique<PIDController>(_settings.pidYaw.kp / (float)PID_SCALE_FACTOR, _settings.pidYaw.ki / (float)PID_SCALE_FACTOR, _settings.pidYaw.kd / (float)PID_SCALE_FACTOR);
+    _pidRoll = std::make_unique<PIDController>(_pidSettings.roll.kp / (float)PID_SCALE_FACTOR, _pidSettings.roll.ki / (float)PID_SCALE_FACTOR, _pidSettings.roll.kd / (float)PID_SCALE_FACTOR);
+    _pidPitch = std::make_unique<PIDController>(_pidSettings.pitch.kp / (float)PID_SCALE_FACTOR, _pidSettings.pitch.ki / (float)PID_SCALE_FACTOR, _pidSettings.pitch.kd / (float)PID_SCALE_FACTOR);
+    _pidYaw = std::make_unique<PIDController>(_pidSettings.yaw.kp / (float)PID_SCALE_FACTOR, _pidSettings.yaw.ki / (float)PID_SCALE_FACTOR, _pidSettings.yaw.kd / (float)PID_SCALE_FACTOR);
 }

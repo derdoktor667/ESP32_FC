@@ -12,6 +12,7 @@
 #define ATTITUDE_ESTIMATOR_MODULE_MODULE_H
 
 #include "src/config/FlightState.h"
+#include "src/config/config.h" // Required for ImuSettings, FilterSettings, CalibrationSettings
 #include "src/hardware/imu/ImuInterface.h"
 #include "src/utils/filter/ComplementaryFilter.h"
 #include "src/utils/filter/MultiStageBiquadFilter.h"
@@ -29,9 +30,9 @@ public:
     AttitudeEstimator();
     // Destructor is no longer explicitly needed as std::unique_ptr handles cleanup
 
-    // Initializes the AttitudeEstimator with required dependencies.
+    // Initializes the AttitudeEstimator with required dependencies and granular settings.
     // This method must be called after settings are loaded and IMU is initialized.
-    void init(ImuInterface &imu, const FlightControllerSettings &settings);
+    void init(ImuInterface &imu, const ImuSettings &imuSettings, const FilterSettings &filterSettings, const CalibrationSettings &calibrationSettings);
 
     // Performs any necessary setup after initialization.
     // This typically includes starting the filter or other internal components.
@@ -51,7 +52,9 @@ public:
 
 private:
     ImuInterface *_imu = nullptr;                        // Pointer to the IMU sensor interface
-    const FlightControllerSettings *_settings = nullptr; // Pointer to global flight controller settings
+    const ImuSettings *_imuSettings = nullptr;           // Pointer to IMU-specific settings
+    const FilterSettings *_filterSettings = nullptr;     // Pointer to filter-specific settings
+    const CalibrationSettings *_calibrationSettings = nullptr; // Pointer to calibration-specific settings
 
     std::unique_ptr<ComplementaryFilter> _complementaryFilter; // Instance of the Complementary filter for sensor fusion
 

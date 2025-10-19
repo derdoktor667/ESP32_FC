@@ -10,11 +10,12 @@
 // License: MIT
 
 #include "src/modules/SafetyManager.h"
+#include "src/config/config.h" // Required for ARM_SWITCH, FAILSAFE_SWITCH
 #include <Arduino.h>
 
 // Constructor: Initializes the SafetyManager with references to the receiver and settings.
-SafetyManager::SafetyManager(ReceiverInterface &receiver, const FlightControllerSettings &settings)
-    : _receiver(receiver), _settings(settings)
+SafetyManager::SafetyManager(ReceiverInterface &receiver, const ReceiverSettings &receiverSettings)
+    : _receiver(receiver), _receiverSettings(receiverSettings)
 {
 }
 
@@ -23,12 +24,12 @@ SafetyManager::SafetyManager(ReceiverInterface &receiver, const FlightController
 void SafetyManager::update(FlightState &state)
 {
     // Retrieve the current values of the arming and failsafe switches from the receiver channels.
-    uint16_t armingChannelValue = state.receiverChannels[_settings.channelMapping.channel[ARM_SWITCH]];
-    uint16_t failsafeSwitchChannelValue = state.receiverChannels[_settings.channelMapping.channel[FAILSAFE_SWITCH]];
+    uint16_t armingChannelValue = state.receiverChannels[_receiverSettings.channelMapping.channel[ARM_SWITCH]];
+    uint16_t failsafeSwitchChannelValue = state.receiverChannels[_receiverSettings.channelMapping.channel[FAILSAFE_SWITCH]];
 
     // --- Failsafe Logic (Highest Priority) ---
     bool receiverFailsafeActive = _receiver.hasFailsafe();
-    bool failsafeSwitchEngaged = (failsafeSwitchChannelValue > _settings.receiver.failsafeThreshold);
+    bool failsafeSwitchEngaged = (failsafeSwitchChannelValue > _receiverSettings.failsafeThreshold);
 
     // Failsafe is activated if the receiver reports signal loss OR if the dedicated failsafe switch is active.
     if (receiverFailsafeActive || failsafeSwitchEngaged)
@@ -55,8 +56,8 @@ void SafetyManager::update(FlightState &state)
     }
 
     // --- Arming/Disarming Logic (Only processed if failsafe is NOT active) ---
-    bool armingSwitchEngaged = (armingChannelValue > _settings.receiver.armingThreshold);
-    bool disarmingSwitchEngaged = (armingChannelValue < _settings.receiver.armingThreshold);
+    bool armingSwitchEngaged = (armingChannelValue > _receiverSettings.armingThreshold);
+    bool disarmingSwitchEngaged = (armingChannelValue < _receiverSettings.armingThreshold);
 
     // Check if the arming switch is in the "armed" position and the drone is not yet armed.
     if (armingSwitchEngaged && !state.isArmed)

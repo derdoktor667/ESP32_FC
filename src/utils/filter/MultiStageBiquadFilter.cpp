@@ -11,13 +11,13 @@
 #include "MultiStageBiquadFilter.h"
 
 // Constructor: Initializes the multi-stage filter.
-MultiStageBiquadFilter::MultiStageBiquadFilter(float cutoffFreq, float sampleFreq, uint8_t numStages, float Q)
+MultiStageBiquadFilter::MultiStageBiquadFilter(float cutoffFreq, float sampleFreq, uint8_t numStages, float Q, FilterType type)
     : _numStages(numStages)
 {
     _filters = new BiquadFilter *[_numStages];
     for (uint8_t i = 0; i < _numStages; ++i)
     {
-        _filters[i] = new BiquadFilter(cutoffFreq, sampleFreq, Q);
+        _filters[i] = new BiquadFilter(cutoffFreq, sampleFreq, Q, type);
     }
 }
 

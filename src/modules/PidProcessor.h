@@ -13,6 +13,7 @@
 #define PID_PROCESSOR_MODULE_H
 
 #include "src/config/FlightState.h"
+#include "src/config/config.h" // Required for PidSettings
 #include "src/utils/pid/pid_controller.h"
 #include <memory> // Required for std::unique_ptr
 
@@ -24,9 +25,8 @@ class PidProcessor
 {
 public:
     // Constructor: Initializes the PID controllers for Roll, Pitch, and Yaw.
-    // @param settings Reference to the global flight controller settings,
-    //                 which contain the PID gains (Kp, Ki, Kd).
-    PidProcessor(const FlightControllerSettings &settings);
+    // @param pidSettings Reference to the PID-specific settings.
+    PidProcessor(const PidSettings &pidSettings);
     // Destructor is no longer explicitly needed as std::unique_ptr handles cleanup
 
     // Performs one cycle of PID calculations for all axes.
@@ -39,7 +39,7 @@ private:
     std::unique_ptr<PIDController> _pidRoll;   // PID controller instance for the Roll axis
     std::unique_ptr<PIDController> _pidPitch;  // PID controller instance for the Pitch axis
     std::unique_ptr<PIDController> _pidYaw;    // PID controller instance for the Yaw axis
-    const FlightControllerSettings &_settings; // Reference to global flight controller settings
+    const PidSettings &_pidSettings; // Reference to PID-specific settings
 
     // Private helper method for PID controller initialization
     void _initializePidControllers();

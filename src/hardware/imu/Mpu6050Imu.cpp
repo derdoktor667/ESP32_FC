@@ -65,24 +65,6 @@ void Mpu6050Imu::update()
         _mpu.readings.gyroscope.x = -tempGyroY;
         _mpu.readings.gyroscope.y = tempGyroX;
         break;
-    case IMU_ROTATION_90_DEG_CCW:
-        _mpu.readings.accelerometer.x = -tempAccelY;
-        _mpu.readings.accelerometer.y = tempAccelX;
-        _mpu.readings.gyroscope.x = -tempGyroY;
-        _mpu.readings.gyroscope.y = tempGyroX;
-        break;
-    case IMU_ROTATION_180_DEG_CCW:
-        _mpu.readings.accelerometer.x = -tempAccelX;
-        _mpu.readings.accelerometer.y = -tempAccelY;
-        _mpu.readings.gyroscope.x = -tempGyroX;
-        _mpu.readings.gyroscope.y = -tempGyroY;
-        break;
-    case IMU_ROTATION_270_DEG_CCW:
-        _mpu.readings.accelerometer.x = tempAccelY;
-        _mpu.readings.accelerometer.y = -tempAccelX;
-        _mpu.readings.gyroscope.x = tempGyroY;
-        _mpu.readings.gyroscope.y = -tempGyroX;
-        break;
     case IMU_ROTATION_FLIP:
         _mpu.readings.accelerometer.y = -tempAccelY;
         _mpu.readings.accelerometer.z = -tempAccelZ;

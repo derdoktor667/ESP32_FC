@@ -9,11 +9,12 @@
 // License: MIT
 
 #include "src/modules/MotorMixer.h"
+#include "src/config/config.h" // Required for DSHOT_OFF, DSHOT_MAX_THROTTLE, DSHOT_MIN_THROTTLE
 #include <Arduino.h>
 
 // Constructor: Initializes the MotorMixer with pointers to the four DShot motor objects and settings.
-MotorMixer::MotorMixer(DShotRMT *motor1, DShotRMT *motor2, DShotRMT *motor3, DShotRMT *motor4, const FlightControllerSettings &settings)
-    : _motor1(motor1), _motor2(motor2), _motor3(motor3), _motor4(motor4), _settings(settings)
+MotorMixer::MotorMixer(DShotRMT *motor1, DShotRMT *motor2, DShotRMT *motor3, DShotRMT *motor4, const MotorSettings &motorSettings)
+    : _motor1(motor1), _motor2(motor2), _motor3(motor3), _motor4(motor4), _motorSettings(motorSettings)
 {
 }
 
@@ -69,7 +70,7 @@ void MotorMixer::apply(FlightState &state)
     // Calculate the effective minimum throttle value.
     // This ensures motors spin at a minimum speed when armed (idle speed)
     // but never below the absolute DSHOT_MIN_THROTTLE.
-    float minActiveThrottle = DSHOT_MAX_THROTTLE * (_settings.motorIdleSpeedPercent / 100.0f);
+    float minActiveThrottle = DSHOT_MAX_THROTTLE * (_motorSettings.idleSpeedPercent / 100.0f);
     int effectiveMinThrottle = max((int)DSHOT_MIN_THROTTLE, (int)minActiveThrottle);
 
     // Constrain each motor's calculated value to be within the valid DShot range

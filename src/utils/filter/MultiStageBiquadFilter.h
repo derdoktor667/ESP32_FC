@@ -24,7 +24,8 @@ public:
     // @param sampleFreq The sample frequency in Hz.
     // @param numStages The number of biquad filter stages to cascade.
     // @param Q The Q factor for each biquad stage (typically 0.707 for Butterworth).
-    MultiStageBiquadFilter(float cutoffFreq, float sampleFreq, uint8_t numStages, float Q = DEFAULT_BUTTERWORTH_Q);
+    // @param type The type of filter (LPF, HPF, NOTCH) for all stages.
+    MultiStageBiquadFilter(float cutoffFreq, float sampleFreq, uint8_t numStages, float Q = DEFAULT_BUTTERWORTH_Q, FilterType type = LPF);
 
     // Destructor: Cleans up dynamically allocated BiquadFilter instances.
     ~MultiStageBiquadFilter();

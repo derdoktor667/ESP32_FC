@@ -13,6 +13,7 @@
 #define SETPOINT_MANAGER_MODULE_H
 
 #include "src/config/FlightState.h"
+#include "src/config/config.h" // Required for ReceiverSettings and RateSettings
 #include "src/hardware/receiver/ReceiverInterface.h"
 
 // Calculates the target setpoints (desired roll, pitch, yaw rates/angles)
@@ -22,7 +23,7 @@ class SetpointManager
 {
 public:
     // Constructor: Initializes the SetpointManager with references to the receiver and settings.
-    SetpointManager(ReceiverInterface &receiver, const FlightControllerSettings &settings);
+    SetpointManager(ReceiverInterface &receiver, const ReceiverSettings &receiverSettings, const RateSettings &rateSettings);
 
     // Performs one cycle of setpoint calculation.
     // It reads the relevant receiver channels and the current flight mode from the FlightState,
@@ -32,7 +33,8 @@ public:
 
 private:
     ReceiverInterface &_receiver;              // Reference to the active RC receiver
-    const FlightControllerSettings &_settings; // Reference to global flight controller settings
+    const ReceiverSettings &_receiverSettings; // Reference to receiver-specific settings
+    const RateSettings &_rateSettings;         // Reference to rate-specific settings
 
     // Private helper methods for setpoint calculations
     float _calculateSetpoint(uint16_t channelValue, float maxRateOrAngle) const;
