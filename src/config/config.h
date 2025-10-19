@@ -253,4 +253,16 @@ static constexpr size_t ATTITUDE_BUFFER_SIZE = 16; // Buffer size for attitude f
 // Firmware Version
 static constexpr const char *FIRMWARE_VERSION = "0.2.6"; // Updated for release
 
+// Simple compile-time string hash function (DJB2 variant, truncated to 15 bits)
+constexpr uint16_t compileTimeHash15Bit(const char* str) {
+    uint32_t hash = 5381;
+    int c;
+    while ((c = *str++)) {
+        hash = ((hash << 5) + hash) + c; // hash * 33 + c
+    }
+    return static_cast<uint16_t>(hash & 0x7FFF); // Truncate to 15 bits (0 to 32767)
+}
+
+static constexpr uint16_t FIRMWARE_BUILD_ID = compileTimeHash15Bit(__DATE__ " " __TIME__); // Unique ID for each build
+
 #endif

@@ -95,6 +95,7 @@ void saveSettings()
     preferences.putULong(NVSKeys::LOGGING_PRINT_INTERVAL_MS, settings.printIntervalMs);
     preferences.putBool(NVSKeys::LOGGING_ENABLE, settings.enableLogging);
     preferences.putBool(NVSKeys::BENCH_RUN_MODE_ENABLE, settings.enableBenchRunMode); // Save bench run mode
+    preferences.putUShort(NVSKeys::FIRMWARE_BUILD_ID, FIRMWARE_BUILD_ID); // Save firmware build ID as UShort
 
     _logSettingsStatus("Settings saved.");
 }
@@ -105,8 +106,16 @@ void loadSettings()
 
     // Check if settings have been initialized before.
     bool initialized = preferences.getBool(INIT_KEY, false);
+    uint16_t storedBuildId = preferences.getUShort(NVSKeys::FIRMWARE_BUILD_ID, 0); // Default to 0 if not found
 
-    if (initialized)
+    // If not initialized, or firmware build ID mismatch, reset to defaults.
+    if (!initialized || storedBuildId != FIRMWARE_BUILD_ID)
+    {
+        _logSettingsStatus("No saved settings found or firmware updated. Saving default values...");
+        settings = FlightControllerSettings(); // Reset to default values
+        saveSettings(); // This will also set the 'initialized' flag and save the new build ID.
+    }
+    else
     {
         _logSettingsStatus("Saved settings found. Loading...");
         // Load all settings into the struct
@@ -168,14 +177,6 @@ void loadSettings()
             settings.channelMapping.channel[i] = preferences.getInt(key.c_str(), settings.channelMapping.channel[i]);
         }
         _logSettingsStatus("Settings loaded.");
-    }
-    else
-    {
-        // This is the first run, or settings were cleared.
-        // The 'settings' object already holds the default values from config.h.
-        // We just need to save them to flash for the first time.
-        _logSettingsStatus("No saved settings found. Saving default values...");
-        saveSettings(); // This will also set the 'initialized' flag.
     }
 
     preferences.end();

@@ -1297,6 +1297,7 @@ void CommunicationManager::_handleVersionCommand() const
     {
         StaticJsonDocument<JSON_DOC_SMALL_SIZE> doc;
         doc["version"] = FIRMWARE_VERSION;
+        doc["build_id"] = FIRMWARE_BUILD_ID; // Add the build ID
         serializeJson(doc, Serial);
         Serial.println();
     }
@@ -1304,5 +1305,8 @@ void CommunicationManager::_handleVersionCommand() const
     {
         Serial.print("Firmware Version: ");
         Serial.println(FIRMWARE_VERSION);
+        // Also print build ID in CLI mode
+        Serial.print("Build ID: ");
+        Serial.println(FIRMWARE_BUILD_ID);
     }
 }

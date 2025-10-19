@@ -361,15 +361,23 @@ function _handleSettingsData(settings) {
     }
 }
 
-function _handleVersionData(version) {
+function _handleVersionData(data) {
     const infoContainer = document.getElementById('infoContainer');
-    let versionDiv = document.getElementById('firmwareVersion'); // More robust selection
+
+    // Handle Firmware Version
+    let versionDiv = document.getElementById('firmwareVersion');
     if (!versionDiv) {
         versionDiv = document.createElement('div');
         versionDiv.id = 'firmwareVersion';
         infoContainer.appendChild(versionDiv);
     }
-    versionDiv.innerHTML = `<h3>Firmware Version: ${version}</h3>`;
+    versionDiv.innerHTML = `<h3>Firmware Version: ${data.version}</h3>`; // Use data.version
+
+    // Handle Firmware Build ID
+    const buildIdDisplay = document.getElementById('buildIdDisplay');
+    if (buildIdDisplay && data.build_id !== undefined) {
+        buildIdDisplay.textContent = data.build_id;
+    }
 }
 
 function _handleStatusData(status) {
@@ -489,7 +497,7 @@ function handleIncomingData(data) {
         _handleSettingsData(data.settings);
     }
     if (data.version) {
-        _handleVersionData(data.version);
+        _handleVersionData(data); // Pass the entire data object
     }
     if (data.status) {
         // The firmware sends 'status' for both system status and set command responses.

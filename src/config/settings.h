@@ -68,6 +68,7 @@ namespace NVSKeys
     static constexpr const char *LOGGING_PRINT_INTERVAL_MS = "log.print_int";
     static constexpr const char *LOGGING_ENABLE = "log.enable";
     static constexpr const char *BENCH_RUN_MODE_ENABLE = "bench.run.en"; // New NVS key for bench run mode
+    static constexpr const char *FIRMWARE_BUILD_ID = "fw.build.id"; // New NVS key for firmware build ID
 }
 
 // Functions to manage persistent storage
