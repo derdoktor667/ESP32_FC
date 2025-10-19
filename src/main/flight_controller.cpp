@@ -12,6 +12,7 @@
 #include "src/config/settings.h"
 #include "src/hardware/receiver/IbusReceiver.h"
 #include "src/hardware/receiver/PpmReceiver.h"
+#include "src/hardware/imu/Mpu6050Imu.h" // Required for Mpu6050Imu instantiation
 #include "src/main/CommunicationManager.h"
 #include <Arduino.h>
 

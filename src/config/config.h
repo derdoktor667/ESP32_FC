@@ -111,7 +111,7 @@ static constexpr uint8_t DEFAULT_ACCEL_LPF_STAGES = 2;
 static constexpr float DEFAULT_FILTER_SAMPLE_FREQ = 250.0f; // General filter sample frequency in Hz
 
 static constexpr bool DEFAULT_ENABLE_GYRO_NOTCH_FILTER = false;
-static constexpr float DEFAULT_GYRO_NOTCH_FREQ = 200.0f;
+static constexpr float DEFAULT_GYRO_NOTCH_FREQ = 80.0f;
 static constexpr float DEFAULT_GYRO_NOTCH_Q = 1.0f;
 
 static constexpr int DEFAULT_IBUS_MIN_VALUE = 1000;
@@ -222,6 +222,7 @@ struct FlightControllerSettings
 static constexpr int PID_SCALE_FACTOR = 1000;
 
 static constexpr uint16_t MAX_UINT16_VALUE = 65535;
+static constexpr uint8_t MAX_UINT8_VALUE = 255;
 
 // General Constants
 

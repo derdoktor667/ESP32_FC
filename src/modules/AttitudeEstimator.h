@@ -46,6 +46,9 @@ public:
     // This method delegates the calibration process to the IMU interface.
     void calibrate();
 
+    // Dynamically updates the state of the notch filters based on settings.
+    void updateNotchFilterState();
+
 private:
     ImuInterface *_imu = nullptr;                        // Pointer to the IMU sensor interface
     const FlightControllerSettings *_settings = nullptr; // Pointer to global flight controller settings

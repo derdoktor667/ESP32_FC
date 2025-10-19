@@ -33,10 +33,10 @@ bool ComplementaryFilter::update(float gx, float gy, float gz, float ax, float a
     float deltaT = (currentTime - _lastUpdateTime) / 1000000.0f; // Convert to seconds
     _lastUpdateTime = currentTime;
 
-    // If deltaT is too large, reset the filter to avoid large jumps
-    if (deltaT > 0.1f)
-    { // 100ms threshold
-        reset();
+    // Prevent large deltaT values that can destabilize the filter
+    if (deltaT > MAX_DELTA_T_THRESHOLD)
+    {
+        _lastUpdateTime = currentTime;
         return false;
     }
 

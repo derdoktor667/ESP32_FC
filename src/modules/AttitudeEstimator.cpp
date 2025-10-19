@@ -16,15 +16,9 @@
 // Default constructor: Initializes pointers to nullptr and Madgwick filter with dummy values.
 // Actual initialization happens in init() once settings are available.
 AttitudeEstimator::AttitudeEstimator()
-    : _imu(nullptr), _settings(nullptr)
+    : _imu(nullptr), _settings(nullptr),
+      _gyroRollNotchFilter(nullptr), _gyroPitchNotchFilter(nullptr), _gyroYawNotchFilter(nullptr)
 {
-    // _complementaryFilter = nullptr; // Handled by std::unique_ptr default constructor
-    // _gyroRollLpf = nullptr;       // Handled by std::unique_ptr default constructor
-    // _gyroPitchLpf = nullptr;      // Handled by std::unique_ptr default constructor
-    // _gyroYawLpf = nullptr;        // Handled by std::unique_ptr default constructor
-    // _accelRollLpf = nullptr;      // Handled by std::unique_ptr default constructor
-    // _accelPitchLpf = nullptr;     // Handled by std::unique_ptr default constructor
-    // _accelYawLpf = nullptr;       // Handled by std::unique_ptr default constructor
 }
 
 // Init method: Sets up references to IMU and settings, then properly initializes the filter.
@@ -39,13 +33,19 @@ void AttitudeEstimator::init(ImuInterface &imu, const FlightControllerSettings &
 // Performs the initial calibration of the IMU.
 void AttitudeEstimator::begin()
 {
-    // Delegate initial calibration to the IMU interface.
+    // Delegate initial calibration to the IMU interface.!
     calibrate();
 }
 
 // Performs one cycle of attitude calculation: reads IMU, updates filter, and stores attitude in state.
 void AttitudeEstimator::update(FlightState &state)
 {
+    if (!_imu)
+    {
+        Serial.println("ERROR: IMU interface not initialized in AttitudeEstimator.");
+        return;
+    }
+
     _imu->update(); // Read the latest raw sensor data from the IMU
 
     // Get raw gyroscope data
@@ -59,7 +59,7 @@ void AttitudeEstimator::update(FlightState &state)
     float gz = _gyroYawLpf->update(rawGz);
 
     // Apply gyroscope notch filters if enabled
-    if (_settings->filter.enableGyroNotchFilter)
+    if (_settings->filter.enableGyroNotchFilter && _gyroRollNotchFilter)
     {
         gx = _gyroRollNotchFilter->update(gx);
         gy = _gyroPitchNotchFilter->update(gy);
@@ -97,6 +97,27 @@ void AttitudeEstimator::calibrate()
     _complementaryFilter->reset();
 }
 
+void AttitudeEstimator::updateNotchFilterState()
+{
+    if (_settings->filter.enableGyroNotchFilter)
+    {
+        // Create notch filters if they don't exist
+        if (!_gyroRollNotchFilter)
+        {
+            _gyroRollNotchFilter = std::make_unique<MultiStageBiquadFilter>(_settings->filter.gyroNotchFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroNotchQ, NOTCH);
+            _gyroPitchNotchFilter = std::make_unique<MultiStageBiquadFilter>(_settings->filter.gyroNotchFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroNotchQ, NOTCH);
+            _gyroYawNotchFilter = std::make_unique<MultiStageBiquadFilter>(_settings->filter.gyroNotchFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroNotchQ, NOTCH);
+        }
+    }
+    else
+    {
+        // Destroy notch filters if they exist
+        _gyroRollNotchFilter.reset();
+        _gyroPitchNotchFilter.reset();
+        _gyroYawNotchFilter.reset();
+    }
+}
+
 void AttitudeEstimator::_initializeFilters()
 {
     // Initialize Complementary filter with actual settings from config.h
@@ -107,12 +128,10 @@ void AttitudeEstimator::_initializeFilters()
     _gyroPitchLpf = std::make_unique<MultiStageBiquadFilter>(_settings->filter.gyroLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroLpfStages);
     _gyroYawLpf = std::make_unique<MultiStageBiquadFilter>(_settings->filter.gyroLpfCutoffFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroLpfStages);
 
-    // Initialize gyroscope notch filters if enabled
+    // Initialize gyroscope notch filters if enabled (at boot)
     if (_settings->filter.enableGyroNotchFilter)
     {
-        _gyroRollNotchFilter = std::make_unique<MultiStageBiquadFilter>(_settings->filter.gyroNotchFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroNotchQ, NOTCH);
-        _gyroPitchNotchFilter = std::make_unique<MultiStageBiquadFilter>(_settings->filter.gyroNotchFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroNotchQ, NOTCH);
-        _gyroYawNotchFilter = std::make_unique<MultiStageBiquadFilter>(_settings->filter.gyroNotchFreq, _settings->filter.filterSampleFreq, _settings->filter.gyroNotchQ, NOTCH);
+        updateNotchFilterState(); // Call the new function to initialize them
     }
 
     // Initialize accelerometer low-pass filters

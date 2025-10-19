@@ -13,7 +13,6 @@
 #include "flight_controller.h"
 #include "../config/config.h"
 #include "../config/settings.h"
-#include "../config/FlightState.h"
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
@@ -132,6 +131,11 @@ String CommunicationManager::_getUint8String(uint8_t value) const
     return String(value);
 }
 
+String CommunicationManager::_getULongString(unsigned long value) const
+{
+    return String(value);
+}
+
 // --- Refactoring: Settings Registry ---
 
 const Setting CommunicationManager::settingsRegistry[] = {
@@ -168,6 +172,10 @@ const Setting CommunicationManager::settingsRegistry[] = {
     {"motor.idle_speed", SettingType::FLOAT, &settings.motorIdleSpeedPercent, DEFAULT_SCALE_FACTOR},
     {"motor.dshot_mode", SettingType::ENUM_DSHOT_MODE, &settings.dshotMode, DEFAULT_SCALE_FACTOR},
     {"enforce_loop_time", SettingType::BOOL, &settings.enforceLoopTime, DEFAULT_SCALE_FACTOR},
+    {"cal.mpu_readings", SettingType::INT, &settings.calibration.mpuCalibrationReadings, DEFAULT_SCALE_FACTOR},
+    {"cal.accel_z_g", SettingType::FLOAT, &settings.calibration.accelZGravity, DEFAULT_SCALE_FACTOR},
+    {"log.print_interval", SettingType::ULONG, &settings.printIntervalMs, DEFAULT_SCALE_FACTOR},
+    {"log.enable", SettingType::BOOL, &settings.enableLogging, DEFAULT_SCALE_FACTOR},
 };
 const int CommunicationManager::numSettings = sizeof(CommunicationManager::settingsRegistry) / sizeof(Setting);
 
@@ -213,6 +221,20 @@ SetResult CommunicationManager::_parseAndValidateUint16(const String &valueStr, 
         return SetResult::OUT_OF_RANGE;
     }
     outValue = (uint16_t)val;
+    return SetResult::SUCCESS;
+}
+
+SetResult CommunicationManager::_parseAndValidateULong(const String &valueStr, unsigned long &outValue, String &expectedValue) const
+{
+    // toULong() returns 0 if no valid conversion could be performed.
+    // We need to check if the string was actually "0" or if it was invalid.
+    unsigned long val = strtoul(valueStr.c_str(), NULL, 10);
+    if (valueStr.length() > 0 && val == 0 && valueStr != "0")
+    {
+        expectedValue = "unsigned long integer";
+        return SetResult::INVALID_VALUE;
+    }
+    outValue = val;
     return SetResult::SUCCESS;
 }
 
@@ -484,6 +506,7 @@ void CommunicationManager::_printFlightStatus() const
     JsonObject status = live_data.createNestedObject("status");
     status["armed"] = _fc->state.isArmed;
     status["failsafe"] = _fc->state.isFailsafeActive;
+    status["loop_time_us"] = _fc->state.loopTimeUs; // Add loop time to live data
     switch (_fc->state.currentFlightMode)
     {
     case ACRO_MODE:
@@ -897,6 +920,9 @@ void CommunicationManager::_handleDumpCommand()
         case SettingType::UINT16:
             Serial.println(*(uint16_t *)s.value);
             break;
+        case SettingType::ULONG:
+            Serial.println(*(unsigned long *)s.value);
+            break;
         case SettingType::ENUM_IBUS_PROTOCOL:
             Serial.println(_getReceiverProtocolString(*(ReceiverProtocol *)s.value));
             break;
@@ -956,6 +982,9 @@ void CommunicationManager::_handleDumpJsonCommand()
             break;
         case SettingType::UINT16:
             jsonDoc[s.name] = *(uint16_t *)s.value;
+            break;
+        case SettingType::ULONG:
+            jsonDoc[s.name] = *(unsigned long *)s.value;
             break;
         case SettingType::BOOL:
             jsonDoc[s.name] = *(bool *)s.value;
@@ -1021,6 +1050,9 @@ void CommunicationManager::_handleGetCommand(String args, bool isApiMode)
                 break;
             case SettingType::UINT16:
                 valueStr = String(*(uint16_t *)s.value);
+                break;
+            case SettingType::ULONG:
+                valueStr = _getULongString(*(unsigned long *)s.value);
                 break;
             case SettingType::ENUM_IBUS_PROTOCOL:
                 valueStr = _getReceiverProtocolString(*(ReceiverProtocol *)s.value);
@@ -1116,9 +1148,9 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode)
                     expectedValue = "integer";
                     result = SetResult::INVALID_VALUE;
                 }
-                else if (tempVal < 0 || tempVal > 255)
+                else if (tempVal < 0 || tempVal > MAX_UINT8_VALUE)
                 { // UINT8 range
-                    expectedValue = "0-255";
+                    expectedValue = "0-" + String(MAX_UINT8_VALUE);
                     result = SetResult::OUT_OF_RANGE;
                 }
                 else
@@ -1139,12 +1171,27 @@ void CommunicationManager::_handleSetCommand(String args, bool isApiMode)
                     *(uint16_t *)s.value = val;
                 break;
             }
+            case SettingType::ULONG:
+            {
+                unsigned long val;
+                result = _parseAndValidateULong(valueStr, val, expectedValue);
+                if (result == SetResult::SUCCESS)
+                    *(unsigned long *)s.value = val;
+                break;
+            }
             case SettingType::BOOL:
             {
                 bool val;
                 result = _parseAndValidateBool(valueStr, val, expectedValue);
                 if (result == SetResult::SUCCESS)
+                {
                     *(bool *)s.value = val;
+                    // If gyro.notch.enable is changed, update the notch filter state
+                    if (param.equalsIgnoreCase("gyro.notch.enable"))
+                    {
+                        _fc->getAttitudeEstimator().updateNotchFilterState();
+                    }
+                }
                 break;
             }
             case SettingType::ENUM_IBUS_PROTOCOL:
