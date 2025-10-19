@@ -62,16 +62,19 @@ void FlightController::runLoop()
     // Start loop timer
     _loopTimer = micros();
 
+    // Always read raw receiver channel values into the flight state.
+    // This is crucial for live data streaming in API mode.
+    _receiver->update(); // Update the receiver to process new data
+    for (int i = 0; i < RECEIVER_CHANNEL_COUNT; i++)
+    {
+        state.receiverChannels[i] = _receiver->getChannel(i);
+    }
+
     // When logging is enabled (API mode), we normally skip the main flight logic
     // to prevent stack overflows and ensure stable communication. However, if
     // `enableBenchRunMode` is active, the full pipeline runs for performance testing.
     if (!settings.enableLogging || settings.enableBenchRunMode)
     {
-        // Read raw receiver channel values into the flight state.
-        for (int i = 0; i < RECEIVER_CHANNEL_COUNT; i++)
-        {
-            state.receiverChannels[i] = _receiver->getChannel(i);
-        }
         // Update attitude estimation based on IMU data.
         _attitudeEstimator.update(state);
         // Check and update safety status (arming, failsafe).

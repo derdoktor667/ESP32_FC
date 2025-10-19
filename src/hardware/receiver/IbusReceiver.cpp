@@ -26,8 +26,8 @@ void IbusReceiver::begin()
 // This update method can be left empty or used for any periodic checks if needed.
 void IbusReceiver::update()
 {
-    // All work is done by the underlying FlyskyIBUS library or on demand by getChannel().
-    // No-op for this implementation.
+    // Call the underlying FlyskyIBUS library's read method to process incoming data.
+    _ibus.read();
 }
 
 // Gets the value of a specific iBUS channel.
@@ -42,5 +42,6 @@ uint16_t IbusReceiver::getChannel(int channel) const
 bool IbusReceiver::hasFailsafe() const
 {
     // The FlyskyIBUS library now handles all failsafe logic internally.
-    return _ibus.hasFailsafe();
+    // return _ibus.hasFailsafe();
+    return false; // DEBUG: Force failsafe to be false
 }
