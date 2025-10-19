@@ -176,6 +176,7 @@ const Setting CommunicationManager::settingsRegistry[] = {
     {"cal.accel_z_g", SettingType::FLOAT, &settings.calibration.accelZGravity, DEFAULT_SCALE_FACTOR},
     {"log.print_interval", SettingType::ULONG, &settings.printIntervalMs, DEFAULT_SCALE_FACTOR},
     {"log.enable", SettingType::BOOL, &settings.enableLogging, DEFAULT_SCALE_FACTOR},
+    {"bench.run.en", SettingType::BOOL, &settings.enableBenchRunMode, DEFAULT_SCALE_FACTOR},
 };
 const int CommunicationManager::numSettings = sizeof(CommunicationManager::settingsRegistry) / sizeof(Setting);
 

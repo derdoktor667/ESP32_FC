@@ -67,6 +67,7 @@ namespace NVSKeys
     // Logging Settings
     static constexpr const char *LOGGING_PRINT_INTERVAL_MS = "log.print_int";
     static constexpr const char *LOGGING_ENABLE = "log.enable";
+    static constexpr const char *BENCH_RUN_MODE_ENABLE = "bench.run.en"; // New NVS key for bench run mode
 }
 
 // Functions to manage persistent storage

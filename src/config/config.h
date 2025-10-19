@@ -213,6 +213,7 @@ struct FlightControllerSettings
     unsigned long printIntervalMs = DEFAULT_PRINT_INTERVAL_MS;
     bool enableLogging = false;  // Global flag to enable/disable all logging output
     bool enforceLoopTime = true; // Enforce target loop time with delayMicroseconds
+    bool enableBenchRunMode = false; // New setting to enable full flight pipeline in API mode
 
     // Motor Settings
     float motorIdleSpeedPercent = DEFAULT_MOTOR_IDLE_SPEED_PERCENT;

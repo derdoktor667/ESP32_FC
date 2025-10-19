@@ -62,10 +62,10 @@ void FlightController::runLoop()
     // Start loop timer
     _loopTimer = micros();
 
-    // When logging is enabled (API mode), we skip the main flight logic
-    // to prevent stack overflows and ensure stable communication.
-    // The attitude estimator is still updated to provide live data to clients.
-    if (!settings.enableLogging)
+    // When logging is enabled (API mode), we normally skip the main flight logic
+    // to prevent stack overflows and ensure stable communication. However, if
+    // `enableBenchRunMode` is active, the full pipeline runs for performance testing.
+    if (!settings.enableLogging || settings.enableBenchRunMode)
     {
         // Read raw receiver channel values into the flight state.
         for (int i = 0; i < RECEIVER_CHANNEL_COUNT; i++)

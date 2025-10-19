@@ -9,6 +9,7 @@
 // License: MIT
 
 #include "src/hardware/imu/Mpu6050Imu.h"
+#include <Wire.h> // Required for I2C communication
 
 // Constructor: Initializes the MPU6050 object.
 Mpu6050Imu::Mpu6050Imu(LpfBandwidth lpfBandwidth, ImuRotation imuRotation)
@@ -19,6 +20,9 @@ Mpu6050Imu::Mpu6050Imu(LpfBandwidth lpfBandwidth, ImuRotation imuRotation)
 // Initializes the MPU6050 sensor.
 bool Mpu6050Imu::begin()
 {
+    Wire.begin();      // Initialize I2C communication
+    Wire.setClock(400000); // Set I2C clock speed to 400kHz
+
     // Using highest ranges for gyroscope (2000 DPS) and accelerometer (16G)
     // to ensure full measurement capability for a flight controller.
     return _mpu.begin(GYRO_RANGE_2000DPS, ACCEL_RANGE_16G, _lpfBandwidth);

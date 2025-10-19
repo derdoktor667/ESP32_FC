@@ -94,6 +94,7 @@ void saveSettings()
     // Logging Settings
     preferences.putULong(NVSKeys::LOGGING_PRINT_INTERVAL_MS, settings.printIntervalMs);
     preferences.putBool(NVSKeys::LOGGING_ENABLE, settings.enableLogging);
+    preferences.putBool(NVSKeys::BENCH_RUN_MODE_ENABLE, settings.enableBenchRunMode); // Save bench run mode
 
     _logSettingsStatus("Settings saved.");
 }
@@ -158,6 +159,7 @@ void loadSettings()
         // Logging Settings
         settings.printIntervalMs = preferences.getULong(NVSKeys::LOGGING_PRINT_INTERVAL_MS, settings.printIntervalMs);
         settings.enableLogging = preferences.getBool(NVSKeys::LOGGING_ENABLE, settings.enableLogging);
+        settings.enableBenchRunMode = preferences.getBool(NVSKeys::BENCH_RUN_MODE_ENABLE, settings.enableBenchRunMode); // Load bench run mode
 
         // Load channel mapping
         for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)
