@@ -64,7 +64,7 @@ void FlightController::runLoop()
     // When logging is enabled (API mode), we normally skip the main flight logic
     // to prevent stack overflows and ensure stable communication. However, if
     // `enableBenchRunMode` is active, the full pipeline runs for performance testing.
-    if (!settings.enableLogging || settings.enableBenchRunMode)
+    if (!settings.logging.enableLogging || settings.logging.enableBenchRunMode)
     {
         // Update attitude estimation based on IMU data.
         _attitudeEstimator.update(state);

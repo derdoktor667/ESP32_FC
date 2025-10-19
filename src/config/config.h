@@ -172,6 +172,7 @@ struct LoggingSettings
     unsigned long printIntervalMs = 40;
     bool enableLogging = false;
     bool enforceLoopTime = true;
+    bool enableBenchRunMode = false;
 };
 
 
