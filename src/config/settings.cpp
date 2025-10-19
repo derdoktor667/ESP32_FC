@@ -87,6 +87,14 @@ void saveSettings()
     preferences.putInt(NVSKeys::DSHOT_MODE_VAL, (int)settings.dshotMode);
     preferences.putBool(NVSKeys::ENFORCE_LOOP_TIME, settings.enforceLoopTime);
 
+    // Calibration Settings
+    preferences.putInt(NVSKeys::CALIBRATION_MPU_READINGS, settings.calibration.mpuCalibrationReadings);
+    preferences.putFloat(NVSKeys::CALIBRATION_ACCEL_Z_GRAVITY, settings.calibration.accelZGravity);
+
+    // Logging Settings
+    preferences.putULong(NVSKeys::LOGGING_PRINT_INTERVAL_MS, settings.printIntervalMs);
+    preferences.putBool(NVSKeys::LOGGING_ENABLE, settings.enableLogging);
+
     _logSettingsStatus("Settings saved.");
 }
 
@@ -142,6 +150,14 @@ void loadSettings()
         settings.motorIdleSpeedPercent = preferences.getFloat(NVSKeys::MOTOR_IDLE_SPEED, settings.motorIdleSpeedPercent);
         settings.dshotMode = (dshot_mode_t)preferences.getInt(NVSKeys::DSHOT_MODE_VAL, (int)settings.dshotMode);
         settings.enforceLoopTime = preferences.getBool(NVSKeys::ENFORCE_LOOP_TIME, settings.enforceLoopTime);
+
+        // Calibration Settings
+        settings.calibration.mpuCalibrationReadings = preferences.getInt(NVSKeys::CALIBRATION_MPU_READINGS, settings.calibration.mpuCalibrationReadings);
+        settings.calibration.accelZGravity = preferences.getFloat(NVSKeys::CALIBRATION_ACCEL_Z_GRAVITY, settings.calibration.accelZGravity);
+
+        // Logging Settings
+        settings.printIntervalMs = preferences.getULong(NVSKeys::LOGGING_PRINT_INTERVAL_MS, settings.printIntervalMs);
+        settings.enableLogging = preferences.getBool(NVSKeys::LOGGING_ENABLE, settings.enableLogging);
 
         // Load channel mapping
         for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)

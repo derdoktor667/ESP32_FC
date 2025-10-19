@@ -14,7 +14,6 @@
 #include "src/config/FlightState.h"
 #include "src/hardware/receiver/ReceiverInterface.h"
 #include "src/hardware/imu/ImuInterface.h"
-#include "src/hardware/imu/Mpu6050Imu.h"
 #include "src/modules/AttitudeEstimator.h"
 #include "src/modules/SafetyManager.h"
 #include "src/modules/SetpointManager.h"
@@ -45,8 +44,11 @@ public:
     // Sets the CommunicationManager instance.
     void setCommunicationManager(CommunicationManager *comms);
 
-    // Requests IMU calibration.
+    // Requests IMU calibration from the AttitudeEstimator module.
     void requestImuCalibration();
+
+    // Getter for AttitudeEstimator to allow CommunicationManager to update notch filter state
+    AttitudeEstimator &getAttitudeEstimator() { return _attitudeEstimator; }
 
     // The public state of the flight controller, readable by other modules.
     FlightState state;

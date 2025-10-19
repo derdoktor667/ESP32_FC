@@ -29,19 +29,19 @@ namespace NVSKeys
     static constexpr const char *PID_YAW_KP = "pid.yaw.kp";
     static constexpr const char *PID_YAW_KI = "pid.yaw.ki";
     static constexpr const char *PID_YAW_KD = "pid.yaw.kd";
-    static constexpr const char *PID_INTEGRAL_LIMIT = "pid.integral_limit";
+    static constexpr const char *PID_INTEGRAL_LIMIT = "pid.int_limit";
 
     static constexpr const char *RATES_MAX_ANGLE_ROLL_PITCH = "rate.angle";
     static constexpr const char *RATES_MAX_RATE_YAW = "rate.y";
     static constexpr const char *RATES_MAX_RATE_ROLL_PITCH = "rate.acro_rp";
 
     static constexpr const char *FILTER_COMPLEMENTARY_TAU = "filter.comp_tau";
-    static constexpr const char *FILTER_GYRO_LPF_CUTOFF_FREQ = "gyro.lpf_cutoff_freq";
-    static constexpr const char *FILTER_ACCEL_LPF_CUTOFF_FREQ = "accel.lpf_cutoff_freq";
+    static constexpr const char *FILTER_GYRO_LPF_CUTOFF_FREQ = "gyro.lpf_cfreq";
+    static constexpr const char *FILTER_ACCEL_LPF_CUTOFF_FREQ = "accel.lpf_cfreq";
     static constexpr const char *FILTER_GYRO_LPF_STAGES = "gyro.lpf_stages";
-    static constexpr const char *FILTER_ACCEL_LPF_STAGES = "accel.lpf_stages";
-    static constexpr const char *FILTER_SAMPLE_FREQ = "filter.sample_freq";
-    static constexpr const char *FILTER_GYRO_NOTCH_ENABLE = "gyro.notch.enable";
+    static constexpr const char *FILTER_ACCEL_LPF_STAGES = "accel.lpf_stg";
+    static constexpr const char *FILTER_SAMPLE_FREQ = "filter.s_freq";
+    static constexpr const char *FILTER_GYRO_NOTCH_ENABLE = "gyro.notch.en";
     static constexpr const char *FILTER_GYRO_NOTCH_FREQ = "gyro.notch.freq";
     static constexpr const char *FILTER_GYRO_NOTCH_Q = "gyro.notch.q";
 
@@ -56,9 +56,17 @@ namespace NVSKeys
     static constexpr const char *IMU_LPF_BANDWIDTH = "imu.lpf";
     static constexpr const char *IMU_ROTATION = "imu.rotation";
 
-    static constexpr const char *MOTOR_IDLE_SPEED = "motor.idle_speed";
-    static constexpr const char *DSHOT_MODE_VAL = "motor.dshot_mode";
+    static constexpr const char *MOTOR_IDLE_SPEED = "motor.idle_spd";
+    static constexpr const char *DSHOT_MODE_VAL = "motor.dshot_m";
     static constexpr const char *ENFORCE_LOOP_TIME = "enforce.loop";
+
+    // Calibration Settings
+    static constexpr const char *CALIBRATION_MPU_READINGS = "cal.mpu_read";
+    static constexpr const char *CALIBRATION_ACCEL_Z_GRAVITY = "cal.accel_z_g";
+
+    // Logging Settings
+    static constexpr const char *LOGGING_PRINT_INTERVAL_MS = "log.print_int";
+    static constexpr const char *LOGGING_ENABLE = "log.enable";
 }
 
 // Functions to manage persistent storage

@@ -45,6 +45,7 @@ enum class SettingType
     INT,
     UINT8, // Added for uint8_t parameters like filter stages
     UINT16,
+    ULONG, // Added for unsigned long parameters like printIntervalMs
     BOOL,
     STRING,
     ENUM_IBUS_PROTOCOL,
@@ -96,9 +97,9 @@ private:
 
     // JSON Document Sizes
     static constexpr size_t JSON_DOC_SMALL_SIZE = 64;
-    static constexpr size_t JSON_DOC_MEDIUM_SIZE = 256;
-    static constexpr size_t JSON_DOC_LARGE_SIZE = 512;
-    static constexpr size_t JSON_DOC_XLARGE_SIZE = 4096;
+    static constexpr size_t JSON_DOC_MEDIUM_SIZE = 128;
+    static constexpr size_t JSON_DOC_LARGE_SIZE = 256;
+    static constexpr size_t JSON_DOC_XLARGE_SIZE = 512;
 
     // API Error Messages
     static constexpr const char *API_ERROR_UNKNOWN_COMMAND = "{\"error\":\"Unknown command\"}";
@@ -114,6 +115,7 @@ private:
     String _getImuRotationString(ImuRotation rotation) const; // New declaration
     String _getBoolString(bool value) const;
     String _getUint8String(uint8_t value) const;
+    String _getULongString(unsigned long value) const;
 
     // Helper functions for printing responses
     void _printGetResponse(const String &param, const String &value, bool isApiMode, bool isString) const;
@@ -125,6 +127,7 @@ private:
     SetResult _parseAndValidateFloat(const String &valueStr, float &outValue, float scaleFactor, String &expectedValue) const;
     SetResult _parseAndValidateInt(const String &valueStr, int &outValue, String &expectedValue) const;
     SetResult _parseAndValidateUint16(const String &valueStr, uint16_t &outValue, String &expectedValue) const;
+    SetResult _parseAndValidateULong(const String &valueStr, unsigned long &outValue, String &expectedValue) const;
     SetResult _parseAndValidateReceiverProtocol(const String &valueStr, ReceiverProtocol &outValue, String &expectedValue) const;
     SetResult _parseAndValidateImuProtocol(const String &valueStr, ImuProtocol &outValue, String &expectedValue) const;
     SetResult _parseAndValidateLpfBandwidth(const String &valueStr, LpfBandwidth &outValue, String &expectedValue) const;

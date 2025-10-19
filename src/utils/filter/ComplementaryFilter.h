@@ -42,6 +42,8 @@ private:
     float _roll, _pitch, _yaw; // Estimated angles
 
     unsigned long _lastUpdateTime; // Last time the filter was updated
+
+    static constexpr float MAX_DELTA_T_THRESHOLD = 0.1f; // Threshold for deltaT to prevent large jumps
 };
 
 #endif // COMPLEMENTARY_FILTER_H
