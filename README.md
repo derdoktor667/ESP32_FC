@@ -23,7 +23,6 @@
 | `⚡` | **High-Performance JSON API**  | A streamlined, machine-readable API for programmatic control and high-frequency `live_data` streaming.                                     |
 | `🔌` | **Flexible Hardware Support**  | Works with MPU6050 IMUs, DShot ESCs, and multiple RC receiver protocols (iBUS, PPM), allowing for versatile hardware configurations.      |
 | `💾` | **Persistent Settings**        | All tunable parameters are saved to non-volatile storage, ensuring your configuration is preserved across reboots.                         |
-| `🛡️` | **Modern C++ Design**          | Leverages features like smart pointers (`std::unique_ptr`) for exceptional memory safety and a robust, professional-grade codebase.        |
 
 ---
 
@@ -135,10 +134,10 @@ The firmware is organized into a clean, modular, object-oriented structure withi
 
 This project stands on the shoulders of giants. The core hardware interaction is handled by these libraries, included as Git submodules:
 
-*   [**DShotRMT**](libraries/DShotRMT): Generates DShot signals using the ESP32's RMT peripheral.
-*   [**ESP32_MPU6050**](libraries/ESP32_MPU6050): Driver for the MPU6050 IMU.
-*   [**FlyskyIBUS**](libraries/FlyskyIBUS): Decodes the Flysky i-BUS protocol.
-*   [**ArduinoJson**](libraries/ArduinoJson): Efficient JSON serialization and deserialization.
+*   [**DShotRMT**](https://github.com/derdoktor667/DShotRMT): Generates DShot signals using the ESP32's RMT peripheral.
+*   [**ESP32_MPU6050**](https://github.com/derdoktor667/ESP32_MPU6050): Driver for the MPU6050 IMU.
+*   [**FlyskyIBUS**](https://github.com/derdoktor667/FlyskyIBUS): Decodes the Flysky i-BUS protocol.
+*   [**ArduinoJson**](https://github.com/bblanchon/ArduinoJson): Efficient JSON serialization and deserialization.
 
 ---
 

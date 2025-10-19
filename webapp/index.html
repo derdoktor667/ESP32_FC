@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,10 +8,11 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
+
 <body>
     <div class="header">
-        <h1>ESP32 Flight Controller Configurator</h1>
         <button id="toggleConnectButton">Connect</button>
+        <h1>ESP32 Flight Controller Configurator</h1>
         <button id="saveSettingsButton" disabled>Save Settings</button>
     </div>
 
@@ -139,7 +141,8 @@
             <label for="rxMapFailsafeSwitch">Failsafe Switch:</label>
             <input type="number" id="rxMapFailsafeSwitch" data-setting="rx.map.failsafe_switch" min="0" max="15"><br>
             <label for="rxMapFlightModeSwitch">Flight Mode Switch:</label>
-            <input type="number" id="rxMapFlightModeSwitch" data-setting="rx.map.flight_mode_switch" min="0" max="15"><br>
+            <input type="number" id="rxMapFlightModeSwitch" data-setting="rx.map.flight_mode_switch" min="0"
+                max="15"><br>
         </div>
         <h3>Live Receiver Channels</h3>
         <div id="receiverChannelBars"></div>
@@ -151,4 +154,5 @@
     </div>
     <script src="js/main.js"></script>
 </body>
+
 </html>

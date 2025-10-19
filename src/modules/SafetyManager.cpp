@@ -10,7 +10,6 @@
 // License: MIT
 
 #include "src/modules/SafetyManager.h"
-
 #include <Arduino.h>
 
 // Constructor: Initializes the SafetyManager with references to the receiver and settings.
@@ -73,7 +72,7 @@ void SafetyManager::update(FlightState &state)
     }
 }
 
-void SafetyManager::_logSafetyStatus(const char* message)
+void SafetyManager::_logSafetyStatus(const char *message)
 {
     Serial.print("INFO: ");
     Serial.println(message);

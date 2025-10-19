@@ -69,8 +69,6 @@ private:
 
     // Private helper method for filter initialization
     void _initializeFilters();
-
-
 };
 
 #endif // ATTITUDE_ESTIMATOR_MODULE_H

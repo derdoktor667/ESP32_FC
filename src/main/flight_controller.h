@@ -59,7 +59,7 @@ private:
     void _initializeModules();
 
     // --- Error Handling ---
-    void _haltOnError(const char* message);
+    void _haltOnError(const char *message);
 
     // --- Hardware Objects ---
     std::unique_ptr<ImuInterface> _imuInterface; // Pointer to the active IMU interface

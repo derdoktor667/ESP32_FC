@@ -23,7 +23,7 @@ const char *INIT_KEY = "initialized";
 
 static constexpr bool NVS_READ_WRITE_MODE = false; // true = read-only mode, false = read-write mode
 
-static void _logSettingsStatus(const char* message)
+static void _logSettingsStatus(const char *message)
 {
     Serial.print("INFO: ");
     Serial.println(message);
@@ -82,7 +82,6 @@ void saveSettings()
         preferences.putInt(key.c_str(), settings.channelMapping.channel[i]);
     }
 
-
     // Motor Settings
     preferences.putFloat(NVSKeys::MOTOR_IDLE_SPEED, settings.motorIdleSpeedPercent);
     preferences.putInt(NVSKeys::DSHOT_MODE_VAL, (int)settings.dshotMode);
@@ -122,27 +121,27 @@ void loadSettings()
         settings.filter.accelLpfCutoffFreq = preferences.getFloat(NVSKeys::FILTER_ACCEL_LPF_CUTOFF_FREQ, settings.filter.accelLpfCutoffFreq);
         settings.filter.gyroLpfStages = preferences.getUChar(NVSKeys::FILTER_GYRO_LPF_STAGES, settings.filter.gyroLpfStages);
         settings.filter.accelLpfStages = preferences.getUChar(NVSKeys::FILTER_ACCEL_LPF_STAGES, settings.filter.accelLpfStages);
-                settings.filter.filterSampleFreq = preferences.getFloat(NVSKeys::FILTER_SAMPLE_FREQ, settings.filter.filterSampleFreq);
-                settings.filter.enableGyroNotchFilter = preferences.getBool(NVSKeys::FILTER_GYRO_NOTCH_ENABLE, settings.filter.enableGyroNotchFilter);
-                settings.filter.gyroNotchFreq = preferences.getFloat(NVSKeys::FILTER_GYRO_NOTCH_FREQ, settings.filter.gyroNotchFreq);
-                settings.filter.gyroNotchQ = preferences.getFloat(NVSKeys::FILTER_GYRO_NOTCH_Q, settings.filter.gyroNotchQ);
-        
-                // Receiver Settings
-                settings.receiverProtocol = (ReceiverProtocol)preferences.getInt(NVSKeys::RX_PROTOCOL, (int)settings.receiverProtocol);
-                settings.receiver.ibusMinValue = preferences.getInt(NVSKeys::RX_MIN_VALUE, settings.receiver.ibusMinValue);
-                settings.receiver.ibusMaxValue = preferences.getInt(NVSKeys::RX_MAX_VALUE, settings.receiver.ibusMaxValue);
-                settings.receiver.armingThreshold = preferences.getInt(NVSKeys::RX_ARMING_THRESHOLD, settings.receiver.armingThreshold);
-                settings.receiver.failsafeThreshold = preferences.getInt(NVSKeys::RX_FAILSAFE_THRESHOLD, settings.receiver.failsafeThreshold);
-        
-                // IMU Settings
-                settings.imuProtocol = (ImuProtocol)preferences.getInt(NVSKeys::IMU_PROTOCOL, (int)settings.imuProtocol);
-                settings.imuLpfBandwidth = (LpfBandwidth)preferences.getInt(NVSKeys::IMU_LPF_BANDWIDTH, (int)settings.imuLpfBandwidth);
-                settings.imuRotation = (ImuRotation)preferences.getInt(NVSKeys::IMU_ROTATION, (int)settings.imuRotation);
-        
-                // Motor Settings
-                settings.motorIdleSpeedPercent = preferences.getFloat(NVSKeys::MOTOR_IDLE_SPEED, settings.motorIdleSpeedPercent);
-                settings.dshotMode = (dshot_mode_t)preferences.getInt(NVSKeys::DSHOT_MODE_VAL, (int)settings.dshotMode);
-                settings.enforceLoopTime = preferences.getBool(NVSKeys::ENFORCE_LOOP_TIME, settings.enforceLoopTime);
+        settings.filter.filterSampleFreq = preferences.getFloat(NVSKeys::FILTER_SAMPLE_FREQ, settings.filter.filterSampleFreq);
+        settings.filter.enableGyroNotchFilter = preferences.getBool(NVSKeys::FILTER_GYRO_NOTCH_ENABLE, settings.filter.enableGyroNotchFilter);
+        settings.filter.gyroNotchFreq = preferences.getFloat(NVSKeys::FILTER_GYRO_NOTCH_FREQ, settings.filter.gyroNotchFreq);
+        settings.filter.gyroNotchQ = preferences.getFloat(NVSKeys::FILTER_GYRO_NOTCH_Q, settings.filter.gyroNotchQ);
+
+        // Receiver Settings
+        settings.receiverProtocol = (ReceiverProtocol)preferences.getInt(NVSKeys::RX_PROTOCOL, (int)settings.receiverProtocol);
+        settings.receiver.ibusMinValue = preferences.getInt(NVSKeys::RX_MIN_VALUE, settings.receiver.ibusMinValue);
+        settings.receiver.ibusMaxValue = preferences.getInt(NVSKeys::RX_MAX_VALUE, settings.receiver.ibusMaxValue);
+        settings.receiver.armingThreshold = preferences.getInt(NVSKeys::RX_ARMING_THRESHOLD, settings.receiver.armingThreshold);
+        settings.receiver.failsafeThreshold = preferences.getInt(NVSKeys::RX_FAILSAFE_THRESHOLD, settings.receiver.failsafeThreshold);
+
+        // IMU Settings
+        settings.imuProtocol = (ImuProtocol)preferences.getInt(NVSKeys::IMU_PROTOCOL, (int)settings.imuProtocol);
+        settings.imuLpfBandwidth = (LpfBandwidth)preferences.getInt(NVSKeys::IMU_LPF_BANDWIDTH, (int)settings.imuLpfBandwidth);
+        settings.imuRotation = (ImuRotation)preferences.getInt(NVSKeys::IMU_ROTATION, (int)settings.imuRotation);
+
+        // Motor Settings
+        settings.motorIdleSpeedPercent = preferences.getFloat(NVSKeys::MOTOR_IDLE_SPEED, settings.motorIdleSpeedPercent);
+        settings.dshotMode = (dshot_mode_t)preferences.getInt(NVSKeys::DSHOT_MODE_VAL, (int)settings.dshotMode);
+        settings.enforceLoopTime = preferences.getBool(NVSKeys::ENFORCE_LOOP_TIME, settings.enforceLoopTime);
 
         // Load channel mapping
         for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)

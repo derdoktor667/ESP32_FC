@@ -33,10 +33,10 @@ public:
     void apply(FlightState &state);
 
 private:
-    DShotRMT *_motor1; // Pointer to the Front-Right DShot motor driver
-    DShotRMT *_motor2; // Pointer to the Front-Left DShot motor driver
-    DShotRMT *_motor3; // Pointer to the Rear-Right DShot motor driver
-    DShotRMT *_motor4; // Pointer to the Rear-Left DShot motor driver
+    DShotRMT *_motor1;                         // Pointer to the Front-Right DShot motor driver
+    DShotRMT *_motor2;                         // Pointer to the Front-Left DShot motor driver
+    DShotRMT *_motor3;                         // Pointer to the Rear-Right DShot motor driver
+    DShotRMT *_motor4;                         // Pointer to the Rear-Left DShot motor driver
     const FlightControllerSettings &_settings; // Reference to global flight controller settings
 };
 

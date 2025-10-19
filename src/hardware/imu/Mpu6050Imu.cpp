@@ -100,7 +100,7 @@ bool Mpu6050Imu::calibrate(int numReadings)
     return true; // MPU6050 library calibration always returns true if it runs
 }
 
-void Mpu6050Imu::_logCalibrationStatus(const char* message)
+void Mpu6050Imu::_logCalibrationStatus(const char *message)
 {
     Serial.print("INFO: ");
     Serial.println(message);

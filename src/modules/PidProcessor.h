@@ -36,9 +36,9 @@ public:
     void update(FlightState &state);
 
 private:
-    std::unique_ptr<PIDController> _pidRoll;  // PID controller instance for the Roll axis
-    std::unique_ptr<PIDController> _pidPitch; // PID controller instance for the Pitch axis
-    std::unique_ptr<PIDController> _pidYaw;   // PID controller instance for the Yaw axis
+    std::unique_ptr<PIDController> _pidRoll;   // PID controller instance for the Roll axis
+    std::unique_ptr<PIDController> _pidPitch;  // PID controller instance for the Pitch axis
+    std::unique_ptr<PIDController> _pidYaw;    // PID controller instance for the Yaw axis
     const FlightControllerSettings &_settings; // Reference to global flight controller settings
 
     // Private helper method for PID controller initialization

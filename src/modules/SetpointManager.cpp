@@ -10,7 +10,6 @@
 // License: MIT
 
 #include "src/modules/SetpointManager.h"
-
 #include <Arduino.h>
 
 // Constructor: Initializes the SetpointManager with references to the receiver and settings.
