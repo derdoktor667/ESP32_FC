@@ -241,6 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isConnected && writer) {
                 log.textContent += 'Sending command: save\n';
                 await writer.write(new TextEncoder().encode('save\n'));
+                location.reload(); // Reload page after saving settings
             } else {
                 log.textContent += 'Not connected to device. Cannot save settings.\n';
             }
@@ -310,6 +311,7 @@ toggleConnectButton.addEventListener('click', async () => {
                 saveSettingsButton.disabled = true; // Disable save button on disconnect
 
                 log.textContent += 'Disconnected from device.\n';
+                location.reload(); // Reload page after disconnecting
             } catch (error) {
                 log.textContent += `Error: ${error.message}\n`;
             }
@@ -372,7 +374,7 @@ function _handleVersionData(version) {
 
 function _handleStatusData(status) {
     const infoContainer = document.getElementById('infoContainer');
-    let statusDiv = document.getElementById('systemStatus'); // More robust selection
+    let statusDiv = document.getElementById('systemStatus');
     if (!statusDiv) {
         statusDiv = document.createElement('div');
         statusDiv.id = 'systemStatus';
@@ -380,6 +382,12 @@ function _handleStatusData(status) {
     }
     let statusHtml = '<h3>System Status:</h3><ul>';
     for (const key in status) {
+        if (key === 'Loop Time (us)') {
+            const looptimeDisplay = document.getElementById('looptimeDisplay');
+            if (looptimeDisplay) {
+                looptimeDisplay.textContent = status[key];
+            }
+        }
         statusHtml += `<li>${key}: ${status[key]}</li>`;
     }
     statusHtml += `</ul>`;
@@ -442,6 +450,7 @@ function _handleLiveData(liveData) {
     // Check which tab is active to avoid unnecessary DOM updates
     const receiverTabVisible = document.getElementById('receiverTab').style.display === 'block';
     const threeDViewTabVisible = document.getElementById('3dViewTab').style.display === 'block';
+    const infoTabVisible = document.getElementById('infoTab').style.display === 'block';
 
     if (receiverTabVisible && liveData.receiver_channels) {
         _updateReceiverBars(liveData.receiver_channels);
@@ -449,6 +458,23 @@ function _handleLiveData(liveData) {
 
     if (threeDViewTabVisible && liveData.attitude) {
         _update3DModel(liveData.attitude);
+    }
+
+    if (infoTabVisible && liveData.status) {
+        const looptimeDisplay = document.getElementById('looptimeDisplay');
+        if (looptimeDisplay && liveData.status.loop_time_us) {
+            looptimeDisplay.textContent = liveData.status.loop_time_us;
+        }
+
+        const failsafeStatusDisplay = document.getElementById('failsafeStatusDisplay');
+        if (failsafeStatusDisplay && liveData.status.failsafe !== undefined) {
+            failsafeStatusDisplay.textContent = liveData.status.failsafe ? 'Active' : 'Inactive';
+        }
+
+        const flightModeDisplay = document.getElementById('flightModeDisplay');
+        if (flightModeDisplay && liveData.status.mode) {
+            flightModeDisplay.textContent = liveData.status.mode;
+        }
     }
 }
 

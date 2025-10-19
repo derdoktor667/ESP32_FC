@@ -506,6 +506,7 @@ void CommunicationManager::_printFlightStatus() const
     JsonObject status = live_data.createNestedObject("status");
     status["armed"] = _fc->state.isArmed;
     status["failsafe"] = _fc->state.isFailsafeActive;
+    status["loop_time_us"] = _fc->state.loopTimeUs; // Add loop time to live data
     switch (_fc->state.currentFlightMode)
     {
     case ACRO_MODE:
