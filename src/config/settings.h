@@ -58,7 +58,7 @@ namespace NVSKeys
 
     static constexpr const char *MOTOR_IDLE_SPEED = "motor.idle_spd";
     static constexpr const char *DSHOT_MODE_VAL = "motor.dshot_m";
-    static constexpr const char *ENFORCE_LOOP_TIME = "log.enforce_l"; // Moved to logging settings
+    static constexpr const char *ENFORCE_LOOP_TIME = "log.enforce_l";
 
     // Calibration Settings
     static constexpr const char *CALIBRATION_MPU_READINGS = "cal.mpu_read";
@@ -67,8 +67,9 @@ namespace NVSKeys
     // Logging Settings
     static constexpr const char *LOGGING_PRINT_INTERVAL_MS = "log.print_int";
     static constexpr const char *LOGGING_ENABLE = "log.enable";
-    static constexpr const char *BENCH_RUN_MODE_ENABLE = "bench.run.en"; // New NVS key for bench run mode
-    static constexpr const char *FIRMWARE_BUILD_ID = "fw.build.id"; // New NVS key for firmware build ID
+    static constexpr const char *BENCH_RUN_MODE_ENABLE = "bench.run.en";
+    static constexpr const char *LOGGING_TEST_STRING = "log.test_str";
+    static constexpr const char *FIRMWARE_BUILD_ID = "fw.build.id";
 }
 
 // Functions to manage persistent storage

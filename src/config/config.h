@@ -37,7 +37,6 @@ enum ReceiverProtocol
 {
     PROTOCOL_IBUS,
     PROTOCOL_PPM,
-    // PROTOCOL_SBUS, // Future implementation
     RECEIVER_PROTOCOL_COUNT // Keep this last to count the number of protocols
 };
 
@@ -45,7 +44,6 @@ enum ReceiverProtocol
 enum ImuProtocol
 {
     IMU_MPU6050,
-    // Add other IMU protocols here as needed
     IMU_PROTOCOL_COUNT // Keep this last to count the number of protocols
 };
 
@@ -70,7 +68,6 @@ enum FlightControlInput
     ARM_SWITCH,
     FAILSAFE_SWITCH,
     FLIGHT_MODE_SWITCH,
-    // Add other control inputs as needed
     NUM_FLIGHT_CONTROL_INPUTS // Keep this last to count the number of inputs
 };
 
@@ -96,39 +93,68 @@ struct PidAxisSettings
     int kp, ki, kd;
 };
 
+// PID Default Values
+static constexpr int DEFAULT_PID_KP_ROLL_PITCH = 800;
+static constexpr int DEFAULT_PID_KI_ROLL_PITCH = 1;
+static constexpr int DEFAULT_PID_KD_ROLL_PITCH = 50;
+static constexpr int DEFAULT_PID_KP_YAW = 1500;
+static constexpr int DEFAULT_PID_KI_YAW = 5;
+static constexpr int DEFAULT_PID_KD_YAW = 100;
+static constexpr float DEFAULT_PID_INTEGRAL_LIMIT = 400.0f;
+
 struct PidSettings
 {
-    PidAxisSettings roll{800, 1, 50};
-    PidAxisSettings pitch{800, 1, 50};
-    PidAxisSettings yaw{1500, 5, 100};
-    float integralLimit = 400.0f;
+    PidAxisSettings roll{DEFAULT_PID_KP_ROLL_PITCH, DEFAULT_PID_KI_ROLL_PITCH, DEFAULT_PID_KD_ROLL_PITCH};
+    PidAxisSettings pitch{DEFAULT_PID_KP_ROLL_PITCH, DEFAULT_PID_KI_ROLL_PITCH, DEFAULT_PID_KD_ROLL_PITCH};
+    PidAxisSettings yaw{DEFAULT_PID_KP_YAW, DEFAULT_PID_KI_YAW, DEFAULT_PID_KD_YAW};
+    float integralLimit = DEFAULT_PID_INTEGRAL_LIMIT;
 };
+
+// Rate Default Values
+static constexpr float DEFAULT_MAX_ANGLE_ROLL_PITCH = 30.0f;
+static constexpr float DEFAULT_MAX_RATE_YAW = 90.0f;
+static constexpr float DEFAULT_MAX_RATE_ROLL_PITCH = 90.0f;
 
 struct RateSettings
 {
-    float maxAngleRollPitch = 30.0f;
-    float maxRateYaw = 90.0f;
-    float maxRateRollPitch = 90.0f;
+    float maxAngleRollPitch = DEFAULT_MAX_ANGLE_ROLL_PITCH;
+    float maxRateYaw = DEFAULT_MAX_RATE_YAW;
+    float maxRateRollPitch = DEFAULT_MAX_RATE_ROLL_PITCH;
 };
+
+// Calibration Default Values
+static constexpr int DEFAULT_MPU_CALIBRATION_READINGS = 1000;
+static constexpr float DEFAULT_ACCEL_Z_GRAVITY = 1.0f;
 
 struct CalibrationSettings
 {
-    int mpuCalibrationReadings = 1000;
-    float accelZGravity = 1.0f;
+    int mpuCalibrationReadings = DEFAULT_MPU_CALIBRATION_READINGS;
+    float accelZGravity = DEFAULT_ACCEL_Z_GRAVITY;
 };
+
+// Filter Default Values
+static constexpr float DEFAULT_COMPLEMENTARY_FILTER_TAU = 0.995f;
+static constexpr float DEFAULT_GYRO_LPF_CUTOFF_FREQ = 10.0f;
+static constexpr float DEFAULT_ACCEL_LPF_CUTOFF_FREQ = 5.0f;
+static constexpr uint8_t DEFAULT_GYRO_LPF_STAGES = 2;
+static constexpr uint8_t DEFAULT_ACCEL_LPF_STAGES = 2;
+static constexpr float DEFAULT_FILTER_SAMPLE_FREQ = 250.0f;
+static constexpr bool DEFAULT_ENABLE_GYRO_NOTCH_FILTER = false;
+static constexpr float DEFAULT_GYRO_NOTCH_FREQ = 80.0f;
+static constexpr float DEFAULT_GYRO_NOTCH_Q = 1.0f;
 
 struct FilterSettings
 {
-    float complementaryFilterTau = 0.995f;
-    float gyroLpfCutoffFreq = 10.0f;
-    float accelLpfCutoffFreq = 5.0f;
-    uint8_t gyroLpfStages = 2;
-    uint8_t accelLpfStages = 2;
-    float filterSampleFreq = 250.0f;
+    float complementaryFilterTau = DEFAULT_COMPLEMENTARY_FILTER_TAU;
+    float gyroLpfCutoffFreq = DEFAULT_GYRO_LPF_CUTOFF_FREQ;
+    float accelLpfCutoffFreq = DEFAULT_ACCEL_LPF_CUTOFF_FREQ;
+    uint8_t gyroLpfStages = DEFAULT_GYRO_LPF_STAGES;
+    uint8_t accelLpfStages = DEFAULT_ACCEL_LPF_STAGES;
+    float filterSampleFreq = DEFAULT_FILTER_SAMPLE_FREQ;
 
-    bool enableGyroNotchFilter = false;
-    float gyroNotchFreq = 80.0f;
-    float gyroNotchQ = 1.0f;
+    bool enableGyroNotchFilter = DEFAULT_ENABLE_GYRO_NOTCH_FILTER;
+    float gyroNotchFreq = DEFAULT_GYRO_NOTCH_FREQ;
+    float gyroNotchQ = DEFAULT_GYRO_NOTCH_Q;
 };
 
 struct ReceiverChannelMapping
@@ -144,14 +170,20 @@ struct ReceiverChannelMapping
     };
 };
 
+// Receiver Default Values
+static constexpr int DEFAULT_RX_MIN_VALUE = 1000;
+static constexpr int DEFAULT_RX_MAX_VALUE = 2000;
+static constexpr int DEFAULT_RX_ARMING_THRESHOLD = 1500;
+static constexpr int DEFAULT_RX_FAILSAFE_THRESHOLD = 1500;
+
 struct ReceiverSettings
 {
     ReceiverProtocol protocol = PROTOCOL_IBUS;
     ReceiverChannelMapping channelMapping;
-    int minValue = 1000;
-    int maxValue = 2000;
-    int armingThreshold = 1500;
-    int failsafeThreshold = 1500;
+    int minValue = DEFAULT_RX_MIN_VALUE;
+    int maxValue = DEFAULT_RX_MAX_VALUE;
+    int armingThreshold = DEFAULT_RX_ARMING_THRESHOLD;
+    int failsafeThreshold = DEFAULT_RX_FAILSAFE_THRESHOLD;
 };
 
 struct ImuSettings
@@ -161,18 +193,30 @@ struct ImuSettings
     ImuRotation rotation = IMU_ROTATION_180_DEG_CW;
 };
 
+// Motor Default Values
+static constexpr float DEFAULT_MOTOR_IDLE_SPEED_PERCENT = 4.0f;
+static constexpr dshot_mode_t DEFAULT_DSHOT_MODE = DSHOT600;
+
 struct MotorSettings
 {
-    float idleSpeedPercent = 4.0f;
-    dshot_mode_t dshotMode = DSHOT600;
+    float idleSpeedPercent = DEFAULT_MOTOR_IDLE_SPEED_PERCENT;
+    dshot_mode_t dshotMode = DEFAULT_DSHOT_MODE;
 };
+
+// Logging Default Values
+static constexpr unsigned long DEFAULT_PRINT_INTERVAL_MS = 40;
+static constexpr bool DEFAULT_ENABLE_LOGGING = false;
+static constexpr bool DEFAULT_ENFORCE_LOOP_TIME = true;
+static constexpr bool DEFAULT_ENABLE_BENCH_RUN_MODE = false;
+static constexpr const char* DEFAULT_TEST_STRING = "default_test_string";
 
 struct LoggingSettings
 {
-    unsigned long printIntervalMs = 40;
-    bool enableLogging = false;
-    bool enforceLoopTime = true;
-    bool enableBenchRunMode = false;
+    unsigned long printIntervalMs = DEFAULT_PRINT_INTERVAL_MS;
+    bool enableLogging = DEFAULT_ENABLE_LOGGING;
+    bool enforceLoopTime = DEFAULT_ENFORCE_LOOP_TIME;
+    bool enableBenchRunMode = DEFAULT_ENABLE_BENCH_RUN_MODE;
+    String testString = DEFAULT_TEST_STRING; // Added for MSP string testing
 };
 
 
@@ -205,6 +249,7 @@ static constexpr int RECEIVER_CHANNEL_OFFSET = 1;      // Offset for receiver ch
 static constexpr float SETPOINT_SCALING_FACTOR = 2.0f; // Factor used for scaling receiver input to setpoints
 static constexpr bool INFINITE_LOOP_CONDITION = true;  // Used to halt execution on critical errors, preventing further processing.
 
+// Flight Mode Thresholds
 static constexpr int FLIGHT_MODE_ACRO_THRESHOLD = 1200;
 static constexpr int FLIGHT_MODE_ANGLE_THRESHOLD = 1800;
 
@@ -219,7 +264,7 @@ static constexpr unsigned long TARGET_LOOP_TIME_US = 1000; // Target loop time i
 static constexpr size_t ATTITUDE_BUFFER_SIZE = 16; // Buffer size for attitude float to string conversion
 
 // Firmware Version
-static constexpr const char *FIRMWARE_VERSION = "0.2.6"; // Updated for release
+static constexpr const char *FIRMWARE_VERSION = "0.2.6";
 
 // Simple compile-time string hash function (DJB2 variant, truncated to 15 bits)
 constexpr uint16_t compileTimeHash15Bit(const char* str) {

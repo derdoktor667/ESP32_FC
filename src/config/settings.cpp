@@ -21,7 +21,7 @@ const char *PREFERENCES_NAMESPACE = "fc-settings";
 // A key to check if settings have been initialized before
 const char *INIT_KEY = "initialized";
 
-static constexpr bool NVS_READ_WRITE_MODE = false; // true = read-only mode, false = read-write mode
+static constexpr bool NVS_READ_WRITE_MODE = false; // false for read-write mode
 
 static void _logSettingsStatus(const char *message)
 {
@@ -94,8 +94,9 @@ void saveSettings()
     // Logging Settings
     preferences.putULong(NVSKeys::LOGGING_PRINT_INTERVAL_MS, settings.logging.printIntervalMs);
     preferences.putBool(NVSKeys::LOGGING_ENABLE, settings.logging.enableLogging);
-    preferences.putBool(NVSKeys::BENCH_RUN_MODE_ENABLE, settings.logging.enableBenchRunMode); // Save bench run mode
-    preferences.putUShort(NVSKeys::FIRMWARE_BUILD_ID, FIRMWARE_BUILD_ID); // Save firmware build ID as UShort
+    preferences.putBool(NVSKeys::BENCH_RUN_MODE_ENABLE, settings.logging.enableBenchRunMode);
+    preferences.putString(NVSKeys::LOGGING_TEST_STRING, settings.logging.testString);
+    preferences.putUShort(NVSKeys::FIRMWARE_BUILD_ID, FIRMWARE_BUILD_ID);
 
     _logSettingsStatus("Settings saved.");
 }
@@ -105,8 +106,9 @@ void loadSettings()
     preferences.begin(PREFERENCES_NAMESPACE, NVS_READ_WRITE_MODE);
 
     // Check if settings have been initialized before.
+    static constexpr uint16_t DEFAULT_FIRMWARE_BUILD_ID = 0;
     bool initialized = preferences.getBool(INIT_KEY, false);
-    uint16_t storedBuildId = preferences.getUShort(NVSKeys::FIRMWARE_BUILD_ID, 0); // Default to 0 if not found
+    uint16_t storedBuildId = preferences.getUShort(NVSKeys::FIRMWARE_BUILD_ID, DEFAULT_FIRMWARE_BUILD_ID); // Default to 0 if not found
 
     // If not initialized, or firmware build ID mismatch, reset to defaults.
     if (!initialized || storedBuildId != FIRMWARE_BUILD_ID)
@@ -168,7 +170,8 @@ void loadSettings()
         // Logging Settings
         settings.logging.printIntervalMs = preferences.getULong(NVSKeys::LOGGING_PRINT_INTERVAL_MS, settings.logging.printIntervalMs);
         settings.logging.enableLogging = preferences.getBool(NVSKeys::LOGGING_ENABLE, settings.logging.enableLogging);
-        settings.logging.enableBenchRunMode = preferences.getBool(NVSKeys::BENCH_RUN_MODE_ENABLE, settings.logging.enableBenchRunMode); // Load bench run mode
+        settings.logging.enableBenchRunMode = preferences.getBool(NVSKeys::BENCH_RUN_MODE_ENABLE, settings.logging.enableBenchRunMode);
+        settings.logging.testString = preferences.getString(NVSKeys::LOGGING_TEST_STRING, settings.logging.testString);
 
         // Load channel mapping
         for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)

@@ -54,14 +54,14 @@ void FlightController::runLoop()
     _loopTimer = micros();
 
     // Always read raw receiver channel values into the flight state.
-    // This is crucial for live data streaming in API mode.
+    // This is crucial for live data streaming in communication mode.
     _receiver->update(); // Update the receiver to process new data
     for (int i = 0; i < RECEIVER_CHANNEL_COUNT; i++)
     {
         state.receiverChannels[i] = _receiver->getChannel(i);
     }
 
-    // When logging is enabled (API mode), we normally skip the main flight logic
+    // When logging is enabled (communication mode), we normally skip the main flight logic
     // to prevent stack overflows and ensure stable communication. However, if
     // `enableBenchRunMode` is active, the full pipeline runs for performance testing.
     if (!settings.logging.enableLogging || settings.logging.enableBenchRunMode)
@@ -79,9 +79,11 @@ void FlightController::runLoop()
     }
     else
     {
-        // Even when not running the full pipeline, we must update the attitude
-        // so a connected client can get live data (e.g., for a ground station).
+        // Even when not running the full pipeline, we must update the attitude,
+        // safety status, and setpoints so a connected client can get live data.
         _attitudeEstimator.update(state);
+        _safetyManager->update(state);
+        _setpointManager->update(state);
     }
 
     // Calculate actual loop time

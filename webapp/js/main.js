@@ -48,6 +48,7 @@
  *    {"error":"<error_message>"}
  */
 
+
 const log = document.getElementById('log');
 const toggleConnectButton = document.getElementById('toggleConnectButton');
 const calibrateImuButton = document.getElementById('calibrateImuButton');
@@ -55,12 +56,32 @@ const saveSettingsButton = document.getElementById('saveSettingsButton');
 
 let port;
 let writer;
+let reader;
 let isConnected = false;
+let receivedSettings = {}; // Global object to store received settings
 
 // Receiver channel names for display
 const receiverChannelNames = [
     "Roll", "Pitch", "Throttle", "Yaw", "Arm", "Failsafe", "Flight Mode",
     "Aux 1", "Aux 2", "Aux 3", "Aux 4", "Aux 5", "Aux 6", "Aux 7", "Aux 8", "Aux 9"
+];
+
+const expectedSettingKeys = [
+    "pid.roll.kp", "pid.roll.ki", "pid.roll.kd",
+    "pid.pitch.kp", "pid.pitch.ki", "pid.pitch.kd",
+    "pid.yaw.kp", "pid.yaw.ki", "pid.yaw.kd",
+    "pid.integral_limit",
+    "rates.angle", "rates.yaw", "rates.acro",
+    "filter.comp_tau", "gyro.lpf_cutoff_freq", "accel.lpf_cutoff_freq",
+    "gyro.lpf_stages", "accel.lpf_stages", "filter.sample_freq",
+    "gyro.notch.enable", "gyro.notch.freq", "gyro.notch.q",
+    "rx.min", "rx.max", "rx.arming_threshold", "rx.failsafe_threshold",
+    "rx.protocol",
+    "imu.protocol", "imu.lpf", "imu.rotation",
+    "motor.idle_speed", "motor.dshot_mode",
+    "enforce_loop_time",
+    "cal.mpu_readings", "cal.accel_z_g",
+    "log.print_interval", "log.enable", "log.test_string", "bench.run.en"
 ];
 
 // --- 3D View ---
@@ -211,11 +232,10 @@ function openTab(evt, tabName) {
 
 // Show the Info tab by default
 document.addEventListener('DOMContentLoaded', () => {
-    openTab(null, 'infoTab');
-    // Find the button that opens the Info tab and add the active class
+    // Find the button that opens the Info tab and click it
     const infoButton = Array.from(document.querySelectorAll('.tablinks')).find(btn => btn.textContent === 'Info');
     if (infoButton) {
-        infoButton.classList.add('active');
+        infoButton.click();
     }
     init3D();
     initializeSettingEventListeners(); // Add this call
@@ -223,8 +243,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (calibrateImuButton) {
         calibrateImuButton.addEventListener('click', async () => {
             if (isConnected && writer) {
-                log.textContent += 'Sending command: calibrate_imu\n';
-                await writer.write(new TextEncoder().encode('calibrate_imu\n'));
+                log.textContent += 'Sending MSP_FC_CALIBRATE_IMU command.\n';
+                await sendMspMessage(MSP_FC_CALIBRATE_IMU);
                 // Reset 3D model orientation
                 if (quadcopter) {
                     targetQuaternion.set(0, 0, 0, 1); // Reset target to no rotation
@@ -239,8 +259,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saveSettingsButton) {
         saveSettingsButton.addEventListener('click', async () => {
             if (isConnected && writer) {
-                log.textContent += 'Sending command: save\n';
-                await writer.write(new TextEncoder().encode('save\n'));
+                log.textContent += 'Sending MSP_FC_SAVE_SETTINGS command.\n';
+                await sendMspMessage(MSP_FC_SAVE_SETTINGS);
                 location.reload(); // Reload page after saving settings
             } else {
                 log.textContent += 'Not connected to device. Cannot save settings.\n';
@@ -274,18 +294,15 @@ toggleConnectButton.addEventListener('click', async () => {
 
             log.textContent += 'Connected to device.\n';
 
-            // Enter API mode
-            await writer.write(new TextEncoder().encode('api\n'));
-
-            // Wait for the device to switch to API mode
+            // Wait for the device to be ready (optional, but good practice)
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            // Get settings
-            await writer.write(new TextEncoder().encode('get_settings\n'));
             // Get version
-            await writer.write(new TextEncoder().encode('version\n'));
+            await sendMspMessage(MSP_FC_GET_VERSION);
             // Get status
-            await writer.write(new TextEncoder().encode('status\n'));
+            await sendMspMessage(MSP_FC_GET_STATUS);
+            // Get settings
+            await sendMspMessage(MSP_FC_GET_SETTING, new TextEncoder().encode("all")); // Request all settings
 
             // Start reading from the port
             readLoop();
@@ -300,18 +317,22 @@ toggleConnectButton.addEventListener('click', async () => {
         // Disconnect logic
         if (port) {
             try {
-                await reader.cancel();
-                reader.releaseLock();
-                await writer.close();
-                writer.releaseLock();
+                if (reader) {
+                    await reader.cancel();
+                    reader.releaseLock();
+                }
+                if (writer) {
+                    await writer.close();
+                    writer.releaseLock();
+                }
                 await port.close();
 
-                toggleConnectButton.textContent = 'Disconnect';
+                toggleConnectButton.textContent = 'Connect';
                 isConnected = false;
                 saveSettingsButton.disabled = true; // Disable save button on disconnect
 
                 log.textContent += 'Disconnected from device.\n';
-                location.reload(); // Reload page after disconnecting
+                // location.reload(); // Reload page after disconnecting
             } catch (error) {
                 log.textContent += `Error: ${error.message}\n`;
             }
@@ -319,49 +340,431 @@ toggleConnectButton.addEventListener('click', async () => {
     }
 });
 
+const MSP_IDLE = 0;
+const MSP_HEADER_START = 1;
+const MSP_HEADER_M = 2;
+const MSP_HEADER_X = 3; // For MSPv2
+const MSP_FLAGS = 4; // MSPv2 flags byte
+const MSP_SIZE = 5; // payload size low byte
+const MSP_SIZE_HIGH = 6; // MSPv2 size high byte
+const MSP_COMMAND = 7; // command low byte
+const MSP_COMMAND_HIGH = 8; // command high byte (MSPv2)
+const MSP_PAYLOAD = 9;
+const MSP_CHECKSUM = 10; // MSPv1 checksum
+const MSP_CRC = 11; // MSPv2 CRC
+
+let mspState = MSP_IDLE;
+let mspBytesRead = 0;
+let mspExpectedSize = 0;
+let mspCommand = 0;
+let mspPayload = [];
+let mspChecksum = 0; // For MSPv1
+let mspCrc = 0;      // For MSPv2
+let isMspV2 = false; // Flag to indicate if current message is MSPv2
+
+function crc8_dvb_s2(crc, byte) {
+    crc ^= byte;
+    for (let i = 0; i < 8; i++) {
+        if (crc & 0x80) {
+            crc = (crc << 1) ^ 0x1D;
+        } else {
+            crc <<= 1;
+        }
+    }
+    return crc & 0xFF;
+}
+
 async function readLoop() {
     try {
-        let buffer = '';
         while (true) {
             const { value, done } = await reader.read();
             if (done) break;
-            buffer += new TextDecoder().decode(value);
 
-            let newlineIndex;
-            while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-                const line = buffer.slice(0, newlineIndex).trim();
-                buffer = buffer.slice(newlineIndex + 1);
+            for (let i = 0; i < value.length; i++) {
+                const byte = value[i];
 
-                if (line) {
-                    log.textContent += line + '\n';
-                    log.scrollTop = log.scrollHeight;
-
-                    if (line.startsWith('{') && line.endsWith('}')) {
-                        try {
-                            const data = JSON.parse(line);
-                            handleIncomingData(data);
-                        } catch (e) {
-                            console.error("Failed to parse JSON:", line, e);
+                switch (mspState) {
+                    case MSP_IDLE:
+                        if (byte === '$'.charCodeAt(0)) {
+                            mspState = MSP_HEADER_START;
                         }
-                    }
+                        break;
+                    case MSP_HEADER_START:
+                        if (byte === 'M'.charCodeAt(0)) {
+                            isMspV2 = false;
+                            mspState = MSP_HEADER_M;
+                        } else if (byte === 'X'.charCodeAt(0)) {
+                            isMspV2 = true;
+                            mspState = MSP_HEADER_X;
+                        } else {
+                            mspState = MSP_IDLE;
+                        }
+                        break;
+                    case MSP_HEADER_M: // MSPv1 header: $M<
+                        if (byte === '<'.charCodeAt(0)) {
+                            mspState = MSP_SIZE;
+                            // For v1 we'll initialize checksum when size read
+                        } else {
+                            mspState = MSP_IDLE;
+                        }
+                        break;
+                    case MSP_HEADER_X: // MSPv2 header: $X<
+                        if (byte === '<'.charCodeAt(0)) {
+                            mspState = MSP_FLAGS;
+                            mspCrc = 0;
+                            mspCrc = crc8_dvb_s2(mspCrc, '<'.charCodeAt(0)); // include direction char ( '<' ) in CRC
+                        } else {
+                            mspState = MSP_IDLE;
+                        }
+                        break;
+                    case MSP_FLAGS:
+                        // read flags for MSPv2 (not used but included in CRC)
+                        mspCrc = crc8_dvb_s2(mspCrc, byte);
+                        mspState = MSP_SIZE;
+                        break;
+                    case MSP_SIZE:
+                        mspExpectedSize = byte;
+                        if (!isMspV2) {
+                            mspChecksum = byte; // init checksum for v1
+                            mspState = MSP_COMMAND;
+                        } else {
+                            mspCrc = crc8_dvb_s2(mspCrc, byte);
+                            mspState = MSP_SIZE_HIGH;
+                        }
+                        break;
+                    case MSP_SIZE_HIGH:
+                        mspExpectedSize |= (byte << 8);
+                        mspCrc = crc8_dvb_s2(mspCrc, byte);
+                        mspState = MSP_COMMAND;
+                        break;
+                    case MSP_COMMAND:
+                        mspCommand = byte;
+                        if (!isMspV2) {
+                            mspChecksum ^= byte;
+                            mspPayload = [];
+                            mspBytesRead = 0;
+                            if (mspExpectedSize > 0) mspState = MSP_PAYLOAD;
+                            else mspState = MSP_CHECKSUM;
+                        } else {
+                            mspCrc = crc8_dvb_s2(mspCrc, byte);
+                            mspState = MSP_COMMAND_HIGH;
+                        }
+                        break;
+                    case MSP_COMMAND_HIGH:
+                        mspCommand |= (byte << 8);
+                        mspCrc = crc8_dvb_s2(mspCrc, byte);
+                        mspPayload = [];
+                        mspBytesRead = 0;
+                        if (mspExpectedSize > 0) mspState = MSP_PAYLOAD;
+                        else mspState = MSP_CRC;
+                        break;
+                    case MSP_PAYLOAD:
+                        mspPayload.push(byte);
+                        if (!isMspV2) {
+                            mspChecksum ^= byte;
+                        } else {
+                            mspCrc = crc8_dvb_s2(mspCrc, byte);
+                        }
+                        mspBytesRead++;
+                        if (mspBytesRead === mspExpectedSize) {
+                            mspState = isMspV2 ? MSP_CRC : MSP_CHECKSUM;
+                        }
+                        break;
+                    case MSP_CHECKSUM: // MSPv1
+                        if (byte === mspChecksum) {
+                            handleIncomingMspData(mspCommand, mspPayload);
+                        } else {
+                            log.textContent += `MSPv1 Checksum Error! Expected ${mspChecksum}, got ${byte}\n`;
+                        }
+                        mspState = MSP_IDLE;
+                        break;
+                    case MSP_CRC: // MSPv2
+                        if (byte === mspCrc) {
+                            handleIncomingMspData(mspCommand, mspPayload);
+                        } else {
+                            log.textContent += `MSPv2 CRC Error! Expected ${mspCrc}, got ${byte}\n`;
+                        }
+                        mspState = MSP_IDLE;
+                        break;
+                    default:
+                        mspState = MSP_IDLE;
+                        break;
                 }
             }
         }
     } catch (error) {
         log.textContent += `Read error: ${error.message}\n`;
     }
+} // Closing for readLoop()
+
+
+function readFloat(payload, offset) {
+    const bytes = payload.slice(offset, offset + 4);
+    const buffer = new ArrayBuffer(4);
+    const view = new DataView(buffer);
+    bytes.forEach((b, i) => view.setUint8(i, b));
+    return view.getFloat32(0, true); // true for little-endian
 }
 
-function _handleSettingsData(settings) {
-    try {
-        populateSettings(settings);
-        enableTabs(); // Enable tabs once settings are received
-    } catch (e) {
-        console.error("Error populating settings or enabling tabs:", e);
+function readInt(payload, offset) {
+    const bytes = payload.slice(offset, offset + 4);
+    const buffer = new ArrayBuffer(4);
+    const view = new DataView(buffer);
+    bytes.forEach((b, i) => view.setUint8(i, b));
+    return view.getInt32(0, true); // true for little-endian
+}
+
+function readUint8(payload, offset) {
+    return payload[offset];
+}
+
+function readUint16(payload, offset) {
+    const bytes = payload.slice(offset, offset + 2);
+    const buffer = new ArrayBuffer(2);
+    const view = new DataView(buffer);
+    bytes.forEach((b, i) => view.setUint8(i, b));
+    return view.getUint16(0, true); // true for little-endian
+}
+
+function readULong(payload, offset) {
+    const bytes = payload.slice(offset, offset + 4);
+    const buffer = new ArrayBuffer(4);
+    const view = new DataView(buffer);
+    bytes.forEach((b, i) => view.setUint8(i, b));
+    return view.getUint32(0, true); // true for little-endian (unsigned long)
+}
+
+// --- handlers for incoming MSP messages (kept as in original, not duplicated) ---
+function _handleLiveDataMsp(payload) {
+    let offset = 0;
+
+    // Attitude (roll, pitch, yaw - float)
+    const roll = readFloat(payload, offset);
+    offset += 4;
+    const pitch = readFloat(payload, offset);
+    offset += 4;
+    const yaw = readFloat(payload, offset);
+    offset += 4;
+
+    // Status (isArmed, isFailsafeActive, currentFlightMode - bool, bool, uint8_t)
+    const isArmed = readUint8(payload, offset) === 1;
+    offset += 1;
+    const isFailsafeActive = readUint8(payload, offset) === 1;
+    offset += 1;
+    const currentFlightMode = readUint8(payload, offset); // This is an enum, will need mapping
+    offset += 1;
+
+    // Loop Time (unsigned long)
+    const loopTimeUs = readULong(payload, offset);
+    offset += 4;
+
+    // Motor Outputs (NUM_MOTORS * uint16_t)
+    const motorOutputs = [];
+    for (let i = 0; i < 4; i++) { // Assuming NUM_MOTORS = 4
+        motorOutputs.push(readUint16(payload, offset));
+        offset += 2;
+    }
+
+    // Receiver Channels (RECEIVER_CHANNEL_COUNT * uint16_t)
+    const receiverChannels = [];
+    for (let i = 0; i < 16; i++) { // Assuming RECEIVER_CHANNEL_COUNT = 16
+        receiverChannels.push(readUint16(payload, offset));
+        offset += 2;
+    }
+
+    // Update UI elements
+    const receiverTabVisible = document.getElementById('receiverTab').style.display === 'block';
+    const threeDViewTabVisible = document.getElementById('3dViewTab').style.display === 'block';
+    const infoTabVisible = document.getElementById('infoTab').style.display === 'block';
+
+    if (receiverTabVisible) {
+        _updateReceiverBars(receiverChannels);
+    }
+
+    if (threeDViewTabVisible) {
+        _update3DModel({ roll: roll, pitch: pitch, yaw: yaw });
+    }
+
+    if (infoTabVisible) {
+        const looptimeDisplay = document.getElementById('looptimeDisplay');
+        if (looptimeDisplay) {
+            looptimeDisplay.textContent = loopTimeUs;
+        }
+
+        const failsafeStatusDisplay = document.getElementById('failsafeStatusDisplay');
+        if (failsafeStatusDisplay) {
+            failsafeStatusDisplay.textContent = isFailsafeActive ? 'Active' : 'Inactive';
+        }
+
+        const flightModeDisplay = document.getElementById('flightModeDisplay');
+        if (flightModeDisplay) {
+            // Map enum value to string
+            let flightModeString = 'UNKNOWN';
+            if (currentFlightMode === 0) flightModeString = 'ACRO'; // ACRO_MODE
+            if (currentFlightMode === 1) flightModeString = 'ANGLE'; // ANGLE_MODE
+            flightModeDisplay.textContent = flightModeString;
+        }
     }
 }
 
-function _handleVersionData(data) {
+function _handleSettingsDataMsp(payload) {
+    let offset = 0;
+
+    // Read setting name
+    let settingName = '';
+    while (payload[offset] !== 0 && offset < payload.length) {
+        settingName += String.fromCharCode(payload[offset]);
+        offset++;
+    }
+    offset++; // Skip null terminator
+
+    // Read setting type
+    const settingType = readUint8(payload, offset);
+    offset++;
+
+    let settingValue;
+
+    switch (settingType) {
+        case 0: // FLOAT
+            settingValue = readFloat(payload, offset);
+            break;
+        case 1: // INT
+            settingValue = readInt(payload, offset);
+            break;
+        case 2: // UINT8
+            settingValue = readUint8(payload, offset);
+            break;
+        case 3: // UINT16
+            settingValue = readUint16(payload, offset);
+            break;
+        case 4: // ULONG
+            settingValue = readULong(payload, offset);
+            break;
+        case 5: // BOOL
+            settingValue = readUint8(payload, offset) === 1;
+            break;
+        case 6: // STRING
+            settingValue = new TextDecoder().decode(new Uint8Array(payload.slice(offset)));
+            break;
+        case 7: // ENUM_IBUS_PROTOCOL
+            {
+                const ibusProtocol = readUint8(payload, offset);
+                settingValue = (ibusProtocol === 0) ? "IBUS" : (ibusProtocol === 1) ? "PPM" : "UNKNOWN";
+            }
+            break;
+        case 8: // ENUM_IMU_PROTOCOL
+            {
+                const imuProtocol = readUint8(payload, offset);
+                settingValue = (imuProtocol === 0) ? "MPU6050" : "UNKNOWN";
+            }
+            break;
+        case 9: // ENUM_IMU_ROTATION
+            {
+                const imuRotation = readUint8(payload, offset);
+                switch (imuRotation) {
+                    case 0: settingValue = "NONE"; break;
+                    case 1: settingValue = "90_CW"; break;
+                    case 2: settingValue = "180_CW"; break;
+                    case 3: settingValue = "270_CW"; break;
+                    case 4: settingValue = "FLIP"; break;
+                    default: settingValue = "UNKNOWN"; break;
+                }
+            }
+            break;
+        case 10: // ENUM_DSHOT_MODE
+            {
+                const dshotMode = readUint8(payload, offset);
+                switch (dshotMode) {
+                    case 0: settingValue = "DSHOT_OFF"; break;
+                    case 1: settingValue = "DSHOT150"; break;
+                    case 2: settingValue = "DSHOT300"; break;
+                    case 3: settingValue = "DSHOT600"; break;
+                    case 4: settingValue = "DSHOT1200"; break;
+                    default: settingValue = "UNKNOWN"; break;
+                }
+            }
+            break;
+        case 11: // ENUM_LPF_BANDWIDTH
+            {
+                const lpfBandwidth = readUint8(payload, offset);
+                switch (lpfBandwidth) {
+                    case 0: settingValue = "LPF_256HZ_N_0MS"; break;
+                    case 1: settingValue = "LPF_188HZ_N_2MS"; break;
+                    case 2: settingValue = "LPF_98HZ_N_3MS"; break;
+                    case 3: settingValue = "LPF_42HZ_N_5MS"; break;
+                    case 4: settingValue = "LPF_20HZ_N_10MS"; break;
+                    case 5: settingValue = "LPF_10HZ_N_13MS"; break;
+                    case 6: settingValue = "LPF_5HZ_N_18MS"; break;
+                    default: settingValue = "UNKNOWN"; break;
+                }
+            }
+            break;
+        case 12: // ENUM_RX_CHANNEL_MAP
+            // This is handled by a dedicated MSP command, so we shouldn't get it here
+            settingValue = "RX_CHANNEL_MAP_DATA";
+            break;
+        default:
+            settingValue = "UNKNOWN_TYPE";
+            break;
+    }
+
+    // Store the received setting
+    receivedSettings[settingName] = settingValue;
+
+    // Update the UI element
+    const element = document.querySelector(`[data-setting="${settingName}"]`);
+    if (element) {
+        if (element.type === 'checkbox') {
+            element.checked = settingValue;
+        } else if (element.tagName === 'SELECT') {
+            // Find the option with the matching value
+            let optionFound = false;
+            for (let i = 0; i < element.options.length; i++) {
+                if (element.options[i].value === settingValue) {
+                    element.value = settingValue;
+                    optionFound = true;
+                    break;
+                }
+            }
+            if (!optionFound) {
+                console.warn(`Option for value ${settingValue} not found in select for ${settingName}`);
+            }
+        }
+        else {
+            element.value = settingValue;
+        }
+    } else {
+        console.warn(`UI element for setting ${settingName} not found.`);
+    }
+
+    // Check if all expected settings have been received
+    const allSettingsReceived = expectedSettingKeys.every(key => receivedSettings.hasOwnProperty(key));
+    if (allSettingsReceived) {
+        _createPidSettingsTable();
+        enableTabs();
+        log.textContent += 'All settings received and UI updated.\n';
+    }
+}
+
+function _handleVersionDataMsp(payload) {
+    let offset = 0;
+
+    // Read Firmware Version
+    let firmwareVersion = '';
+    while (payload[offset] !== 0 && offset < payload.length) {
+        firmwareVersion += String.fromCharCode(payload[offset]);
+        offset++;
+    }
+    offset++; // Skip null terminator
+
+    // Read Build ID
+    let buildId = '';
+    while (payload[offset] !== 0 && offset < payload.length) {
+        buildId += String.fromCharCode(payload[offset]);
+        offset++;
+    }
+    offset++; // Skip null terminator
+
     const infoContainer = document.getElementById('infoContainer');
 
     // Handle Firmware Version
@@ -371,16 +774,46 @@ function _handleVersionData(data) {
         versionDiv.id = 'firmwareVersion';
         infoContainer.appendChild(versionDiv);
     }
-    versionDiv.innerHTML = `<h3>Firmware Version: ${data.version}</h3>`; // Use data.version
+    versionDiv.innerHTML = `<h3>Firmware Version: ${firmwareVersion}</h3>`;
 
     // Handle Firmware Build ID
     const buildIdDisplay = document.getElementById('buildIdDisplay');
-    if (buildIdDisplay && data.build_id !== undefined) {
-        buildIdDisplay.textContent = data.build_id;
+    if (buildIdDisplay && buildId !== undefined) {
+        buildIdDisplay.textContent = buildId;
     }
 }
 
-function _handleStatusData(status) {
+function _handleStatusDataMsp(payload) {
+    let offset = 0;
+
+    // Loop Time (unsigned long)
+    const loopTimeUs = readULong(payload, offset);
+    offset += 4;
+
+    // CPU Load (float)
+    const cpuLoad = readFloat(payload, offset);
+    offset += 4;
+
+    // Battery Voltage (float)
+    const voltage = readFloat(payload, offset);
+    offset += 4;
+
+    // Current Draw (float)
+    const current = readFloat(payload, offset);
+    offset += 4;
+
+    // Is Armed (bool)
+    const isArmed = readUint8(payload, offset) === 1;
+    offset += 1;
+
+    // Is Failsafe Active (bool)
+    const isFailsafeActive = readUint8(payload, offset) === 1;
+    offset += 1;
+
+    // Current Flight Mode (uint8_t - enum)
+    const currentFlightMode = readUint8(payload, offset);
+    offset += 1;
+
     const infoContainer = document.getElementById('infoContainer');
     let statusDiv = document.getElementById('systemStatus');
     if (!statusDiv) {
@@ -388,18 +821,87 @@ function _handleStatusData(status) {
         statusDiv.id = 'systemStatus';
         infoContainer.appendChild(statusDiv);
     }
-    let statusHtml = '<h3>System Status:</h3><ul>';
-    for (const key in status) {
-        if (key === 'Loop Time (us)') {
-            const looptimeDisplay = document.getElementById('looptimeDisplay');
-            if (looptimeDisplay) {
-                looptimeDisplay.textContent = status[key];
-            }
-        }
-        statusHtml += `<li>${key}: ${status[key]}</li>`;
-    }
-    statusHtml += `</ul>`;
+
+    let flightModeString = 'UNKNOWN';
+    if (currentFlightMode === 0) flightModeString = 'ACRO'; // ACRO_MODE
+    if (currentFlightMode === 1) flightModeString = 'ANGLE'; // ANGLE_MODE
+
+    const statusHtml = `
+        <h3>System Status:</h3>
+        <ul>
+            <li>Loop Time (us): ${loopTimeUs}</li>
+            <li>CPU Load (%): ${cpuLoad.toFixed(2)}</li>
+            <li>Battery Voltage (V): ${voltage.toFixed(2)}</li>
+            <li>Current Draw (A): ${current.toFixed(2)}</li>
+            <li>Is Armed: ${isArmed ? 'Yes' : 'No'}</li>
+            <li>Is Failsafe Active: ${isFailsafeActive ? 'Yes' : 'No'}</li>
+            <li>Flight Mode: ${flightModeString}</li>
+        </ul>
+    `;
     statusDiv.innerHTML = statusHtml;
+
+    // Update specific info displays
+    const looptimeDisplay = document.getElementById('looptimeDisplay');
+    if (looptimeDisplay) {
+        looptimeDisplay.textContent = loopTimeUs;
+    }
+    const failsafeStatusDisplay = document.getElementById('failsafeStatusDisplay');
+    if (failsafeStatusDisplay) {
+        failsafeStatusDisplay.textContent = isFailsafeActive ? 'Active' : 'Inactive';
+    }
+    const flightModeDisplay = document.getElementById('flightModeDisplay');
+    if (flightModeDisplay) {
+        flightModeDisplay.textContent = flightModeString;
+    }
+}
+
+function _createPidSettingsTable() {
+    const pidSettingsContainer = document.getElementById('pidSettingsContainer');
+    pidSettingsContainer.innerHTML = ''; // Clear previous content
+
+    const groupedPidSettings = {};
+    for (const key in receivedSettings) {
+        if (key.startsWith('pid.')) {
+            const parts = key.split('.');
+            const subCategory = parts.slice(0, -1).join('.'); // e.g., "pid.roll"
+            const settingName = parts[parts.length - 1]; // e.g., "kp"
+
+            if (!groupedPidSettings[subCategory]) {
+                groupedPidSettings[subCategory] = {};
+            }
+            groupedPidSettings[subCategory][settingName] = receivedSettings[key];
+        }
+    }
+
+    for (const subCategory in groupedPidSettings) {
+        const subCategoryTitle = document.createElement('h3');
+        subCategoryTitle.textContent = subCategory;
+        pidSettingsContainer.appendChild(subCategoryTitle);
+
+        const table = document.createElement('table');
+        table.innerHTML = '<thead><tr><th>Name</th><th>Value</th></tr></thead>';
+        const tbody = document.createElement('tbody');
+
+        for (const key in groupedPidSettings[subCategory]) {
+            const row = document.createElement('tr');
+            const nameCell = document.createElement('td');
+            const valueCell = document.createElement('td');
+
+            nameCell.textContent = key;
+
+            const input = document.createElement('input');
+            input.type = 'text'; // Use text to allow for float values from user
+            input.value = groupedPidSettings[subCategory][key];
+            input.dataset.setting = `${subCategory}.${key}`;
+
+            valueCell.appendChild(input);
+            row.appendChild(nameCell);
+            row.appendChild(valueCell);
+            tbody.appendChild(row);
+        }
+        table.appendChild(tbody);
+        pidSettingsContainer.appendChild(table);
+    }
 }
 
 function _updateReceiverBars(receiverChannels) {
@@ -454,156 +956,268 @@ function _update3DModel(attitude) {
 }
 
 
-function _handleLiveData(liveData) {
-    // Check which tab is active to avoid unnecessary DOM updates
-    const receiverTabVisible = document.getElementById('receiverTab').style.display === 'block';
-    const threeDViewTabVisible = document.getElementById('3dViewTab').style.display === 'block';
-    const infoTabVisible = document.getElementById('infoTab').style.display === 'block';
-
-    if (receiverTabVisible && liveData.receiver_channels) {
-        _updateReceiverBars(liveData.receiver_channels);
-    }
-
-    if (threeDViewTabVisible && liveData.attitude) {
-        _update3DModel(liveData.attitude);
-    }
-
-    if (infoTabVisible && liveData.status) {
-        const looptimeDisplay = document.getElementById('looptimeDisplay');
-        if (looptimeDisplay && liveData.status.loop_time_us) {
-            looptimeDisplay.textContent = liveData.status.loop_time_us;
-        }
-
-        const failsafeStatusDisplay = document.getElementById('failsafeStatusDisplay');
-        if (failsafeStatusDisplay && liveData.status.failsafe !== undefined) {
-            failsafeStatusDisplay.textContent = liveData.status.failsafe ? 'Active' : 'Inactive';
-        }
-
-        const flightModeDisplay = document.getElementById('flightModeDisplay');
-        if (flightModeDisplay && liveData.status.mode) {
-            flightModeDisplay.textContent = liveData.status.mode;
-        }
-    }
-}
 
 
-function handleIncomingData(data) {
-    if (!data || typeof data !== 'object') {
-        console.warn("Received non-object data or empty data:", data);
-        return;
-    }
 
-    if (data.settings) {
-        _handleSettingsData(data.settings);
-    }
-    if (data.version) {
-        _handleVersionData(data); // Pass the entire data object
-    }
-    if (data.status) {
-        // The firmware sends 'status' for both system status and set command responses.
-        // We check for a known key from the system status object to differentiate.
-        if ("Loop Time (us)" in data.status) {
-            _handleStatusData(data.status);
-        }
-    }
-    if (data.live_data) {
-        _handleLiveData(data.live_data);
-    }
-}
+function handleIncomingMspData(command, payload) {
+    log.textContent += `Received MSP command 0x${command.toString(16)} with payload size ${payload.length}\n`;
+    log.scrollTop = log.scrollHeight;
 
-function populateSettings(settings) {
-    // Update all settings by iterating through elements with a data-setting attribute
-    for (const key in settings) {
-        const element = document.querySelector(`[data-setting="${key}"]`);
-        if (element) {
-            if (element.type === 'checkbox') {
-                element.checked = settings[key];
-            } else {
-                element.value = settings[key];
+    switch (command) {
+        case MSP_FC_SETTING_RESPONSE:
+            _handleSettingsDataMsp(payload);
+            break;
+        case MSP_FC_ERROR:
+            {
+                const errorMessage = new TextDecoder().decode(new Uint8Array(payload));
+                log.textContent += `MSP_FC_ERROR: ${errorMessage}\n`;
             }
-        }
-    }
-
-    // Dynamically create PID settings table (as it's more complex)
-    const pidSettingsContainer = document.getElementById('pidSettingsContainer');
-    pidSettingsContainer.innerHTML = ''; // Clear previous content
-
-    const groupedPidSettings = {};
-    for (const key in settings) {
-        if (key.startsWith('pid.')) {
-            const parts = key.split('.');
-            const subCategory = parts.slice(0, -1).join('.'); // e.g., "pid.roll"
-            const settingName = parts[parts.length - 1]; // e.g., "kp"
-
-            if (!groupedPidSettings[subCategory]) {
-                groupedPidSettings[subCategory] = {};
-            }
-            groupedPidSettings[subCategory][settingName] = settings[key];
-        }
-    }
-
-    for (const subCategory in groupedPidSettings) {
-        const subCategoryTitle = document.createElement('h3');
-        subCategoryTitle.textContent = subCategory;
-        pidSettingsContainer.appendChild(subCategoryTitle);
-
-        const table = document.createElement('table');
-        table.innerHTML = '<thead><tr><th>Name</th><th>Value</th></tr></thead>';
-        const tbody = document.createElement('tbody');
-
-        for (const key in groupedPidSettings[subCategory]) {
-            const row = document.createElement('tr');
-            const nameCell = document.createElement('td');
-            const valueCell = document.createElement('td');
-
-            nameCell.textContent = key;
-
-            const input = document.createElement('input');
-            input.type = 'text'; // Use text to allow for float values from user
-            input.value = groupedPidSettings[subCategory][key];
-            input.dataset.setting = `${subCategory}.${key}`;
-
-            valueCell.appendChild(input);
-            row.appendChild(nameCell);
-            row.appendChild(valueCell);
-            tbody.appendChild(row);
-        }
-        table.appendChild(tbody);
-        pidSettingsContainer.appendChild(table);
+            break;
+        case MSP_FC_LIVE_DATA:
+            _handleLiveDataMsp(payload);
+            break;
+        case MSP_FC_GET_VERSION: // Response to GET_VERSION
+            _handleVersionDataMsp(payload);
+            break;
+        case MSP_FC_GET_STATUS: // Response to GET_STATUS
+            _handleStatusDataMsp(payload);
+            break;
+        default:
+            log.textContent += `Unhandled MSP Command: 0x${command.toString(16)}\n`;
+            break;
     }
 }
+
+
 
 function initializeSettingEventListeners() {
     // Use event delegation on the document to handle all setting changes
     document.addEventListener('change', (event) => {
         const target = event.target;
-        if (target && target.dataset.setting) {
+        if (target && target.dataset && target.dataset.setting) {
             handleSettingChange(target);
         }
     });
 }
 
+function valueToBytes(value, type) {
+    const encoder = new TextEncoder();
+    let bytes = [];
+
+    switch (type) {
+        case 0: // FLOAT
+            {
+                const buffer = new ArrayBuffer(4);
+                const view = new DataView(buffer);
+                view.setFloat32(0, parseFloat(value), true); // little-endian
+                bytes = Array.from(new Uint8Array(buffer));
+            }
+            break;
+        case 1: // INT
+            {
+                const buffer = new ArrayBuffer(4);
+                const view = new DataView(buffer);
+                view.setInt32(0, parseInt(value), true); // little-endian
+                bytes = Array.from(new Uint8Array(buffer));
+            }
+            break;
+        case 2: // UINT8
+            bytes = [parseInt(value)];
+            break;
+        case 3: // UINT16
+            {
+                const buffer = new ArrayBuffer(2);
+                const view = new DataView(buffer);
+                view.setUint16(0, parseInt(value), true); // little-endian
+                bytes = Array.from(new Uint8Array(buffer));
+            }
+            break;
+        case 4: // ULONG
+            {
+                const buffer = new ArrayBuffer(4);
+                const view = new DataView(buffer);
+                view.setUint32(0, parseInt(value), true); // little-endian
+                bytes = Array.from(new Uint8Array(buffer));
+            }
+            break;
+        case 5: // BOOL
+            bytes = [value ? 1 : 0];
+            break;
+        case 6: // STRING
+            bytes = Array.from(encoder.encode(value));
+            bytes.push(0); // Null terminator
+            break;
+        case 7: // ENUM_IBUS_PROTOCOL
+            bytes = [value === "IBUS" ? 0 : value === "PPM" ? 1 : 255]; // 0: IBUS, 1: PPM, 255: UNKNOWN
+            break;
+        case 8: // ENUM_IMU_PROTOCOL
+            bytes = [value === "MPU6050" ? 0 : 255]; // 0: MPU6050, 255: UNKNOWN
+            break;
+        case 9: // ENUM_IMU_ROTATION
+            {
+                let enumVal = 255; // UNKNOWN
+                switch (value) {
+                    case "NONE": enumVal = 0; break;
+                    case "90_CW": enumVal = 1; break;
+                    case "180_CW": enumVal = 2; break;
+                    case "270_CW": enumVal = 3; break;
+                    case "FLIP": enumVal = 4; break;
+                }
+                bytes = [enumVal];
+            }
+            break;
+        case 10: // ENUM_DSHOT_MODE
+            {
+                let enumVal = 255; // UNKNOWN
+                switch (value) {
+                    case "DSHOT_OFF": enumVal = 0; break;
+                    case "DSHOT150": enumVal = 1; break;
+                    case "DSHOT300": enumVal = 2; break;
+                    case "DSHOT600": enumVal = 3; break;
+                    case "DSHOT1200": enumVal = 4; break;
+                }
+                bytes = [enumVal];
+            }
+            break;
+        case 11: // ENUM_LPF_BANDWIDTH
+            {
+                let enumVal = 255; // UNKNOWN
+                switch (value) {
+                    case "LPF_256HZ_N_0MS": enumVal = 0; break;
+                    case "LPF_188HZ_N_2MS": enumVal = 1; break;
+                    case "LPF_98HZ_N_3MS": enumVal = 2; break;
+                    case "LPF_42HZ_N_5MS": enumVal = 3; break;
+                    case "LPF_20HZ_N_10MS": enumVal = 4; break;
+                    case "LPF_10HZ_N_13MS": enumVal = 5; break;
+                    case "LPF_5HZ_N_18MS": enumVal = 6; break;
+                }
+                bytes = [enumVal];
+            }
+            break;
+        default:
+            console.warn(`Unknown setting type for valueToBytes: ${type}`);
+            break;
+    }
+    return bytes;
+}
+
 async function handleSettingChange(inputElement) {
     const settingKey = inputElement.dataset.setting;
     let value;
+    let settingType;
 
     if (!writer) {
         log.textContent += 'ERROR: Serial writer not available. Cannot send command.\n';
         return;
     }
 
+    // Determine value and settingType
     if (inputElement.type === 'checkbox') {
         value = inputElement.checked;
-    } else {
+        settingType = 5; // BOOL
+    } else if (inputElement.tagName === 'SELECT') {
         value = inputElement.value;
+        // Infer enum type from settingKey
+        if (settingKey.includes('rx.protocol')) settingType = 7; // ENUM_IBUS_PROTOCOL
+        else if (settingKey.includes('imu.protocol')) settingType = 8; // ENUM_IMU_PROTOCOL
+        else if (settingKey.includes('imu.rotation')) settingType = 9; // ENUM_IMU_ROTATION
+        else if (settingKey.includes('motor.dshot_mode')) settingType = 10; // ENUM_DSHOT_MODE
+        else if (settingKey.includes('imu.lpf')) settingType = 11; // ENUM_LPF_BANDWIDTH
+        else settingType = 255; // Unknown enum type
+    } else if (inputElement.type === 'number') {
+        value = parseFloat(inputElement.value);
+        if (settingKey.includes('kp') || settingKey.includes('ki') || settingKey.includes('kd')) {
+            settingType = 1; // INT (PID gains are ints in firmware)
+        } else if (settingKey.includes('stages')) {
+            settingType = 2; // UINT8
+        } else if (settingKey.includes('min') || settingKey.includes('max') || settingKey.includes('threshold')) {
+            settingType = 3; // UINT16
+        } else if (settingKey.includes('print_interval')) {
+            settingType = 4; // ULONG
+        }
+        else {
+            settingType = 0; // FLOAT by default for numbers
+        }
+    } else if (inputElement.type === 'text') {
+        value = inputElement.value;
+        if (settingKey.includes('test_string')) { // Assuming this is our test string
+            settingType = 6; // STRING
+        } else {
+            settingType = 255; // Unknown string type
+        }
+    } else {
+        log.textContent += `ERROR: Unhandled input type for setting ${settingKey}.\n`;
+        return;
     }
 
-    const command = `set ${settingKey} ${value}\n`;
-    log.textContent += `Attempting to send command: ${command}`;
+    // Construct MSP payload
+    const settingKeyBytes = Array.from(new TextEncoder().encode(settingKey));
+    settingKeyBytes.push(0); // Null terminator for string
+
+    const settingTypeByte = [settingType];
+    const settingValueBytes = valueToBytes(value, settingType);
+
+    const payload = [...settingKeyBytes, ...settingTypeByte, ...settingValueBytes];
+
+    log.textContent += `Attempting to send MSP_FC_SET_SETTING for ${settingKey} with value ${value}.\n`;
     try {
-        await writer.write(new TextEncoder().encode(command));
-        log.textContent += `Command sent successfully.\n`;
+        await sendMspMessage(MSP_FC_SET_SETTING, payload);
+        log.textContent += `MSP_FC_SET_SETTING sent successfully.\n`;
     } catch (error) {
-        log.textContent += `ERROR sending command: ${error.message}\n`;
+        log.textContent += `ERROR sending MSP_FC_SET_SETTING: ${error.message}\n`;
+    }
+}
+
+// --- MSP Constants and Functions ---
+const MSP_HEADER_V1 = "$M<";
+const MSP_HEADER_V2 = "$X<"; // Not used for sending yet, but available
+
+// Custom MSP Commands (must match firmware's MspCommands.h)
+const MSP_FC_GET_SETTING = 2000;
+const MSP_FC_SET_SETTING = 2001;
+const MSP_FC_SETTING_RESPONSE = 2002;
+const MSP_FC_ERROR = 2003;
+const MSP_FC_GET_RX_MAP = 2004;
+const MSP_FC_SET_RX_MAP = 2005;
+const MSP_FC_SAVE_SETTINGS = 2006;
+const MSP_FC_RESET_SETTINGS = 2007;
+const MSP_FC_REBOOT = 2008;
+const MSP_FC_GET_STATUS = 2009;
+const MSP_FC_GET_VERSION = 2010;
+const MSP_FC_CALIBRATE_IMU = 2011;
+const MSP_FC_LIVE_DATA = 2012;
+
+function calculateChecksum(data) {
+    let checksum = 0;
+    for (let i = 0; i < data.length; i++) {
+        checksum ^= data[i];
+    }
+    return checksum;
+}
+
+async function sendMspMessage(command, payload = []) {
+    if (!writer) {
+        log.textContent += 'ERROR: Serial writer not available. Cannot send MSP command.\n';
+        return;
+    }
+
+    const size = payload.length;
+    const data = [size, command, ...payload];
+    const checksum = calculateChecksum(data);
+
+    const buffer = new Uint8Array([
+        MSP_HEADER_V1.charCodeAt(0),
+        MSP_HEADER_V1.charCodeAt(1),
+        MSP_HEADER_V1.charCodeAt(2),
+        ...data,
+        checksum
+    ]);
+
+    log.textContent += `Sending MSP command 0x${command.toString(16)} with payload size ${size}.\n`;
+    try {
+        await writer.write(buffer);
+        log.textContent += `MSP command sent successfully.\n`;
+    } catch (error) {
+        log.textContent += `ERROR sending MSP command: ${error.message}\n`;
     }
 }
