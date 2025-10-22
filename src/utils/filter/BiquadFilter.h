@@ -23,12 +23,14 @@ enum FilterType
 class BiquadFilter
 {
 public:
+    static constexpr float DEFAULT_Q_FACTOR = 0.707f;
+
     // Constructor: Initializes the filter.
     // @param cutoffFreq The cutoff frequency in Hz (for LPF/HPF) or center frequency (for NOTCH).
     // @param sampleFreq The sample frequency in Hz.
     // @param Q The Q factor of the filter.
     // @param type The type of filter (LPF, HPF, NOTCH).
-    BiquadFilter(float cutoffFreq, float sampleFreq, float Q = 0.707f, FilterType type = LPF);
+    BiquadFilter(float cutoffFreq, float sampleFreq, float Q = DEFAULT_Q_FACTOR, FilterType type = LPF);
 
     // Updates the filter with a new raw value and returns the filtered value.
     float update(float rawValue);

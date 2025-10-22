@@ -20,8 +20,9 @@ Preferences preferences;
 const char *PREFERENCES_NAMESPACE = "fc-settings";
 // A key to check if settings have been initialized before
 const char *INIT_KEY = "initialized";
+static constexpr uint16_t NVS_DEFAULT_BUILD_ID = 0;
 
-static constexpr bool NVS_READ_WRITE_MODE = false; // false for read-write mode
+
 
 static void _logSettingsStatus(const char *message)
 {
@@ -32,7 +33,7 @@ static void _logSettingsStatus(const char *message)
 void saveSettings()
 {
     _logSettingsStatus("Saving settings to flash...");
-    preferences.begin(PREFERENCES_NAMESPACE, NVS_READ_WRITE_MODE);
+    preferences.begin(PREFERENCES_NAMESPACE, false);
 
     // Mark settings as initialized
     preferences.putBool(INIT_KEY, true);
@@ -103,12 +104,11 @@ void saveSettings()
 
 void loadSettings()
 {
-    preferences.begin(PREFERENCES_NAMESPACE, NVS_READ_WRITE_MODE);
+    preferences.begin(PREFERENCES_NAMESPACE, false);
 
     // Check if settings have been initialized before.
-    static constexpr uint16_t DEFAULT_FIRMWARE_BUILD_ID = 0;
     bool initialized = preferences.getBool(INIT_KEY, false);
-    uint16_t storedBuildId = preferences.getUShort(NVSKeys::FIRMWARE_BUILD_ID, DEFAULT_FIRMWARE_BUILD_ID); // Default to 0 if not found
+    uint16_t storedBuildId = preferences.getUShort(NVSKeys::FIRMWARE_BUILD_ID, NVS_DEFAULT_BUILD_ID); // Default to 0 if not found
 
     // If not initialized, or firmware build ID mismatch, reset to defaults.
     if (!initialized || storedBuildId != FIRMWARE_BUILD_ID)

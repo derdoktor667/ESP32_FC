@@ -163,7 +163,7 @@ uint16_t CommunicationManager::_serializeSettingValueToMspPayload(const Setting 
         int value;
         if (setting->scaleFactor == PID_SCALE_FACTOR)
         {
-            value = *(int *)setting->value / 10;
+            value = *(int *)setting->value / PID_DISPLAY_SCALE_FACTOR;
         }
         else
         {
@@ -282,7 +282,7 @@ SetResult CommunicationManager::_deserializeMspPayloadToSettingValue(const uint8
         memcpy(&value, payload + offset, sizeof(int));
         if (setting->scaleFactor == PID_SCALE_FACTOR)
         {
-            *(int *)setting->value = value * 10;
+            *(int *)setting->value = value * PID_DISPLAY_SCALE_FACTOR;
         }
         else
         {
@@ -429,7 +429,7 @@ uint16_t CommunicationManager::_serializeStatusToMspPayload(uint8_t *buffer) con
 uint16_t CommunicationManager::_serializeVersionToMspPayload(uint8_t *buffer) const
 {
     uint16_t offset = 0;
-    char tempBuffer[16]; // Sufficient for version and build ID
+    char tempBuffer[VERSION_STRING_BUFFER_SIZE]; // Sufficient for version and build ID
 
     // Firmware Version (string)
     snprintf(tempBuffer, sizeof(tempBuffer), "%d", FIRMWARE_VERSION);
@@ -726,7 +726,20 @@ SetResult CommunicationManager::_parseAndValidateRxChannelMap(const String &para
 
 void CommunicationManager::_sendMspResponse(uint16_t command, const uint8_t *payload, uint16_t payloadSize)
 {
-    _mspParser.sendMspMessage(Serial, command, payload, payloadSize);
+    Serial.print("DEBUG: Sending MSP response - Command: 0x");
+    Serial.print(command, HEX);
+    Serial.print(", Payload Size: ");
+    Serial.println(payloadSize);
+    _mspParser.sendMspMessage(Serial, '>', command, payload, payloadSize, true);
+}
+
+void CommunicationManager::_sendMspDebugMessage(const String& message)
+{
+    if (_instance) { // Ensure instance exists before calling non-static method
+        uint8_t payload[message.length() + 1]; // +1 for null terminator
+        message.getBytes(payload, message.length() + 1);
+        _instance->_sendMspResponse(MSP_FC_DEBUG_MESSAGE, payload, message.length() + 1);
+    }
 }
 
 // --- Public Methods ---
@@ -734,7 +747,7 @@ void CommunicationManager::_sendMspResponse(uint16_t command, const uint8_t *pay
 CommunicationManager::CommunicationManager(FlightController *fc) : _fc(fc)
 {
     _instance = this;
-    _mspParser.begin(Serial, "USB");
+    _mspParser.begin(Serial, "USB", &CommunicationManager::_sendMspDebugMessage);
     _mspParser.onMessage(_onMspMessageReceived);
 }
 
@@ -742,6 +755,11 @@ void CommunicationManager::_onMspMessageReceived(const MspMessage &message, cons
 {
     if (_instance)
     {
+        String debugMsg = "Received MSP command: 0x" + String(message.command, HEX) +
+                          ", Size: " + String(message.payloadSize) +
+                          ", Direction: '" + String(message.direction) + "'" +
+                          " from prefix: " + String(prefix);
+        _instance->_sendMspDebugMessage(debugMsg);
         _instance->_handleMspCommand(message);
     }
 }
@@ -753,8 +771,7 @@ void CommunicationManager::_handleMspCommand(const MspMessage &message)
     case MSP_FC_GET_SETTING:
     {
         String settingName = _payloadToString(message.payload, message.payloadSize);
-        Serial.print("Received MSP_FC_GET_SETTING for: ");
-        Serial.println(settingName);
+        _sendMspDebugMessage("Received MSP_FC_GET_SETTING for: " + settingName);
 
         if (settingName.equalsIgnoreCase("all"))
         {
@@ -762,11 +779,11 @@ void CommunicationManager::_handleMspCommand(const MspMessage &message)
             for (int i = 0; i < numSettings; ++i)
             {
                 const Setting *setting = &settingsRegistry[i];
-                uint8_t responsePayload[128]; // Increased buffer for safety
+                uint8_t responsePayload[MSP_MAX_PAYLOAD_SIZE_SETTINGS]; // Increased buffer for safety
                 uint16_t payloadSize = _serializeSettingValueToMspPayload(setting, responsePayload);
                 _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, payloadSize);
-                delay(10); // Delay to prevent overwhelming the client
             }
+            _isLiveStreamingEnabled = true; // Enable live data streaming after sending all settings
         }
         else
         {
@@ -783,13 +800,14 @@ void CommunicationManager::_handleMspCommand(const MspMessage &message)
 
             if (foundSetting)
             {
-                uint8_t responsePayload[128];
+                uint8_t responsePayload[MSP_MAX_PAYLOAD_SIZE_SETTINGS];
                 uint16_t payloadSize = _serializeSettingValueToMspPayload(foundSetting, responsePayload);
                 _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, payloadSize);
             }
             else
             {
                 String errorMessage = "Unknown setting: " + settingName;
+                _sendMspDebugMessage(errorMessage); // Also send as debug message
                 uint8_t errorPayload[errorMessage.length() + 1];
                 strcpy((char *)errorPayload, errorMessage.c_str());
                 _sendMspResponse(MSP_FC_ERROR, errorPayload, errorMessage.length() + 1);
@@ -800,8 +818,7 @@ void CommunicationManager::_handleMspCommand(const MspMessage &message)
     case MSP_FC_SET_SETTING:
     {
         String settingName = _payloadToString(message.payload, message.payloadSize);
-        Serial.print("Received MSP_FC_SET_SETTING for: ");
-        Serial.println(settingName);
+        _sendMspDebugMessage("Received MSP_FC_SET_SETTING for: " + settingName);
 
         const Setting *foundSetting = nullptr;
         for (int i = 0; i < numSettings; ++i)
@@ -815,43 +832,40 @@ void CommunicationManager::_handleMspCommand(const MspMessage &message)
 
         if (foundSetting)
         {
-            Serial.print("Found setting: ");
-            Serial.print(foundSetting->name);
-            Serial.print(", Type: ");
-            Serial.println((int)foundSetting->type);
+            _sendMspDebugMessage("Found setting: " + String(foundSetting->name) + ", Type: " + String((int)foundSetting->type));
 
             SetResult result = _deserializeMspPayloadToSettingValue(message.payload, message.payloadSize, (Setting *)foundSetting);
             if (result == SetResult::SUCCESS)
             {
-                Serial.println("Setting updated successfully.");
+                _sendMspDebugMessage("Setting updated successfully.");
                 uint8_t responsePayload[1];
                 responsePayload[0] = (uint8_t)SetResult::SUCCESS;
-                _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, 1);
+                _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, MSP_PAYLOAD_SIZE_STATUS);
             }
             else
             {
-                Serial.print("Failed to update setting: ");
-                Serial.println((int)result);
-                String errorMessage = "Failed to set " + settingName + ": Error " + String((int)result);
-                uint8_t errorPayload[errorMessage.length() + 1];
-                strcpy((char*)errorPayload, errorMessage.c_str());
-                _sendMspResponse(MSP_FC_ERROR, errorPayload, errorMessage.length() + 1);
+                String errorMessage = "Failed to update setting: " + String((int)result);
+                _sendMspDebugMessage(errorMessage);
+                String fullErrorMessage = "Failed to set " + settingName + ": Error " + String((int)result);
+                uint8_t errorPayload[fullErrorMessage.length() + 1];
+                strcpy((char*)errorPayload, fullErrorMessage.c_str());
+                _sendMspResponse(MSP_FC_ERROR, errorPayload, fullErrorMessage.length() + 1);
             }
         }
         else
         {
-            Serial.print("Setting not found: ");
-            Serial.println(settingName);
-            String errorMessage = "Unknown setting: " + settingName;
-            uint8_t errorPayload[errorMessage.length() + 1];
-            strcpy((char*)errorPayload, errorMessage.c_str());
-            _sendMspResponse(MSP_FC_ERROR, errorPayload, errorMessage.length() + 1);
+            String errorMessage = "Setting not found: " + settingName;
+            _sendMspDebugMessage(errorMessage);
+            String fullErrorMessage = "Unknown setting: " + settingName;
+            uint8_t errorPayload[fullErrorMessage.length() + 1];
+            strcpy((char*)errorPayload, fullErrorMessage.c_str());
+            _sendMspResponse(MSP_FC_ERROR, errorPayload, fullErrorMessage.length() + 1);
         }
         break;
     }
     case MSP_FC_GET_RX_MAP:
     {
-        Serial.println("Received MSP_FC_GET_RX_MAP");
+        _sendMspDebugMessage("Received MSP_FC_GET_RX_MAP");
         uint8_t responsePayload[NUM_FLIGHT_CONTROL_INPUTS];
         uint16_t payloadSize = _serializeRxChannelMapToMspPayload(responsePayload);
         _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, payloadSize);
@@ -859,76 +873,76 @@ void CommunicationManager::_handleMspCommand(const MspMessage &message)
     }
     case MSP_FC_SET_RX_MAP:
     {
-        Serial.println("Received MSP_FC_SET_RX_MAP");
+        _sendMspDebugMessage("Received MSP_FC_SET_RX_MAP");
         SetResult result = _deserializeMspPayloadToRxChannelMap(message.payload, message.payloadSize);
         if (result == SetResult::SUCCESS)
         {
-            Serial.println("RX Channel Map updated successfully.");
-            uint8_t responsePayload[1];
-            responsePayload[0] = (uint8_t)SetResult::SUCCESS;
-            _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, 1);
-        }
+            _sendMspDebugMessage("RX Channel Map updated successfully.");
+                    uint8_t responsePayload[MSP_PAYLOAD_SIZE_STATUS];
+                    responsePayload[0] = (uint8_t)SetResult::SUCCESS;
+                    _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, MSP_PAYLOAD_SIZE_STATUS);        }
         else
         {
-            Serial.print("Failed to update RX Channel Map: ");
-            Serial.println((int)result);
-            String errorMessage = "Failed to set RX Map: Error " + String((int)result);
-            uint8_t errorPayload[errorMessage.length() + 1];
-            strcpy((char*)errorPayload, errorMessage.c_str());
-            _sendMspResponse(MSP_FC_ERROR, errorPayload, errorMessage.length() + 1);
+            String errorMessage = "Failed to update RX Channel Map: " + String((int)result);
+            _sendMspDebugMessage(errorMessage);
+            String fullErrorMessage = "Failed to set RX Map: Error " + String((int)result);
+            uint8_t errorPayload[fullErrorMessage.length() + 1];
+            strcpy((char*)errorPayload, fullErrorMessage.c_str());
+            _sendMspResponse(MSP_FC_ERROR, errorPayload, fullErrorMessage.length() + 1);
         }
         break;
     }
     case MSP_FC_SAVE_SETTINGS:
     {
-        Serial.println("Received MSP_FC_SAVE_SETTINGS");
+        _sendMspDebugMessage("Received MSP_FC_SAVE_SETTINGS");
         saveSettings();
-        uint8_t responsePayload[1] = {(uint8_t)SetResult::SUCCESS};
-        _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, 1);
+        uint8_t responsePayload[MSP_PAYLOAD_SIZE_STATUS] = {(uint8_t)SetResult::SUCCESS};
+        _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, MSP_PAYLOAD_SIZE_STATUS);
         break;
     }
     case MSP_FC_RESET_SETTINGS:
     {
-        Serial.println("Received MSP_FC_RESET_SETTINGS");
+        _sendMspDebugMessage("Received MSP_FC_RESET_SETTINGS");
         settings = FlightControllerSettings();
         saveSettings();
-        uint8_t responsePayload[1] = {(uint8_t)SetResult::SUCCESS};
-        _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, 1);
+        uint8_t responsePayload[MSP_PAYLOAD_SIZE_STATUS] = {(uint8_t)SetResult::SUCCESS};
+        _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, MSP_PAYLOAD_SIZE_STATUS);
         break;
     }
     case MSP_FC_REBOOT:
     {
-        Serial.println("Received MSP_FC_REBOOT");
+        _sendMspDebugMessage("Received MSP_FC_REBOOT");
         ESP.restart();
         break;
     }
     case MSP_FC_CALIBRATE_IMU:
     {
-        Serial.println("Received MSP_FC_CALIBRATE_IMU");
+        _sendMspDebugMessage("Received MSP_FC_CALIBRATE_IMU");
         _fc->requestImuCalibration();
-        uint8_t responsePayload[1] = {(uint8_t)SetResult::SUCCESS};
-        _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, 1);
+        uint8_t responsePayload[MSP_PAYLOAD_SIZE_STATUS] = {(uint8_t)SetResult::SUCCESS};
+        _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, MSP_PAYLOAD_SIZE_STATUS);
         break;
     }
     case MSP_FC_GET_STATUS:
     {
-        Serial.println("Received MSP_FC_GET_STATUS");
-        uint8_t responsePayload[64]; // Max payload size for status
+        _sendMspDebugMessage("Received MSP_FC_GET_STATUS");
+        uint8_t responsePayload[MSP_MAX_PAYLOAD_SIZE_STATUS_VERSION]; // Max payload size for status
         uint16_t payloadSize = _serializeStatusToMspPayload(responsePayload);
-        _sendMspResponse(MSP_FC_GET_STATUS, responsePayload, payloadSize);
+        _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, payloadSize);
         break;
     }
     case MSP_FC_GET_VERSION:
     {
-        Serial.println("Received MSP_FC_GET_VERSION");
-        uint8_t responsePayload[64]; // Max payload size for version
+        _sendMspDebugMessage("Received MSP_FC_GET_VERSION");
+        uint8_t responsePayload[MSP_MAX_PAYLOAD_SIZE_STATUS_VERSION]; // Max payload size for version
         uint16_t payloadSize = _serializeVersionToMspPayload(responsePayload);
-        _sendMspResponse(MSP_FC_GET_VERSION, responsePayload, payloadSize);
+        _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, payloadSize);
         break;
     }
     default:
     {
         String errorMessage = "Unhandled MSP Command: " + String(message.command) + " with payload size " + String(message.payloadSize);
+        _sendMspDebugMessage(errorMessage); // Also send as debug message
         uint8_t errorPayload[errorMessage.length() + 1];
         strcpy((char*)errorPayload, errorMessage.c_str());
         _sendMspResponse(MSP_FC_ERROR, errorPayload, errorMessage.length() + 1);
@@ -941,10 +955,15 @@ void CommunicationManager::initializeCommunication() {}
 
 void CommunicationManager::processCommunication()
 {
-    _handleSerialInput();
-    if (_currentMode == OperatingMode::MSP_API && settings.logging.enableLogging && millis() - _lastSerialLogTime >= settings.logging.printIntervalMs)
+    if (_currentMode == OperatingMode::MSP_API) {
+        _handleMspApiInput(); // MspParser handles input in MSP_API mode
+    } else {
+        _handleSerialInput(); // Handle string input for FLIGHT and CLI modes
+    }
+
+    if (_currentMode == OperatingMode::MSP_API && settings.logging.enableLogging && _isLiveStreamingEnabled && millis() - _lastSerialLogTime >= settings.logging.printIntervalMs)
     {
-        uint8_t responsePayload[128]; // Max payload size for flight status
+        uint8_t responsePayload[MSP_MAX_PAYLOAD_SIZE_FLIGHT_STATUS]; // Max payload size for flight status
         uint16_t payloadSize = _serializeFlightStatusToMspPayload(responsePayload);
         _sendMspResponse(MSP_FC_LIVE_DATA, responsePayload, payloadSize);
         _lastSerialLogTime = millis();
@@ -972,10 +991,31 @@ void CommunicationManager::_handleFlightModeInput(const String &input)
 
 void CommunicationManager::_handleSerialInput()
 {
+    if (_currentMode == OperatingMode::MSP_API) {
+        return; // MspParser handles input in MSP_API mode
+    }
+
     if (Serial.available() == 0)
         return;
+
+    // Peek at the first byte to check for MSP message
+    char peekedChar = Serial.peek();
+    if (peekedChar == '$') {
+        // If it's an MSP message, switch to MSP_API mode and let MspParser handle it
+        _currentMode = OperatingMode::MSP_API;
+        settings.logging.enableLogging = true; // Enable logging for MSP API
+        _sendMspDebugMessage("DEBUG: Detected MSP message, switching to MSP_API mode.");
+        return;
+    }
+
+    // If not an MSP message, proceed with string input
+    _sendMspDebugMessage("DEBUG: Serial data available in _handleSerialInput(). Current mode: " + String((int)_currentMode));
+
     String input = Serial.readStringUntil('\n');
     input.trim();
+
+    _sendMspDebugMessage("DEBUG: Read input: '" + input + "'");
+
     if (input.length() == 0)
         return;
 
@@ -1000,14 +1040,12 @@ void CommunicationManager::_handleSerialInput()
         }
         break;
     }
-    case OperatingMode::MSP_API:
-        _handleMspApiInput();
-        break;
     }
 }
 
 void CommunicationManager::_handleMspApiInput()
 {
+    _sendMspDebugMessage("DEBUG: _handleMspApiInput() called, calling _mspParser.update()");
     _mspParser.update();
 }
 

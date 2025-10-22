@@ -366,7 +366,7 @@ function crc8_dvb_s2(crc, byte) {
     crc ^= byte;
     for (let i = 0; i < 8; i++) {
         if (crc & 0x80) {
-            crc = (crc << 1) ^ 0x1D;
+            crc = (crc << 1) ^ 0xD5; // DVB-S2 polynomial
         } else {
             crc <<= 1;
         }
@@ -382,6 +382,7 @@ async function readLoop() {
 
             for (let i = 0; i < value.length; i++) {
                 const byte = value[i];
+                console.log(`Received byte: 0x${byte.toString(16)}, mspState: ${mspState}`);
 
                 switch (mspState) {
                     case MSP_IDLE:
@@ -408,14 +409,11 @@ async function readLoop() {
                             mspState = MSP_IDLE;
                         }
                         break;
-                    case MSP_HEADER_X: // MSPv2 header: $X<
-                        if (byte === '<'.charCodeAt(0)) {
-                            mspState = MSP_FLAGS;
-                            mspCrc = 0;
-                            mspCrc = crc8_dvb_s2(mspCrc, '<'.charCodeAt(0)); // include direction char ( '<' ) in CRC
-                        } else {
-                            mspState = MSP_IDLE;
-                        }
+                    case MSP_HEADER_X: // MSPv2 header: $X< or $X>
+                        // The byte here is the direction character ('<' or '>')
+                        mspCrc = 0; // Initialize CRC for MSPv2
+                        mspCrc = crc8_dvb_s2(mspCrc, byte); // Include direction char in CRC
+                        mspState = MSP_FLAGS;
                         break;
                     case MSP_FLAGS:
                         // read flags for MSPv2 (not used but included in CRC)
@@ -982,6 +980,12 @@ function handleIncomingMspData(command, payload) {
         case MSP_FC_GET_STATUS: // Response to GET_STATUS
             _handleStatusDataMsp(payload);
             break;
+        case MSP_FC_DEBUG_MESSAGE:
+            {
+                const debugMessage = new TextDecoder().decode(new Uint8Array(payload));
+                log.textContent += `DEBUG: ${debugMessage}\n`;
+            }
+            break;
         default:
             log.textContent += `Unhandled MSP Command: 0x${command.toString(16)}\n`;
             break;
@@ -1186,6 +1190,7 @@ const MSP_FC_GET_STATUS = 2009;
 const MSP_FC_GET_VERSION = 2010;
 const MSP_FC_CALIBRATE_IMU = 2011;
 const MSP_FC_LIVE_DATA = 2012;
+const MSP_FC_DEBUG_MESSAGE = 2013;
 
 function calculateChecksum(data) {
     let checksum = 0;
@@ -1202,16 +1207,56 @@ async function sendMspMessage(command, payload = []) {
     }
 
     const size = payload.length;
-    const data = [size, command, ...payload];
-    const checksum = calculateChecksum(data);
+    let buffer;
 
-    const buffer = new Uint8Array([
-        MSP_HEADER_V1.charCodeAt(0),
-        MSP_HEADER_V1.charCodeAt(1),
-        MSP_HEADER_V1.charCodeAt(2),
-        ...data,
-        checksum
-    ]);
+    // Determine if MSPv1 or MSPv2 is needed
+    // MSPv2 is required if command > 255 or payload size > 255
+    const useMspV2 = (command > 255 || size > 255);
+
+    if (useMspV2) {
+        // MSPv2 message construction
+        let mspCrc = 0;
+        const directionChar = '>'.charCodeAt(0); // Host to device
+        const flags = 0; // No flags for now
+
+        // Calculate CRC for header
+        mspCrc = crc8_dvb_s2(mspCrc, flags);
+        mspCrc = crc8_dvb_s2(mspCrc, (size & 0xFF));
+        mspCrc = crc8_dvb_s2(mspCrc, (size >> 8));
+        mspCrc = crc8_dvb_s2(mspCrc, (command & 0xFF));
+        mspCrc = crc8_dvb_s2(mspCrc, (command >> 8));
+
+        // Calculate CRC for payload
+        for (let i = 0; i < payload.length; i++) {
+            mspCrc = crc8_dvb_s2(mspCrc, payload[i]);
+        }
+
+        buffer = new Uint8Array([
+            '$'.charCodeAt(0),
+            'X'.charCodeAt(0),
+            directionChar,
+            flags,
+            (size & 0xFF),       // Size LSB
+            (size >> 8),         // Size MSB
+            (command & 0xFF),    // Command LSB
+            (command >> 8),      // Command MSB
+            ...payload,
+            mspCrc
+        ]);
+
+    } else {
+        // MSPv1 message construction
+        const data = [size, command, ...payload];
+        const checksum = calculateChecksum(data);
+
+        buffer = new Uint8Array([
+            MSP_HEADER_V1.charCodeAt(0),
+            MSP_HEADER_V1.charCodeAt(1),
+            MSP_HEADER_V1.charCodeAt(2),
+            ...data,
+            checksum
+        ]);
+    }
 
     log.textContent += `Sending MSP command 0x${command.toString(16)} with payload size ${size}.\n`;
     try {

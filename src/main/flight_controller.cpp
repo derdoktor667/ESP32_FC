@@ -26,11 +26,7 @@ FlightController::FlightController()
     // settings have been loaded.
 }
 
-// Sets the CommunicationManager instance. This is used to break a circular dependency.
-void FlightController::setCommunicationManager(CommunicationManager *comms)
-{
-    _comms = comms;
-}
+
 
 // Initializes all components of the flight controller in the correct sequence.
 void FlightController::initialize()

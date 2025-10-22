@@ -39,6 +39,8 @@ private:
     DShotRMT *_motor3;                         // Pointer to the Rear-Right DShot motor driver
     DShotRMT *_motor4;                         // Pointer to the Rear-Left DShot motor driver
     const MotorSettings &_motorSettings; // Reference to motor-specific settings
+
+    static constexpr float PERCENT_TO_FLOAT_DIVISOR = 100.0f;
 };
 
 #endif // MOTOR_MIXER_MODULE_H

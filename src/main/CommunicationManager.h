@@ -90,7 +90,8 @@ private:
     FlightController *_fc;                              // Pointer to the FlightController instance
     OperatingMode _currentMode = OperatingMode::FLIGHT; // Current operating mode
     unsigned long _lastSerialLogTime = 0;               // Timestamp of the last serial log output
-    bool _isSendingSettings = false;                    // Flag to prevent live_data stream during settings dump
+
+    bool _isLiveStreamingEnabled = false;               // Flag to control live data streaming
     MspParser _mspParser;                               // MSP Parser instance
 
     static const Setting settingsRegistry[];
@@ -99,6 +100,13 @@ private:
     static CommunicationManager *_instance; // Static instance to allow MSP callback to access members
 
     static constexpr float DEFAULT_SCALE_FACTOR = 1.0f;
+
+    static constexpr uint16_t MSP_PAYLOAD_SIZE_STATUS = 1;
+    static constexpr uint16_t MSP_MAX_PAYLOAD_SIZE_SETTINGS = 128;
+    static constexpr uint16_t MSP_MAX_PAYLOAD_SIZE_STATUS_VERSION = 64;
+    static constexpr uint16_t MSP_MAX_PAYLOAD_SIZE_FLIGHT_STATUS = 128;
+    static constexpr uint8_t VERSION_STRING_BUFFER_SIZE = 16;
+    static constexpr int PID_DISPLAY_SCALE_FACTOR = 10;
 
 
 
@@ -147,6 +155,7 @@ private:
     static void _onMspMessageReceived(const MspMessage &message, const char *prefix);
     void _handleMspCommand(const MspMessage &message);
     void _sendMspResponse(uint16_t command, const uint8_t *payload, uint16_t payloadSize);
+    static void _sendMspDebugMessage(const String& message);
     uint16_t _serializeSettingValueToMspPayload(const Setting *setting, uint8_t *buffer) const;
     SetResult _deserializeMspPayloadToSettingValue(const uint8_t *payload, uint16_t payloadSize, Setting *setting);
     uint16_t _serializeRxChannelMapToMspPayload(uint8_t *buffer) const;

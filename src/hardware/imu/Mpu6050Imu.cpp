@@ -21,7 +21,7 @@ Mpu6050Imu::Mpu6050Imu(LpfBandwidth lpfBandwidth, ImuRotation imuRotation)
 bool Mpu6050Imu::begin()
 {
     Wire.begin();      // Initialize I2C communication
-    Wire.setClock(400000); // Set I2C clock speed to 400kHz
+    Wire.setClock(I2C_CLOCK_SPEED_HZ); // Set I2C clock speed to 400kHz
 
     // Using highest ranges for gyroscope (2000 DPS) and accelerometer (16G)
     // to ensure full measurement capability for a flight controller.

@@ -78,6 +78,15 @@ enum FlightMode
     ANGLE_MODE,
 };
 
+enum MotorPosition
+{
+    MOTOR_FRONT_RIGHT = 0,
+    MOTOR_FRONT_LEFT = 1,
+    MOTOR_REAR_RIGHT = 2,
+    MOTOR_REAR_LEFT = 3,
+    NUM_MOTORS_ENUM // Keep this last to count the number of motors
+};
+
 // Default iBUS Channel Mappings (0-indexed)
 static constexpr int IBUS_CHANNEL_THROTTLE = 1;
 static constexpr int IBUS_CHANNEL_ROLL = 0;

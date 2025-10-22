@@ -19,5 +19,6 @@
 
 // Custom MSP command for Live Data Streaming
 #define MSP_FC_LIVE_DATA 2012
+#define MSP_FC_DEBUG_MESSAGE 2013
 
 #endif // MSP_COMMANDS_H

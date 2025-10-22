@@ -70,20 +70,20 @@ void MotorMixer::apply(FlightState &state)
     // Calculate the effective minimum throttle value.
     // This ensures motors spin at a minimum speed when armed (idle speed)
     // but never below the absolute DSHOT_MIN_THROTTLE.
-    float minActiveThrottle = DSHOT_MAX_THROTTLE * (_motorSettings.idleSpeedPercent / 100.0f);
+    float minActiveThrottle = DSHOT_MAX_THROTTLE * (_motorSettings.idleSpeedPercent / PERCENT_TO_FLOAT_DIVISOR);
     int effectiveMinThrottle = max((int)DSHOT_MIN_THROTTLE, (int)minActiveThrottle);
 
     // Constrain each motor's calculated value to be within the valid DShot range
     // (from effectiveMinThrottle to DSHOT_MAX_THROTTLE).
     // Store these final values in the FlightState for logging/debugging.
-    state.motorOutputs[0] = constrain(m1, effectiveMinThrottle, DSHOT_MAX_THROTTLE);
-    state.motorOutputs[1] = constrain(m2, effectiveMinThrottle, DSHOT_MAX_THROTTLE);
-    state.motorOutputs[2] = constrain(m3, effectiveMinThrottle, DSHOT_MAX_THROTTLE);
-    state.motorOutputs[3] = constrain(m4, effectiveMinThrottle, DSHOT_MAX_THROTTLE);
+    state.motorOutputs[MOTOR_FRONT_RIGHT] = constrain(m1, effectiveMinThrottle, DSHOT_MAX_THROTTLE);
+    state.motorOutputs[MOTOR_FRONT_LEFT] = constrain(m2, effectiveMinThrottle, DSHOT_MAX_THROTTLE);
+    state.motorOutputs[MOTOR_REAR_RIGHT] = constrain(m3, effectiveMinThrottle, DSHOT_MAX_THROTTLE);
+    state.motorOutputs[MOTOR_REAR_LEFT] = constrain(m4, effectiveMinThrottle, DSHOT_MAX_THROTTLE);
 
     // Send the final, constrained throttle commands to the DShot ESCs.
-    _motor1->sendThrottle(state.motorOutputs[0]);
-    _motor2->sendThrottle(state.motorOutputs[1]);
-    _motor3->sendThrottle(state.motorOutputs[2]);
-    _motor4->sendThrottle(state.motorOutputs[3]);
+    _motor1->sendThrottle(state.motorOutputs[MOTOR_FRONT_RIGHT]);
+    _motor2->sendThrottle(state.motorOutputs[MOTOR_FRONT_LEFT]);
+    _motor3->sendThrottle(state.motorOutputs[MOTOR_REAR_RIGHT]);
+    _motor4->sendThrottle(state.motorOutputs[MOTOR_REAR_LEFT]);
 }
