@@ -13,30 +13,24 @@
 #include "src/config/config.h"
 
 // Global instances of the core components
-FlightController *fc;
-CommunicationManager *comms;
+FlightController *flightController;
+CommunicationManager *communicationManager;
 
 void setup()
 {
     Serial.begin(SERIAL_BAUD_RATE);
+    Serial.flush(); // Clear any pending incoming serial data
 
     // Instantiate after Serial.begin()
-    fc = new FlightController();
-    comms = new CommunicationManager(fc);
+    flightController = new FlightController();
+    communicationManager = new CommunicationManager(flightController);
 
-    fc->setCommunicationManager(comms);
-
-    fc->initialize();
-    comms->initializeCommunication();
-
-    Serial.println(); // Print a blank line for readability
-    Serial.print("--- ESP32 Flight Controller Ready (v");
-    Serial.print(FIRMWARE_VERSION);
-    Serial.println(") ---");
+    flightController->initialize();
+    communicationManager->initializeCommunication();
 }
 
 void loop()
 {
-    fc->runLoop();
-    comms->processCommunication();
+    flightController->runLoop();
+    communicationManager->processCommunication();
 }

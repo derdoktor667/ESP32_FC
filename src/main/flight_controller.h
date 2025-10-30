@@ -33,16 +33,13 @@ class FlightController
 {
 public:
     FlightController();
-    // Destructor is no longer explicitly needed as std::unique_ptr handles cleanup
-
     // Initializes all hardware and modules.
     void initialize();
 
     // Runs one iteration of the main flight loop.
     void runLoop();
 
-    // Sets the CommunicationManager instance.
-    void setCommunicationManager(CommunicationManager *comms);
+
 
     // Requests IMU calibration from the AttitudeEstimator module.
     void requestImuCalibration();
@@ -75,11 +72,9 @@ private:
     PidProcessor _pidProcessor;
     std::unique_ptr<MotorMixer> _motorMixer;
 
-    // --- Communication Manager ---
-    CommunicationManager *_comms = nullptr; // Communication Manager instance (now a pointer)
 
     // --- Loop Timing ---
-    unsigned long _loopTimer = 0;
+    unsigned long _currentLoopStartTimeUs = 0;
 };
 
 #endif // FLIGHT_CONTROLLER_H

@@ -9,6 +9,7 @@
 // License: MIT
 
 #include "src/hardware/imu/Mpu6050Imu.h"
+#include <Wire.h> // Required for I2C communication
 
 // Constructor: Initializes the MPU6050 object.
 Mpu6050Imu::Mpu6050Imu(LpfBandwidth lpfBandwidth, ImuRotation imuRotation)
@@ -19,6 +20,9 @@ Mpu6050Imu::Mpu6050Imu(LpfBandwidth lpfBandwidth, ImuRotation imuRotation)
 // Initializes the MPU6050 sensor.
 bool Mpu6050Imu::begin()
 {
+    Wire.begin();      // Initialize I2C communication
+    Wire.setClock(I2C_CLOCK_SPEED_HZ); // Set I2C clock speed to 400kHz
+
     // Using highest ranges for gyroscope (2000 DPS) and accelerometer (16G)
     // to ensure full measurement capability for a flight controller.
     return _mpu.begin(GYRO_RANGE_2000DPS, ACCEL_RANGE_16G, _lpfBandwidth);
@@ -61,24 +65,6 @@ void Mpu6050Imu::update()
         _mpu.readings.gyroscope.x = -tempGyroY;
         _mpu.readings.gyroscope.y = tempGyroX;
         break;
-    case IMU_ROTATION_90_DEG_CCW:
-        _mpu.readings.accelerometer.x = -tempAccelY;
-        _mpu.readings.accelerometer.y = tempAccelX;
-        _mpu.readings.gyroscope.x = -tempGyroY;
-        _mpu.readings.gyroscope.y = tempGyroX;
-        break;
-    case IMU_ROTATION_180_DEG_CCW:
-        _mpu.readings.accelerometer.x = -tempAccelX;
-        _mpu.readings.accelerometer.y = -tempAccelY;
-        _mpu.readings.gyroscope.x = -tempGyroX;
-        _mpu.readings.gyroscope.y = -tempGyroY;
-        break;
-    case IMU_ROTATION_270_DEG_CCW:
-        _mpu.readings.accelerometer.x = tempAccelY;
-        _mpu.readings.accelerometer.y = -tempAccelX;
-        _mpu.readings.gyroscope.x = tempGyroY;
-        _mpu.readings.gyroscope.y = -tempGyroX;
-        break;
     case IMU_ROTATION_FLIP:
         _mpu.readings.accelerometer.y = -tempAccelY;
         _mpu.readings.accelerometer.z = -tempAccelZ;
@@ -94,14 +80,6 @@ void Mpu6050Imu::update()
 // Performs MPU6050-specific calibration.
 bool Mpu6050Imu::calibrate(int numReadings)
 {
-    _logCalibrationStatus("Calibrating MPU6050... Keep the drone still.");
     _mpu.calibrate(numReadings);
-    _logCalibrationStatus("MPU6050 Calibration complete.");
     return true; // MPU6050 library calibration always returns true if it runs
-}
-
-void Mpu6050Imu::_logCalibrationStatus(const char *message)
-{
-    Serial.print("INFO: ");
-    Serial.println(message);
 }

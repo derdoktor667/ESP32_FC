@@ -11,6 +11,7 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
+#include <functional> // Required for std::function
 #include "src/config/config.h"
 
 // Declare the global settings instance to be accessible across the project
@@ -58,7 +59,7 @@ namespace NVSKeys
 
     static constexpr const char *MOTOR_IDLE_SPEED = "motor.idle_spd";
     static constexpr const char *DSHOT_MODE_VAL = "motor.dshot_m";
-    static constexpr const char *ENFORCE_LOOP_TIME = "enforce.loop";
+    static constexpr const char *ENFORCE_LOOP_TIME = "log.enforce_l";
 
     // Calibration Settings
     static constexpr const char *CALIBRATION_MPU_READINGS = "cal.mpu_read";
@@ -67,10 +68,14 @@ namespace NVSKeys
     // Logging Settings
     static constexpr const char *LOGGING_PRINT_INTERVAL_MS = "log.print_int";
     static constexpr const char *LOGGING_ENABLE = "log.enable";
+    static constexpr const char *BENCH_RUN_MODE_ENABLE = "bench.run.en";
+    static constexpr const char *LOGGING_DEBUG_ENABLE = "log.debug.en"; // Add this line
+    static constexpr const char *LOGGING_TEST_STRING = "log.test_str";
+    static constexpr const char *FIRMWARE_BUILD_ID = "fw.build.id";
 }
 
 // Functions to manage persistent storage
-void saveSettings();
+void saveSettings(std::function<void(const String&)> sendDebugMessage = [](const String&){});
 void loadSettings();
 
 #endif

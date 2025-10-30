@@ -12,6 +12,7 @@
 #define SAFETY_MANAGER_MODULE_H
 
 #include "src/config/FlightState.h"
+#include "src/config/config.h" // Required for ReceiverSettings
 #include "src/hardware/receiver/ReceiverInterface.h"
 
 // Manages the arming, disarming, and failsafe logic of the flight controller.
@@ -21,8 +22,8 @@
 class SafetyManager
 {
 public:
-    // Constructor: Initializes the SafetyManager with references to the receiver and settings.
-    SafetyManager(ReceiverInterface &receiver, const FlightControllerSettings &settings);
+    // Constructor: Initializes the SafetyManager with references to the receiver and receiver-specific settings.
+    SafetyManager(ReceiverInterface &receiver, const ReceiverSettings &receiverSettings);
 
     // Performs one cycle of safety checks.
     // It reads the relevant receiver channels, evaluates arming/disarming conditions,
@@ -31,7 +32,7 @@ public:
 
 private:
     ReceiverInterface &_receiver;              // Reference to the active RC receiver
-    const FlightControllerSettings &_settings; // Reference to global flight controller settings
+    const ReceiverSettings &_receiverSettings; // Reference to receiver-specific settings
 
     // Private helper method for logging safety status changes
     void _logSafetyStatus(const char *message);

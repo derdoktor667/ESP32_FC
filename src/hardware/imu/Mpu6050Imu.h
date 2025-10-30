@@ -40,6 +40,8 @@ private:
     LpfBandwidth _lpfBandwidth;
     ImuRotation _imuRotation; // New member to store IMU rotation
 
+    static constexpr long I2C_CLOCK_SPEED_HZ = 400000; // I2C clock speed for MPU6050
+
     // Private helper method for logging calibration status
     void _logCalibrationStatus(const char *message);
 };

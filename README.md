@@ -1,4 +1,4 @@
-# 🚁 ESP32 Flight Controller v0.2.6
+# 🚁 ESP32 Flight Controller
 
 <p align="center">
   <img src="https://img.shields.io/github/actions/workflow/status/derdoktor667/ESP32_FC/ci.yml?branch=main&style=for-the-badge" alt="Build Status"/>
@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  An advanced, high-performance flight controller firmware for quadcopters, built on the ESP32 and the Arduino framework. This project features a highly modular, object-oriented C++ architecture with a clean separation between flight logic and communication, paired with a powerful web-based configuration tool.
+  An advanced, high-performance flight controller firmware for quadcopters, built on the ESP32 and the Arduino framework. This project features a highly modular, object-oriented C++ architecture and a robust communication protocol, paired with a powerful web-based configuration tool for real-time tuning and 3D visualization.
 </p>
 
 ---
@@ -20,7 +20,7 @@
 | :--: | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `🧠` | **Modular C++ Architecture**   | Clean separation of flight logic and communication using modern C++ principles for enhanced stability and maintainability.                 |
 | `💻` | **Web-Based Configurator**     | A powerful and reliable UI for real-time tuning, configuration, and 3D attitude visualization, accessible from any modern web browser.      |
-| `⚡` | **High-Performance JSON API**  | A streamlined, machine-readable API for programmatic control and high-frequency `live_data` streaming.                                     |
+| `⚡` | **Robust MSP Protocol**        | Implements the MultiWii Serial Protocol (MSP) with automatic switching between V1 and V2, ensuring reliable, high-frequency data streaming. |
 | `🔌` | **Flexible Hardware Support**  | Works with MPU6050 IMUs, DShot ESCs, and multiple RC receiver protocols (iBUS, PPM), allowing for versatile hardware configurations.      |
 | `💾` | **Persistent Settings**        | All tunable parameters are saved to non-volatile storage, ensuring your configuration is preserved across reboots.                         |
 
@@ -86,18 +86,14 @@ This project includes a powerful web-based configurator that runs locally and co
 
 ---
 
-## 🤖 Interface Modes
+## 🤖 Communication
 
-The firmware boots into a silent `FLIGHT` mode. To interact with it, activate one of the two interactive modes over the serial connection:
+The firmware communicates using the **MultiWii Serial Protocol (MSP)**. It boots into a silent `FLIGHT` mode and automatically enters MSP API mode as soon as it receives a valid MSP message (`$M<...` or `$X<...`).
 
-*   **`api` Mode**: For programmatic clients and the web configurator (JSON-based).
-    *   **Activation**: Send `api`
-    *   **Response**: `{"status":"api_mode_activated"}` and `live_data` streaming begins.
-
-*   **`cli` Mode**: For human interaction via a serial monitor.
-    *   **Activation**: Send `cli`
-    *   **Prompt**: `ESP32_FC >`
-    *   Use the `help` command for a full list of commands and settings.
+For human interaction, a Command Line Interface (CLI) is also available:
+*   **Activation**: Send `cli` over a serial monitor.
+*   **Prompt**: `ESP32_FC >`
+*   Use the `help` command for a full list of commands and settings.
 
 ---
 
@@ -137,7 +133,8 @@ This project stands on the shoulders of giants. The core hardware interaction is
 *   [**DShotRMT**](https://github.com/derdoktor667/DShotRMT): Generates DShot signals using the ESP32's RMT peripheral.
 *   [**ESP32_MPU6050**](https://github.com/derdoktor667/ESP32_MPU6050): Driver for the MPU6050 IMU.
 *   [**FlyskyIBUS**](https://github.com/derdoktor667/FlyskyIBUS): Decodes the Flysky i-BUS protocol.
-*   [**ArduinoJson**](https://github.com/bblanchon/ArduinoJson): Efficient JSON serialization and deserialization.
+*   [**MspParser**](https://github.com/derdoktor667/MspParser): A custom library for parsing and creating MSP messages.
+
 
 ---
 

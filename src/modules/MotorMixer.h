@@ -12,6 +12,7 @@
 #define MOTOR_MIXER_MODULE_H
 
 #include "src/config/FlightState.h"
+#include "src/config/config.h" // Required for MotorSettings
 #include <DShotRMT.h>
 
 // Mixes PID outputs with throttle and sends commands to the motors.
@@ -20,8 +21,8 @@
 class MotorMixer
 {
 public:
-    // Constructor: Initializes the MotorMixer with references to the DShot motor instances and settings.
-    MotorMixer(DShotRMT *motor1, DShotRMT *motor2, DShotRMT *motor3, DShotRMT *motor4, const FlightControllerSettings &settings);
+    // Constructor: Initializes the MotorMixer with references to the DShot motor instances and motor-specific settings.
+    MotorMixer(DShotRMT *motor1, DShotRMT *motor2, DShotRMT *motor3, DShotRMT *motor4, const MotorSettings &motorSettings);
 
     // Initializes the DShot motors.
     // This typically involves setting up the RMT channels.
@@ -37,7 +38,9 @@ private:
     DShotRMT *_motor2;                         // Pointer to the Front-Left DShot motor driver
     DShotRMT *_motor3;                         // Pointer to the Rear-Right DShot motor driver
     DShotRMT *_motor4;                         // Pointer to the Rear-Left DShot motor driver
-    const FlightControllerSettings &_settings; // Reference to global flight controller settings
+    const MotorSettings &_motorSettings; // Reference to motor-specific settings
+
+    static constexpr float PERCENT_TO_FLOAT_DIVISOR = 100.0f;
 };
 
 #endif // MOTOR_MIXER_MODULE_H

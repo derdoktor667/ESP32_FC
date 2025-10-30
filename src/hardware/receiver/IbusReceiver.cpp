@@ -26,8 +26,7 @@ void IbusReceiver::begin()
 // This update method can be left empty or used for any periodic checks if needed.
 void IbusReceiver::update()
 {
-    // All work is done by the underlying FlyskyIBUS library or on demand by getChannel().
-    // No-op for this implementation.
+    // The FlyskyIBUS library handles data reception internally, so no explicit read call is needed here.
 }
 
 // Gets the value of a specific iBUS channel.
