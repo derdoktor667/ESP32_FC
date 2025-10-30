@@ -33,8 +33,6 @@ class FlightController
 {
 public:
     FlightController();
-    // Destructor is no longer explicitly needed as std::unique_ptr handles cleanup
-
     // Initializes all hardware and modules.
     void initialize();
 
@@ -74,11 +72,9 @@ private:
     PidProcessor _pidProcessor;
     std::unique_ptr<MotorMixer> _motorMixer;
 
-    // --- Communication Manager ---
-
 
     // --- Loop Timing ---
-    unsigned long _loopTimer = 0;
+    unsigned long _currentLoopStartTimeUs = 0;
 };
 
 #endif // FLIGHT_CONTROLLER_H

@@ -18,7 +18,7 @@
 // --- Refactoring: Settings Registry ---
 
 // --- Helper Functions for String Conversion ---
-String CommunicationManager::_getReceiverProtocolString(ReceiverProtocol protocol) const
+String CommunicationManager::_getReceiverProtocolName(ReceiverProtocol protocol) const
 {
     if (protocol == PROTOCOL_IBUS)
         return "IBUS";
@@ -27,14 +27,14 @@ String CommunicationManager::_getReceiverProtocolString(ReceiverProtocol protoco
     return "UNKNOWN";
 }
 
-String CommunicationManager::_getImuProtocolString(ImuProtocol protocol) const
+String CommunicationManager::_getImuProtocolName(ImuProtocol protocol) const
 {
     if (protocol == IMU_MPU6050)
         return "MPU6050";
     return "UNKNOWN";
 }
 
-String CommunicationManager::_getLpfBandwidthString(LpfBandwidth bandwidth) const
+String CommunicationManager::_getLpfBandwidthName(LpfBandwidth bandwidth) const
 {
     switch (bandwidth)
     {
@@ -57,7 +57,7 @@ String CommunicationManager::_getLpfBandwidthString(LpfBandwidth bandwidth) cons
     }
 }
 
-String CommunicationManager::_getFlightControlInputString(FlightControlInput input) const
+String CommunicationManager::_getFlightControlInputName(FlightControlInput input) const
 {
     switch (input)
     {
@@ -80,7 +80,7 @@ String CommunicationManager::_getFlightControlInputString(FlightControlInput inp
     }
 }
 
-String CommunicationManager::_getDShotModeString(dshot_mode_t mode) const
+String CommunicationManager::_getDShotModeName(dshot_mode_t mode) const
 {
     if (mode == DSHOT_OFF)
         return "DSHOT_OFF";
@@ -95,7 +95,7 @@ String CommunicationManager::_getDShotModeString(dshot_mode_t mode) const
     return "UNKNOWN";
 }
 
-String CommunicationManager::_getImuRotationString(ImuRotation rotation) const
+String CommunicationManager::_getImuRotationName(ImuRotation rotation) const
 {
     switch (rotation)
     {
@@ -114,22 +114,22 @@ String CommunicationManager::_getImuRotationString(ImuRotation rotation) const
     }
 }
 
-String CommunicationManager::_getBoolString(bool value) const
+String CommunicationManager::_getBoolName(bool value) const
 {
     return value ? "true" : "false";
 }
 
-String CommunicationManager::_getUint8String(uint8_t value) const
+String CommunicationManager::_getUint8Name(uint8_t value) const
 {
     return String(value);
 }
 
-String CommunicationManager::_getULongString(unsigned long value) const
+String CommunicationManager::_getULongName(unsigned long value) const
 {
     return String(value);
 }
 
-String CommunicationManager::_payloadToString(const uint8_t* payload, uint16_t size) const
+String CommunicationManager::_convertPayloadToString(const uint8_t* payload, uint16_t size) const
 {
     char buffer[size + 1];
     memcpy(buffer, payload, size);
@@ -137,7 +137,7 @@ String CommunicationManager::_payloadToString(const uint8_t* payload, uint16_t s
     return String(buffer);
 }
 
-uint16_t CommunicationManager::_serializeSettingValueToMspPayload(const Setting *setting, uint8_t *buffer) const
+uint16_t CommunicationManager::_serializeSettingToMspPayload(const Setting *setting, uint8_t *buffer) const
 {
     uint16_t offset = 0;
 
@@ -160,14 +160,9 @@ uint16_t CommunicationManager::_serializeSettingValueToMspPayload(const Setting 
     }
     case SettingType::INT:
     {
-        int value;
-        if (setting->scaleFactor == PID_SCALE_FACTOR)
-        {
-            value = *(int *)setting->value / PID_DISPLAY_SCALE_FACTOR;
-        }
-        else
-        {
-            value = *(int *)setting->value;
+        int value = *(int *)setting->value;
+        if (setting->scaleFactor == PID_SCALE_FACTOR) {
+            value = value / PID_DISPLAY_SCALE_FACTOR;
         }
         memcpy(buffer + offset, &value, sizeof(int));
         offset += sizeof(int);
@@ -249,14 +244,22 @@ uint16_t CommunicationManager::_serializeSettingValueToMspPayload(const Setting 
     return offset;
 }
 
-SetResult CommunicationManager::_deserializeMspPayloadToSettingValue(const uint8_t *payload, uint16_t payloadSize, Setting *setting)
+SetResult CommunicationManager::_deserializeMspPayloadToSetting(const uint8_t *payload, uint16_t payloadSize, Setting *setting)
 {
     uint16_t offset = 0;
 
     // Read setting name (null-terminated string)
-    String receivedSettingName = _payloadToString(payload + offset, strlen((char*)(payload + offset)));
-    offset += receivedSettingName.length() + 1; // +1 for null terminator
+    uint16_t receivedNameLength = 0;
+    while (offset + receivedNameLength < payloadSize && payload[offset + receivedNameLength] != '\0') {
+        receivedNameLength++;
+    }
+    String receivedSettingName = _convertPayloadToString(payload + offset, receivedNameLength);
+    offset += receivedNameLength + 1; // +1 for null terminator
 
+    // Check if there's enough payload left for the setting type
+    if (payloadSize - offset < sizeof(uint8_t)) {
+        return SetResult::INVALID_FORMAT;
+    }
     // Read setting type (1 byte)
     SettingType receivedSettingType = (SettingType)payload[offset++];
 
@@ -271,6 +274,7 @@ SetResult CommunicationManager::_deserializeMspPayloadToSettingValue(const uint8
     {
     case SettingType::FLOAT:
     {
+        if (payloadSize - offset < sizeof(float)) return SetResult::INVALID_FORMAT;
         float value;
         memcpy(&value, payload + offset, sizeof(float));
         *(float *)setting->value = value * setting->scaleFactor;
@@ -278,20 +282,20 @@ SetResult CommunicationManager::_deserializeMspPayloadToSettingValue(const uint8
     }
     case SettingType::INT:
     {
+        if (payloadSize - offset < sizeof(int)) return SetResult::INVALID_FORMAT;
         int value;
         memcpy(&value, payload + offset, sizeof(int));
-        if (setting->scaleFactor == PID_SCALE_FACTOR)
-        {
+        // Apply scaling to match firmware's internal PID_SCALE_FACTOR
+        if (setting->scaleFactor == PID_SCALE_FACTOR) {
             *(int *)setting->value = value * PID_DISPLAY_SCALE_FACTOR;
-        }
-        else
-        {
+        } else {
             *(int *)setting->value = value;
         }
         break;
     }
     case SettingType::UINT8:
     {
+        if (payloadSize - offset < sizeof(uint8_t)) return SetResult::INVALID_FORMAT;
         uint8_t value;
         memcpy(&value, payload + offset, sizeof(uint8_t));
         *(uint8_t *)setting->value = value;
@@ -299,6 +303,7 @@ SetResult CommunicationManager::_deserializeMspPayloadToSettingValue(const uint8
     }
     case SettingType::UINT16:
     {
+        if (payloadSize - offset < sizeof(uint16_t)) return SetResult::INVALID_FORMAT;
         uint16_t value;
         memcpy(&value, payload + offset, sizeof(uint16_t));
         *(uint16_t *)setting->value = value;
@@ -306,6 +311,7 @@ SetResult CommunicationManager::_deserializeMspPayloadToSettingValue(const uint8
     }
     case SettingType::ULONG:
     {
+        if (payloadSize - offset < sizeof(unsigned long)) return SetResult::INVALID_FORMAT;
         unsigned long value;
         memcpy(&value, payload + offset, sizeof(unsigned long));
         *(unsigned long *)setting->value = value;
@@ -313,12 +319,14 @@ SetResult CommunicationManager::_deserializeMspPayloadToSettingValue(const uint8
     }
     case SettingType::BOOL:
     {
+        if (payloadSize - offset < sizeof(uint8_t)) return SetResult::INVALID_FORMAT; // bool is 1 byte
         bool value = (bool)payload[offset];
         *(bool *)setting->value = value;
         break;
     }
     case SettingType::ENUM_IBUS_PROTOCOL:
     {
+        if (payloadSize - offset < sizeof(ReceiverProtocol)) return SetResult::INVALID_FORMAT;
         ReceiverProtocol value;
         memcpy(&value, payload + offset, sizeof(ReceiverProtocol));
         *(ReceiverProtocol *)setting->value = value;
@@ -326,6 +334,7 @@ SetResult CommunicationManager::_deserializeMspPayloadToSettingValue(const uint8
     }
     case SettingType::ENUM_IMU_PROTOCOL:
     {
+        if (payloadSize - offset < sizeof(ImuProtocol)) return SetResult::INVALID_FORMAT;
         ImuProtocol value;
         memcpy(&value, payload + offset, sizeof(ImuProtocol));
         *(ImuProtocol *)setting->value = value;
@@ -333,6 +342,7 @@ SetResult CommunicationManager::_deserializeMspPayloadToSettingValue(const uint8
     }
     case SettingType::ENUM_LPF_BANDWIDTH:
     {
+        if (payloadSize - offset < sizeof(LpfBandwidth)) return SetResult::INVALID_FORMAT;
         LpfBandwidth value;
         memcpy(&value, payload + offset, sizeof(LpfBandwidth));
         *(LpfBandwidth *)setting->value = value;
@@ -340,6 +350,7 @@ SetResult CommunicationManager::_deserializeMspPayloadToSettingValue(const uint8
     }
     case SettingType::ENUM_IMU_ROTATION:
     {
+        if (payloadSize - offset < sizeof(ImuRotation)) return SetResult::INVALID_FORMAT;
         ImuRotation value;
         memcpy(&value, payload + offset, sizeof(ImuRotation));
         *(ImuRotation *)setting->value = value;
@@ -347,6 +358,7 @@ SetResult CommunicationManager::_deserializeMspPayloadToSettingValue(const uint8
     }
     case SettingType::ENUM_DSHOT_MODE:
     {
+        if (payloadSize - offset < sizeof(dshot_mode_t)) return SetResult::INVALID_FORMAT;
         dshot_mode_t value;
         memcpy(&value, payload + offset, sizeof(dshot_mode_t));
         *(dshot_mode_t *)setting->value = value;
@@ -354,8 +366,9 @@ SetResult CommunicationManager::_deserializeMspPayloadToSettingValue(const uint8
     }
     case SettingType::STRING:
     {
+        // For strings, we read the remaining payload, so no fixed size check here
         String *value = static_cast<String *>(setting->value);
-        *value = _payloadToString(payload + offset, payloadSize - offset); // Read remaining payload as string
+        *value = _convertPayloadToString(payload + offset, payloadSize - offset); // Read remaining payload as string
         break;
     }
     case SettingType::ENUM_RX_CHANNEL_MAP:
@@ -365,7 +378,7 @@ SetResult CommunicationManager::_deserializeMspPayloadToSettingValue(const uint8
     return SetResult::SUCCESS;
 }
 
-uint16_t CommunicationManager::_serializeRxChannelMapToMspPayload(uint8_t *buffer) const
+uint16_t CommunicationManager::_serializeReceiverChannelMapToMspPayload(uint8_t *buffer) const
 {
     uint16_t offset = 0;
     for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)
@@ -375,7 +388,7 @@ uint16_t CommunicationManager::_serializeRxChannelMapToMspPayload(uint8_t *buffe
     return offset;
 }
 
-SetResult CommunicationManager::_deserializeMspPayloadToRxChannelMap(const uint8_t *payload, uint16_t payloadSize)
+SetResult CommunicationManager::_deserializeMspPayloadToReceiverChannelMap(const uint8_t *payload, uint16_t payloadSize)
 {
     if (payloadSize != NUM_FLIGHT_CONTROL_INPUTS)
     {
@@ -390,43 +403,40 @@ SetResult CommunicationManager::_deserializeMspPayloadToRxChannelMap(const uint8
     return SetResult::SUCCESS;
 }
 
-uint16_t CommunicationManager::_serializeStatusToMspPayload(uint8_t *buffer) const
+uint16_t CommunicationManager::_serializeFlightStatusToMspPayload(uint8_t *buffer) const
 {
     uint16_t offset = 0;
 
     // Loop Time (unsigned long)
-    unsigned long loopTimeUs = _fc->state.loopTimeUs;
+    unsigned long loopTimeUs = _flightController->state.loopTimeUs;
     memcpy(buffer + offset, &loopTimeUs, sizeof(unsigned long));
     offset += sizeof(unsigned long);
 
     // CPU Load (float)
-    float cpuLoad = _fc->state.cpuLoad;
+    float cpuLoad = _flightController->state.cpuLoad;
     memcpy(buffer + offset, &cpuLoad, sizeof(float));
     offset += sizeof(float);
 
     // Battery Voltage (float)
-    float voltage = _fc->state.voltage;
+    float voltage = _flightController->state.voltage;
     memcpy(buffer + offset, &voltage, sizeof(float));
     offset += sizeof(float);
 
     // Current Draw (float)
-    float current = _fc->state.current;
+    float current = _flightController->state.current;
     memcpy(buffer + offset, &current, sizeof(float));
     offset += sizeof(float);
 
-    // Is Armed (bool)
-    buffer[offset++] = (uint8_t)_fc->state.isArmed;
+    buffer[offset++] = (uint8_t)_flightController->state.isArmed;
 
-    // Is Failsafe Active (bool)
-    buffer[offset++] = (uint8_t)_fc->state.isFailsafeActive;
+    buffer[offset++] = (uint8_t)_flightController->state.isFailsafeActive;
 
-    // Current Flight Mode (uint8_t - enum)
-    buffer[offset++] = (uint8_t)_fc->state.currentFlightMode;
+    buffer[offset++] = (uint8_t)_flightController->state.currentFlightMode;
 
     return offset;
 }
 
-uint16_t CommunicationManager::_serializeVersionToMspPayload(uint8_t *buffer) const
+uint16_t CommunicationManager::_serializeFirmwareVersionToMspPayload(uint8_t *buffer) const
 {
     uint16_t offset = 0;
     char tempBuffer[VERSION_STRING_BUFFER_SIZE]; // Sufficient for version and build ID
@@ -444,38 +454,38 @@ uint16_t CommunicationManager::_serializeVersionToMspPayload(uint8_t *buffer) co
     return offset;
 }
 
-uint16_t CommunicationManager::_serializeFlightStatusToMspPayload(uint8_t *buffer) const
+uint16_t CommunicationManager::_serializeLiveFlightDataToMspPayload(uint8_t *buffer) const
 {
     uint16_t offset = 0;
 
     // Attitude (roll, pitch, yaw - float)
-    memcpy(buffer + offset, &_fc->state.attitude.roll, sizeof(float));
+    memcpy(buffer + offset, &_flightController->state.attitude.roll, sizeof(float));
     offset += sizeof(float);
-    memcpy(buffer + offset, &_fc->state.attitude.pitch, sizeof(float));
+    memcpy(buffer + offset, &_flightController->state.attitude.pitch, sizeof(float));
     offset += sizeof(float);
-    memcpy(buffer + offset, &_fc->state.attitude.yaw, sizeof(float));
+    memcpy(buffer + offset, &_flightController->state.attitude.yaw, sizeof(float));
     offset += sizeof(float);
 
     // Status (isArmed, isFailsafeActive, currentFlightMode - bool, bool, uint8_t)
-    buffer[offset++] = (uint8_t)_fc->state.isArmed;
-    buffer[offset++] = (uint8_t)_fc->state.isFailsafeActive;
-    buffer[offset++] = (uint8_t)_fc->state.currentFlightMode;
+    buffer[offset++] = (uint8_t)_flightController->state.isArmed;
+    buffer[offset++] = (uint8_t)_flightController->state.isFailsafeActive;
+    buffer[offset++] = (uint8_t)_flightController->state.currentFlightMode;
 
     // Loop Time (unsigned long)
-    memcpy(buffer + offset, &_fc->state.loopTimeUs, sizeof(unsigned long));
+    memcpy(buffer + offset, &_flightController->state.loopTimeUs, sizeof(unsigned long));
     offset += sizeof(unsigned long);
 
     // Motor Outputs (NUM_MOTORS * uint16_t)
     for (int i = 0; i < NUM_MOTORS; ++i)
     {
-        memcpy(buffer + offset, &_fc->state.motorOutputs[i], sizeof(uint16_t));
+        memcpy(buffer + offset, &_flightController->state.motorOutputs[i], sizeof(uint16_t));
         offset += sizeof(uint16_t);
     }
 
     // Receiver Channels (RECEIVER_CHANNEL_COUNT * uint16_t)
     for (int i = 0; i < RECEIVER_CHANNEL_COUNT; ++i)
     {
-        memcpy(buffer + offset, &_fc->state.receiverChannels[i], sizeof(uint16_t));
+        memcpy(buffer + offset, &_flightController->state.receiverChannels[i], sizeof(uint16_t));
         offset += sizeof(uint16_t);
     }
 
@@ -495,9 +505,9 @@ const Setting CommunicationManager::settingsRegistry[] = {
     {"pid.yaw.ki", SettingType::INT, &settings.pid.yaw.ki, PID_SCALE_FACTOR},
     {"pid.yaw.kd", SettingType::INT, &settings.pid.yaw.kd, PID_SCALE_FACTOR},
     {"pid.integral_limit", SettingType::FLOAT, &settings.pid.integralLimit, DEFAULT_SCALE_FACTOR},
-    {"rates.angle", SettingType::FLOAT, &settings.rates.maxAngleRollPitch, DEFAULT_SCALE_FACTOR},
-    {"rates.yaw", SettingType::FLOAT, &settings.rates.maxRateYaw, DEFAULT_SCALE_FACTOR},
-    {"rates.acro", SettingType::FLOAT, &settings.rates.maxRateRollPitch, DEFAULT_SCALE_FACTOR},
+    {"rates.angle", SettingType::FLOAT, &settings.flightRates.maxAngleRollPitch, DEFAULT_SCALE_FACTOR},
+    {"rates.yaw", SettingType::FLOAT, &settings.flightRates.maxRateYaw, DEFAULT_SCALE_FACTOR},
+    {"rates.acro", SettingType::FLOAT, &settings.flightRates.maxRateRollPitch, DEFAULT_SCALE_FACTOR},
     {"filter.comp_tau", SettingType::FLOAT, &settings.filter.complementaryFilterTau, DEFAULT_SCALE_FACTOR},
     {"gyro.lpf_cutoff_freq", SettingType::FLOAT, &settings.filter.gyroLpfCutoffFreq, DEFAULT_SCALE_FACTOR},
     {"accel.lpf_cutoff_freq", SettingType::FLOAT, &settings.filter.accelLpfCutoffFreq, DEFAULT_SCALE_FACTOR},
@@ -527,11 +537,11 @@ const Setting CommunicationManager::settingsRegistry[] = {
     {"bench.run.en", SettingType::BOOL, &settings.logging.enableBenchRunMode, DEFAULT_SCALE_FACTOR},
 };const int CommunicationManager::numSettings = sizeof(CommunicationManager::settingsRegistry) / sizeof(Setting);
 
-CommunicationManager *CommunicationManager::_instance = nullptr;
+CommunicationManager *CommunicationManager::_communicationManagerInstance = nullptr;
 
 // --- Helper Functions for Parsing and Validation ---
 
-SetResult CommunicationManager::_parseAndValidateFloat(const String &valueStr, float &outValue, float scaleFactor, String &expectedValue) const
+SetResult CommunicationManager::_parseAndValidateFloatSetting(const String &valueStr, float &outValue, float scaleFactor, String &expectedValue) const
 {
     float val = valueStr.toFloat();
     if (valueStr.length() > 0 && val == 0.0f && valueStr != "0" && valueStr != "0.0")
@@ -543,7 +553,7 @@ SetResult CommunicationManager::_parseAndValidateFloat(const String &valueStr, f
     return SetResult::SUCCESS;
 }
 
-SetResult CommunicationManager::_parseAndValidateInt(const String &valueStr, int &outValue, String &expectedValue) const
+SetResult CommunicationManager::_parseAndValidateIntSetting(const String &valueStr, int &outValue, String &expectedValue) const
 {
     long val = valueStr.toInt();
     if (valueStr.length() > 0 && val == 0 && valueStr != "0")
@@ -557,7 +567,7 @@ SetResult CommunicationManager::_parseAndValidateInt(const String &valueStr, int
     return SetResult::SUCCESS;
 }
 
-SetResult CommunicationManager::_parseAndValidateUint16(const String &valueStr, uint16_t &outValue, String &expectedValue) const
+SetResult CommunicationManager::_parseAndValidateUint16Setting(const String &valueStr, uint16_t &outValue, String &expectedValue) const
 {
     long val = valueStr.toInt();
     if (valueStr.length() > 0 && val == 0 && valueStr != "0")
@@ -574,7 +584,7 @@ SetResult CommunicationManager::_parseAndValidateUint16(const String &valueStr, 
     return SetResult::SUCCESS;
 }
 
-SetResult CommunicationManager::_parseAndValidateULong(const String &valueStr, unsigned long &outValue, String &expectedValue) const
+SetResult CommunicationManager::_parseAndValidateULongSetting(const String &valueStr, unsigned long &outValue, String &expectedValue) const
 {
     // toULong() returns 0 if no valid conversion could be performed.
     // We need to check if the string was actually "0" or if it was invalid.
@@ -588,7 +598,7 @@ SetResult CommunicationManager::_parseAndValidateULong(const String &valueStr, u
     return SetResult::SUCCESS;
 }
 
-SetResult CommunicationManager::_parseAndValidateReceiverProtocol(const String &valueStr, ReceiverProtocol &outValue, String &expectedValue) const
+SetResult CommunicationManager::_parseAndValidateReceiverProtocolSetting(const String &valueStr, ReceiverProtocol &outValue, String &expectedValue) const
 {
     if (valueStr.equalsIgnoreCase("IBUS"))
         outValue = PROTOCOL_IBUS;
@@ -602,7 +612,7 @@ SetResult CommunicationManager::_parseAndValidateReceiverProtocol(const String &
     return SetResult::SUCCESS;
 }
 
-SetResult CommunicationManager::_parseAndValidateImuProtocol(const String &valueStr, ImuProtocol &outValue, String &expectedValue) const
+SetResult CommunicationManager::_parseAndValidateImuProtocolSetting(const String &valueStr, ImuProtocol &outValue, String &expectedValue) const
 {
     if (valueStr.equalsIgnoreCase("MPU6050"))
         outValue = IMU_MPU6050;
@@ -614,7 +624,7 @@ SetResult CommunicationManager::_parseAndValidateImuProtocol(const String &value
     return SetResult::SUCCESS;
 }
 
-SetResult CommunicationManager::_parseAndValidateLpfBandwidth(const String &valueStr, LpfBandwidth &outValue, String &expectedValue) const
+SetResult CommunicationManager::_parseAndValidateLpfBandwidthSetting(const String &valueStr, LpfBandwidth &outValue, String &expectedValue) const
 {
     if (valueStr.equalsIgnoreCase("LPF_256HZ_N_0MS"))
         outValue = LPF_256HZ_N_0MS;
@@ -638,7 +648,7 @@ SetResult CommunicationManager::_parseAndValidateLpfBandwidth(const String &valu
     return SetResult::SUCCESS;
 }
 
-SetResult CommunicationManager::_parseAndValidateImuRotation(const String &valueStr, ImuRotation &outValue, String &expectedValue) const
+SetResult CommunicationManager::_parseAndValidateImuRotationSetting(const String &valueStr, ImuRotation &outValue, String &expectedValue) const
 {
     if (valueStr.equalsIgnoreCase("NONE"))
         outValue = IMU_ROTATION_NONE;
@@ -658,7 +668,7 @@ SetResult CommunicationManager::_parseAndValidateImuRotation(const String &value
     return SetResult::SUCCESS;
 }
 
-SetResult CommunicationManager::_parseAndValidateDShotMode(const String &valueStr, dshot_mode_t &outValue, String &expectedValue) const
+SetResult CommunicationManager::_parseAndValidateDShotModeSetting(const String &valueStr, dshot_mode_t &outValue, String &expectedValue) const
 {
     if (valueStr.equalsIgnoreCase("DSHOT_OFF"))
         outValue = DSHOT_OFF;
@@ -678,7 +688,7 @@ SetResult CommunicationManager::_parseAndValidateDShotMode(const String &valueSt
     return SetResult::SUCCESS;
 }
 
-SetResult CommunicationManager::_parseAndValidateBool(const String &valueStr, bool &outValue, String &expectedValue) const
+SetResult CommunicationManager::_parseAndValidateBoolSetting(const String &valueStr, bool &outValue, String &expectedValue) const
 {
     if (valueStr.equalsIgnoreCase("true"))
         outValue = true;
@@ -692,7 +702,7 @@ SetResult CommunicationManager::_parseAndValidateBool(const String &valueStr, bo
     return SetResult::SUCCESS;
 }
 
-SetResult CommunicationManager::_parseAndValidateRxChannelMap(const String &param, const String &valueStr, int &outValue, String &expectedValue) const
+SetResult CommunicationManager::_parseAndValidateReceiverChannelMapSetting(const String &param, const String &valueStr, int &outValue, String &expectedValue) const
 {
     String inputName = param.substring(RX_MAP_PREFIX_LENGTH);
     int channelValue = valueStr.toInt();
@@ -711,7 +721,7 @@ SetResult CommunicationManager::_parseAndValidateRxChannelMap(const String &para
     {
         for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)
         {
-            if (inputName.equalsIgnoreCase(_getFlightControlInputString((FlightControlInput)i)))
+            if (inputName.equalsIgnoreCase(_getFlightControlInputName((FlightControlInput)i)))
             {
                 outValue = channelValue;
                 return SetResult::SUCCESS;
@@ -725,50 +735,41 @@ SetResult CommunicationManager::_parseAndValidateRxChannelMap(const String &para
 
 
 
-void CommunicationManager::_sendMspResponse(uint16_t command, const uint8_t *payload, uint16_t payloadSize)
+void CommunicationManager::_sendMspMessageResponse(uint16_t command, const uint8_t *payload, uint16_t payloadSize)
 {
-    _mspParser.sendMspMessage(Serial, '>', command, payload, payloadSize, true);
+    _mspMessageParser.sendMspMessage(Serial, '>', command, payload, payloadSize, true);
 }
 
-void CommunicationManager::_sendMspDebugMessage(const String& message)
-{
-    if (_instance && settings.logging.enableDebugLogging) { // Ensure instance exists and debug logging is enabled
-        uint8_t payload[message.length() + 1]; // +1 for null terminator
-        message.getBytes(payload, message.length() + 1);
-        _instance->_sendMspResponse(MSP_FC_DEBUG_MESSAGE, payload, message.length() + 1);
-    }
-}
+
 
 // --- Public Methods ---
 
-CommunicationManager::CommunicationManager(FlightController *fc) : _fc(fc)
+CommunicationManager::CommunicationManager(FlightController *flightController) : _flightController(flightController)
 {
-    _instance = this;
-    _mspParser.begin(Serial, "USB", &CommunicationManager::_sendMspDebugMessage);
-    _mspParser.onMessage(_onMspMessageReceived);
+    _communicationManagerInstance = this;
+    _mspMessageParser.begin(Serial, "USB");
+    _mspMessageParser.onMessage(_onMspMessageReceivedCallback);
 }
 
-void CommunicationManager::_onMspMessageReceived(const MspMessage &message, const char *prefix)
+void CommunicationManager::_onMspMessageReceivedCallback(const MspMessage &message, const char *prefix)
 {
-    if (_instance)
+    if (_communicationManagerInstance)
     {
         String debugMsg = "Received MSP command: 0x" + String(message.command, HEX) +
                           ", Size: " + String(message.payloadSize) +
                           ", Direction: '" + String(message.direction) + "'" +
                           " from prefix: " + String(prefix);
-        _instance->_sendMspDebugMessage(debugMsg);
-        _instance->_handleMspCommand(message);
+        _communicationManagerInstance->_processMspCommand(message);
     }
 }
 
-void CommunicationManager::_handleMspCommand(const MspMessage &message)
+void CommunicationManager::_processMspCommand(const MspMessage &message)
 {
     switch (message.command)
     {
     case MSP_FC_GET_SETTING:
     {
-        String settingName = _payloadToString(message.payload, message.payloadSize);
-        _sendMspDebugMessage("Received MSP_FC_GET_SETTING for: " + settingName);
+        String settingName = _convertPayloadToString(message.payload, message.payloadSize);
 
         if (settingName.equalsIgnoreCase("all"))
         {
@@ -777,10 +778,10 @@ void CommunicationManager::_handleMspCommand(const MspMessage &message)
             {
                 const Setting *setting = &settingsRegistry[i];
                 uint8_t responsePayload[MSP_MAX_PAYLOAD_SIZE_SETTINGS]; // Increased buffer for safety
-                uint16_t payloadSize = _serializeSettingValueToMspPayload(setting, responsePayload);
-                _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, payloadSize);
+                uint16_t payloadSize = _serializeSettingToMspPayload(setting, responsePayload);
+                _sendMspMessageResponse(MSP_FC_SETTING_RESPONSE, responsePayload, payloadSize);
             }
-            _isLiveStreamingEnabled = true; // Enable live data streaming after sending all settings
+            _isTelemetryStreamingEnabled = true; // Enable live data streaming after sending all settings
         }
         else
         {
@@ -798,24 +799,27 @@ void CommunicationManager::_handleMspCommand(const MspMessage &message)
             if (foundSetting)
             {
                 uint8_t responsePayload[MSP_MAX_PAYLOAD_SIZE_SETTINGS];
-                uint16_t payloadSize = _serializeSettingValueToMspPayload(foundSetting, responsePayload);
-                _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, payloadSize);
+                uint16_t payloadSize = _serializeSettingToMspPayload(foundSetting, responsePayload);
+                _sendMspMessageResponse(MSP_FC_SETTING_RESPONSE, responsePayload, payloadSize);
             }
             else
             {
                 String errorMessage = "Unknown setting: " + settingName;
-                _sendMspDebugMessage(errorMessage); // Also send as debug message
                 uint8_t errorPayload[errorMessage.length() + 1];
                 strcpy((char *)errorPayload, errorMessage.c_str());
-                _sendMspResponse(MSP_FC_ERROR, errorPayload, errorMessage.length() + 1);
+                _sendMspMessageResponse(MSP_FC_ERROR, errorPayload, errorMessage.length() + 1);
             }
         }
         break;
     }
     case MSP_FC_SET_SETTING:
     {
-        String settingName = _payloadToString(message.payload, message.payloadSize);
-        _sendMspDebugMessage("Received MSP_FC_SET_SETTING for: " + settingName);
+        // Correctly extract the setting name from the payload
+        uint16_t nameLength = 0;
+        while (nameLength < message.payloadSize && message.payload[nameLength] != '\0') {
+            nameLength++;
+        }
+        String settingName = _convertPayloadToString(message.payload, nameLength);
 
         const Setting *foundSetting = nullptr;
         for (int i = 0; i < numSettings; ++i)
@@ -829,120 +833,104 @@ void CommunicationManager::_handleMspCommand(const MspMessage &message)
 
         if (foundSetting)
         {
-            _sendMspDebugMessage("Found setting: " + String(foundSetting->name) + ", Type: " + String((int)foundSetting->type));
-
-            SetResult result = _deserializeMspPayloadToSettingValue(message.payload, message.payloadSize, (Setting *)foundSetting);
+            SetResult result = _deserializeMspPayloadToSetting(message.payload, message.payloadSize, (Setting *)foundSetting);
             if (result == SetResult::SUCCESS)
             {
-                _sendMspDebugMessage("Setting updated successfully.");
                 uint8_t responsePayload[1];
                 responsePayload[0] = (uint8_t)SetResult::SUCCESS;
-                _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, MSP_PAYLOAD_SIZE_STATUS);
+                _sendMspMessageResponse(MSP_FC_SETTING_RESPONSE, responsePayload, MSP_PAYLOAD_SIZE_STATUS);
             }
             else
             {
                 String errorMessage = "Failed to update setting: " + String((int)result);
-                _sendMspDebugMessage(errorMessage);
                 String fullErrorMessage = "Failed to set " + settingName + ": Error " + String((int)result);
                 uint8_t errorPayload[fullErrorMessage.length() + 1];
                 strcpy((char*)errorPayload, fullErrorMessage.c_str());
-                _sendMspResponse(MSP_FC_ERROR, errorPayload, fullErrorMessage.length() + 1);
+                _sendMspMessageResponse(MSP_FC_ERROR, errorPayload, fullErrorMessage.length() + 1);
             }
         }
         else
         {
             String errorMessage = "Setting not found: " + settingName;
-            _sendMspDebugMessage(errorMessage);
             String fullErrorMessage = "Unknown setting: " + settingName;
             uint8_t errorPayload[fullErrorMessage.length() + 1];
             strcpy((char*)errorPayload, fullErrorMessage.c_str());
-            _sendMspResponse(MSP_FC_ERROR, errorPayload, fullErrorMessage.length() + 1);
+            _sendMspMessageResponse(MSP_FC_ERROR, errorPayload, fullErrorMessage.length() + 1);
         }
         break;
     }
     case MSP_FC_GET_RX_MAP:
     {
-        _sendMspDebugMessage("Received MSP_FC_GET_RX_MAP");
         uint8_t responsePayload[NUM_FLIGHT_CONTROL_INPUTS];
-        uint16_t payloadSize = _serializeRxChannelMapToMspPayload(responsePayload);
-        _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, payloadSize);
+        uint16_t payloadSize = _serializeReceiverChannelMapToMspPayload(responsePayload);
+        _sendMspMessageResponse(MSP_FC_SETTING_RESPONSE, responsePayload, payloadSize);
         break;
     }
     case MSP_FC_SET_RX_MAP:
     {
-        _sendMspDebugMessage("Received MSP_FC_SET_RX_MAP");
-        SetResult result = _deserializeMspPayloadToRxChannelMap(message.payload, message.payloadSize);
+        SetResult result = _deserializeMspPayloadToReceiverChannelMap(message.payload, message.payloadSize);
         if (result == SetResult::SUCCESS)
         {
-            _sendMspDebugMessage("RX Channel Map updated successfully.");
                     uint8_t responsePayload[MSP_PAYLOAD_SIZE_STATUS];
                     responsePayload[0] = (uint8_t)SetResult::SUCCESS;
-                    _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, MSP_PAYLOAD_SIZE_STATUS);        }
+                    _sendMspMessageResponse(MSP_FC_SETTING_RESPONSE, responsePayload, MSP_PAYLOAD_SIZE_STATUS);        }
         else
         {
             String errorMessage = "Failed to update RX Channel Map: " + String((int)result);
-            _sendMspDebugMessage(errorMessage);
             String fullErrorMessage = "Failed to set RX Map: Error " + String((int)result);
             uint8_t errorPayload[fullErrorMessage.length() + 1];
             strcpy((char*)errorPayload, fullErrorMessage.c_str());
-            _sendMspResponse(MSP_FC_ERROR, errorPayload, fullErrorMessage.length() + 1);
+            _sendMspMessageResponse(MSP_FC_ERROR, errorPayload, fullErrorMessage.length() + 1);
         }
         break;
     }
     case MSP_FC_SAVE_SETTINGS:
     {
-        _sendMspDebugMessage("Received MSP_FC_SAVE_SETTINGS");
-        saveSettings();
+        saveSettings([this](const String& msg){ /* No debug message */ });
         uint8_t responsePayload[MSP_PAYLOAD_SIZE_STATUS] = {(uint8_t)SetResult::SUCCESS};
-        _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, MSP_PAYLOAD_SIZE_STATUS);
+        _sendMspMessageResponse(MSP_FC_SETTING_RESPONSE, responsePayload, MSP_PAYLOAD_SIZE_STATUS);
         break;
     }
     case MSP_FC_RESET_SETTINGS:
     {
-        _sendMspDebugMessage("Received MSP_FC_RESET_SETTINGS");
         settings = FlightControllerSettings();
-        saveSettings();
+        saveSettings([this](const String& msg){ /* No debug message */ });
         uint8_t responsePayload[MSP_PAYLOAD_SIZE_STATUS] = {(uint8_t)SetResult::SUCCESS};
-        _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, MSP_PAYLOAD_SIZE_STATUS);
+        _sendMspMessageResponse(MSP_FC_SETTING_RESPONSE, responsePayload, MSP_PAYLOAD_SIZE_STATUS);
         break;
     }
     case MSP_FC_REBOOT:
     {
-        _sendMspDebugMessage("Received MSP_FC_REBOOT");
         ESP.restart();
         break;
     }
     case MSP_FC_CALIBRATE_IMU:
     {
-        _sendMspDebugMessage("Received MSP_FC_CALIBRATE_IMU");
-        _fc->requestImuCalibration();
+        _flightController->requestImuCalibration();
         uint8_t responsePayload[MSP_PAYLOAD_SIZE_STATUS] = {(uint8_t)SetResult::SUCCESS};
-        _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, MSP_PAYLOAD_SIZE_STATUS);
+        _sendMspMessageResponse(MSP_FC_SETTING_RESPONSE, responsePayload, MSP_PAYLOAD_SIZE_STATUS);
         break;
     }
     case MSP_FC_GET_STATUS:
     {
-        _sendMspDebugMessage("Received MSP_FC_GET_STATUS");
         uint8_t responsePayload[MSP_MAX_PAYLOAD_SIZE_STATUS_VERSION]; // Max payload size for status
-        uint16_t payloadSize = _serializeStatusToMspPayload(responsePayload);
-        _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, payloadSize);
+        uint16_t payloadSize = _serializeFlightStatusToMspPayload(responsePayload);
+        _sendMspMessageResponse(MSP_FC_SETTING_RESPONSE, responsePayload, payloadSize);
         break;
     }
     case MSP_FC_GET_VERSION:
     {
-        _sendMspDebugMessage("Received MSP_FC_GET_VERSION");
         uint8_t responsePayload[MSP_MAX_PAYLOAD_SIZE_STATUS_VERSION]; // Max payload size for version
-        uint16_t payloadSize = _serializeVersionToMspPayload(responsePayload);
-        _sendMspResponse(MSP_FC_SETTING_RESPONSE, responsePayload, payloadSize);
+        uint16_t payloadSize = _serializeFirmwareVersionToMspPayload(responsePayload);
+        _sendMspMessageResponse(MSP_FC_SETTING_RESPONSE, responsePayload, payloadSize);
         break;
     }
     default:
     {
         String errorMessage = "Unhandled MSP Command: " + String(message.command) + " with payload size " + String(message.payloadSize);
-        _sendMspDebugMessage(errorMessage); // Also send as debug message
         uint8_t errorPayload[errorMessage.length() + 1];
         strcpy((char*)errorPayload, errorMessage.c_str());
-        _sendMspResponse(MSP_FC_ERROR, errorPayload, errorMessage.length() + 1);
+        _sendMspMessageResponse(MSP_FC_ERROR, errorPayload, errorMessage.length() + 1);
         break;
     }
     }
@@ -952,26 +940,26 @@ void CommunicationManager::initializeCommunication() {}
 
 void CommunicationManager::processCommunication()
 {
-    if (_currentMode == OperatingMode::MSP_API) {
-        _handleMspApiInput(); // MspParser handles input in MSP_API mode
+    if (_currentOperatingMode == OperatingMode::MSP_API) {
+        _processMspApiInput(); // MspParser handles input in MSP_API mode
     } else {
-        _handleSerialInput(); // Handle string input for FLIGHT and CLI modes
+        _processSerialInput(); // Handle string input for FLIGHT and CLI modes
     }
 
-    if (_currentMode == OperatingMode::MSP_API && settings.logging.enableLogging && _isLiveStreamingEnabled && millis() - _lastSerialLogTime >= settings.logging.printIntervalMs)
+    if (_currentOperatingMode == OperatingMode::MSP_API && settings.logging.enableLogging && _isTelemetryStreamingEnabled && millis() - _lastTelemetrySendTimeUs >= settings.logging.printIntervalMs)
     {
         uint8_t responsePayload[MSP_MAX_PAYLOAD_SIZE_FLIGHT_STATUS]; // Max payload size for flight status
-        uint16_t payloadSize = _serializeFlightStatusToMspPayload(responsePayload);
-        _sendMspResponse(MSP_FC_LIVE_DATA, responsePayload, payloadSize);
-        _lastSerialLogTime = millis();
+        uint16_t payloadSize = _serializeLiveFlightDataToMspPayload(responsePayload);
+        _sendMspMessageResponse(MSP_FC_LIVE_DATA, responsePayload, payloadSize);
+        _lastTelemetrySendTimeUs = millis();
     }
 }
 
-void CommunicationManager::_handleFlightModeInput(const String &input)
+void CommunicationManager::_processFlightModeInput(const String &input)
 {
     if (input.equalsIgnoreCase("cli"))
     {
-        _currentMode = OperatingMode::CLI;
+        _currentOperatingMode = OperatingMode::CLI;
         settings.logging.enableLogging = false;
         settings.logging.inCliMode = true; // Set in_cli_mode to true
         Serial.println("--- CLI  Activated ---");
@@ -979,18 +967,19 @@ void CommunicationManager::_handleFlightModeInput(const String &input)
     }
     else if (input.startsWith("$"))
     {
-        _currentMode = OperatingMode::MSP_API;
+        _currentOperatingMode = OperatingMode::MSP_API;
         settings.logging.enableLogging = true;
-        settings.logging.inCliMode = false; // Set in_cli_mode to false
+        settings.logging.inCliMode = false;
+        settings.logging.enableDebugLogging = true; // Enable debug logging for MSP API
         Serial.println("--- MSP API Activated ---");
     }
 }
 
 // --- Private Methods: Main Logic ---
 
-void CommunicationManager::_handleSerialInput()
+void CommunicationManager::_processSerialInput()
 {
-    if (_currentMode == OperatingMode::MSP_API) {
+    if (_currentOperatingMode == OperatingMode::MSP_API) {
         return; // MspParser handles input in MSP_API mode
     }
 
@@ -1001,39 +990,35 @@ void CommunicationManager::_handleSerialInput()
     char peekedChar = Serial.peek();
     if (peekedChar == '$') {
         // If it's an MSP message, switch to MSP_API mode and let MspParser handle it
-        _currentMode = OperatingMode::MSP_API;
+        _currentOperatingMode = OperatingMode::MSP_API;
         settings.logging.enableLogging = true; // Enable logging for MSP API
-        _sendMspDebugMessage("DEBUG: Detected MSP message, switching to MSP_API mode.");
         return;
     }
 
     // If not an MSP message, proceed with string input
-    _sendMspDebugMessage("DEBUG: Serial data available in _handleSerialInput(). Current mode: " + String((int)_currentMode));
 
     String input = Serial.readStringUntil('\n');
     input.trim();
 
-    _sendMspDebugMessage("DEBUG: Read input: '" + input + "'");
-
     if (input.length() == 0)
         return;
 
-    switch (_currentMode)
+    switch (_currentOperatingMode)
     {
     case OperatingMode::FLIGHT:
-        _handleFlightModeInput(input);
+        _processFlightModeInput(input);
         break;
     case OperatingMode::CLI:
     {
         String commandName = (input.indexOf(' ') != -1) ? input.substring(0, input.indexOf(' ')) : input;
         if (commandName.equalsIgnoreCase("exit"))
         {
-            _currentMode = OperatingMode::FLIGHT;
+            _currentOperatingMode = OperatingMode::FLIGHT;
             settings.logging.inCliMode = false; // Set in_cli_mode to false
             Serial.println("--- CLI  Deactivated ---");
             return;
         }
-        _executeCommand(input, false);
+        _executeCliCommand(input, false);
         if (!commandName.equalsIgnoreCase("save") && !commandName.equalsIgnoreCase("reboot") && !commandName.equalsIgnoreCase("reset"))
         {
             if (settings.logging.inCliMode) Serial.print("ESP32_FC > ");
@@ -1043,13 +1028,12 @@ void CommunicationManager::_handleSerialInput()
     }
 }
 
-void CommunicationManager::_handleMspApiInput()
+void CommunicationManager::_processMspApiInput()
 {
-    _sendMspDebugMessage("DEBUG: _handleMspApiInput() called, calling _mspParser.update()");
-    _mspParser.update();
+    _mspMessageParser.update();
 }
 
-void CommunicationManager::_executeCommand(String command, bool isApiMode)
+void CommunicationManager::_executeCliCommand(String command, bool isApiMode)
 {
     String commandName = "";
     String commandArgs = "";
@@ -1067,15 +1051,19 @@ void CommunicationManager::_executeCommand(String command, bool isApiMode)
 
     if (commandName.equals("dump"))
     {
-        _handleDumpCommand();
+        _displayAllSettingsCliCommand();
     }
     else if (commandName.equals("save") || commandName.equals("reset") || commandName.equals("reboot") || commandName.equals("status") || commandName.equals("version"))
     {
-        _handleSystemCommand(commandName, isApiMode);
+        _processSystemCliCommand(commandName, isApiMode);
     }
     else if (commandName.equals("calibrate_imu") || commandName.equals("help"))
     {
-        _handleUtilityCommand(commandName, isApiMode);
+        _processUtilityCliCommand(commandName, isApiMode);
+    }
+    else if (commandName.equals("get") || commandName.equals("set"))
+    {
+        _processGetSetCliCommand(commandName, commandArgs, isApiMode);
     }
     else
     {
@@ -1088,26 +1076,13 @@ void CommunicationManager::_executeCommand(String command, bool isApiMode)
 
 // --- New Helper Methods for Command Handling ---
 
-void CommunicationManager::_handleSettingsCommand(String commandName, String commandArgs, bool isApiMode)
-{
-    if (commandName.equals("dump"))
-        _handleDumpCommand();
-    else
-    {
-        if (settings.logging.inCliMode) {
-            Serial.print("Unknown command: ");
-            Serial.println(commandName);
-        }
-    }
-}
-
-void CommunicationManager::_handleSystemCommand(String commandName, bool isApiMode)
+void CommunicationManager::_processSystemCliCommand(String commandName, bool isApiMode)
 {
     if (commandName.equals("save"))
     {
         if (settings.logging.inCliMode)
             Serial.println("INFO: Settings saved. Rebooting...");
-        saveSettings();
+        saveSettings([](const String&){});
         delay(CLI_REBOOT_DELAY_MS);
         ESP.restart();
     }
@@ -1116,7 +1091,7 @@ void CommunicationManager::_handleSystemCommand(String commandName, bool isApiMo
         if (settings.logging.inCliMode)
             Serial.println("INFO: All settings have been reset to their default values and saved.");
         settings = FlightControllerSettings();
-        saveSettings();
+        saveSettings([](const String&){});
         delay(CLI_REBOOT_DELAY_MS);
         ESP.restart();
     }
@@ -1129,11 +1104,11 @@ void CommunicationManager::_handleSystemCommand(String commandName, bool isApiMo
     }
     else if (commandName.equals("status"))
     {
-        _handleStatusCommand();
+        _displaySystemStatusCliCommand();
     }
     else if (commandName.equals("version"))
     {
-        _handleVersionCommand();
+        _displayFirmwareVersionCliCommand();
     }
     else
     {
@@ -1144,30 +1119,338 @@ void CommunicationManager::_handleSystemCommand(String commandName, bool isApiMo
     }
 }
 
-void CommunicationManager::_handleUtilityCommand(String commandName, bool isApiMode)
+void CommunicationManager::_processUtilityCliCommand(String commandName, bool isApiMode)
 {
     if (commandName.equals("calibrate_imu"))
     {
         if (settings.logging.inCliMode)
             Serial.println("INFO: IMU calibration requested.");
-        _fc->requestImuCalibration();
+        _flightController->requestImuCalibration();
     }
     else if (commandName.equals("help"))
     {
-        _printCliHelp();
+        _displayCliHelp();
     }
     else
     {
         if (settings.logging.inCliMode) {
             Serial.print("Unknown command: ");
             Serial.println(commandName);
+        }
+    }
+}
+
+void CommunicationManager::_processGetSetCliCommand(String commandName, String commandArgs, bool isApiMode)
+{
+    if (commandName.equals("get"))
+    {
+        _processGetSettingCliCommand(commandArgs, isApiMode);
+    }
+    else if (commandName.equals("set"))
+    {
+        _processSetSettingCliCommand(commandArgs, isApiMode);
+    }
+    else
+    {
+        if (settings.logging.inCliMode) {
+            Serial.print("Unknown command: ");
+            Serial.println(commandName);
+        }
+    }
+}
+
+void CommunicationManager::_processGetSettingCliCommand(String settingName, bool isApiMode)
+{
+    const Setting *foundSetting = nullptr;
+    for (int i = 0; i < numSettings; ++i)
+    {
+        if (settingName.equalsIgnoreCase(settingsRegistry[i].name))
+        {
+            foundSetting = &settingsRegistry[i];
+            break;
+        }
+    }
+
+    if (foundSetting)
+    {
+        if (settings.logging.inCliMode) {
+            Serial.print(foundSetting->name);
+            Serial.print(": ");
+            switch (foundSetting->type)
+            {
+            case SettingType::FLOAT:
+                Serial.println(*(float *)foundSetting->value / foundSetting->scaleFactor, 4);
+                break;
+            case SettingType::INT:
+                if (foundSetting->scaleFactor == PID_SCALE_FACTOR)
+                {
+                    Serial.println(*(int *)foundSetting->value / PID_DISPLAY_SCALE_FACTOR);
+                }
+                else
+                {
+                    Serial.println(*(int *)foundSetting->value);
+                }
+                break;
+            case SettingType::UINT8:
+                Serial.println(*(uint8_t *)foundSetting->value);
+                break;
+            case SettingType::UINT16:
+                Serial.println(*(uint16_t *)foundSetting->value);
+                break;
+            case SettingType::ULONG:
+                Serial.println(*(unsigned long *)foundSetting->value);
+                break;
+            case SettingType::ENUM_IBUS_PROTOCOL:
+                Serial.println(_getReceiverProtocolName(*(ReceiverProtocol *)foundSetting->value));
+                break;
+            case SettingType::ENUM_IMU_PROTOCOL:
+                Serial.println(_getImuProtocolName(*(ImuProtocol *)foundSetting->value));
+                break;
+            case SettingType::ENUM_LPF_BANDWIDTH:
+                Serial.println(_getLpfBandwidthName(*(LpfBandwidth *)foundSetting->value));
+                break;
+            case SettingType::ENUM_IMU_ROTATION:
+                Serial.println(_getImuRotationName(*(ImuRotation *)foundSetting->value));
+                break;
+            case SettingType::BOOL:
+                Serial.println(_getBoolName(*(bool *)foundSetting->value));
+                break;
+            case SettingType::ENUM_DSHOT_MODE:
+                Serial.println(_getDShotModeName(*(dshot_mode_t *)foundSetting->value));
+                break;
+            case SettingType::STRING:
+                Serial.println(*(String *)foundSetting->value);
+                break;
+            case SettingType::ENUM_RX_CHANNEL_MAP:
+                Serial.println("Use 'dump' to see RX channel map.");
+                break;
+            }
+        }
+    }
+    else
+    {
+        if (settings.logging.inCliMode) {
+            Serial.print("Unknown setting: ");
+            Serial.println(settingName);
+        }
+    }
+}
+
+void CommunicationManager::_processSetSettingCliCommand(String commandArgs, bool isApiMode)
+{
+    int spaceIndex = commandArgs.indexOf(' ');
+    if (spaceIndex == -1)
+    {
+        if (settings.logging.inCliMode) {
+            Serial.println("ERROR: Invalid set command format. Usage: set <param> <value>");
+        }
+        return;
+    }
+
+    String settingName = commandArgs.substring(0, spaceIndex);
+    String valueStr = commandArgs.substring(spaceIndex + 1);
+
+    const Setting *foundSetting = nullptr;
+    for (int i = 0; i < numSettings; ++i)
+    {
+        if (settingName.equalsIgnoreCase(settingsRegistry[i].name))
+        {
+            foundSetting = &settingsRegistry[i];
+            break;
+        }
+    }
+
+    if (foundSetting)
+    {
+        String expectedValueType = "";
+        SetResult result = SetResult::SUCCESS;
+
+        // Handle RX Channel Map separately
+        if (settingName.startsWith(RX_MAP_PREFIX) && foundSetting->type == SettingType::ENUM_RX_CHANNEL_MAP)
+        {
+            int channelValue;
+            result = _parseAndValidateReceiverChannelMapSetting(settingName, valueStr, channelValue, expectedValueType);
+            if (result == SetResult::SUCCESS)
+            {
+                String inputName = settingName.substring(RX_MAP_PREFIX_LENGTH);
+                for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)
+                {
+                    if (inputName.equalsIgnoreCase(_getFlightControlInputName((FlightControlInput)i)))
+                    {
+                        settings.receiver.channelMapping.channel[i] = channelValue;
+                        break;
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Handle other settings
+            switch (foundSetting->type)
+            {
+            case SettingType::FLOAT:
+            {
+                float value;
+                result = _parseAndValidateFloatSetting(valueStr, value, foundSetting->scaleFactor, expectedValueType);
+                if (result == SetResult::SUCCESS)
+                    *(float *)foundSetting->value = value;
+                break;
+            }
+            case SettingType::INT:
+            {
+                int value;
+                result = _parseAndValidateIntSetting(valueStr, value, expectedValueType);
+                if (result == SetResult::SUCCESS)
+                {
+                    if (foundSetting->scaleFactor == PID_SCALE_FACTOR) {
+                        *(int *)foundSetting->value = value * PID_DISPLAY_SCALE_FACTOR;
+                    } else {
+                        *(int *)foundSetting->value = value;
+                    }
+                }
+                break;
+            }
+            case SettingType::UINT8:
+            {
+                long val = valueStr.toInt();
+                if (valueStr.length() > 0 && val == 0 && valueStr != "0")
+                {
+                    expectedValueType = "integer";
+                    result = SetResult::INVALID_VALUE;
+                }
+                else if (val < 0 || val > MAX_UINT8_VALUE)
+                {
+                    expectedValueType = "0-" + String(MAX_UINT8_VALUE);
+                    result = SetResult::OUT_OF_RANGE;
+                }
+                else
+                {
+                    *(uint8_t *)foundSetting->value = (uint8_t)val;
+                }
+                break;
+            }
+            case SettingType::UINT16:
+            {
+                uint16_t value;
+                result = _parseAndValidateUint16Setting(valueStr, value, expectedValueType);
+                if (result == SetResult::SUCCESS)
+                    *(uint16_t *)foundSetting->value = value;
+                break;
+            }
+            case SettingType::ULONG:
+            {
+                unsigned long value;
+                result = _parseAndValidateULongSetting(valueStr, value, expectedValueType);
+                if (result == SetResult::SUCCESS)
+                    *(unsigned long *)foundSetting->value = value;
+                break;
+            }
+            case SettingType::BOOL:
+            {
+                bool value;
+                result = _parseAndValidateBoolSetting(valueStr, value, expectedValueType);
+                if (result == SetResult::SUCCESS)
+                    *(bool *)foundSetting->value = value;
+                break;
+            }
+            case SettingType::ENUM_IBUS_PROTOCOL:
+            {
+                ReceiverProtocol value;
+                result = _parseAndValidateReceiverProtocolSetting(valueStr, value, expectedValueType);
+                if (result == SetResult::SUCCESS)
+                    *(ReceiverProtocol *)foundSetting->value = value;
+                break;
+            }
+            case SettingType::ENUM_IMU_PROTOCOL:
+            {
+                ImuProtocol value;
+                result = _parseAndValidateImuProtocolSetting(valueStr, value, expectedValueType);
+                if (result == SetResult::SUCCESS)
+                    *(ImuProtocol *)foundSetting->value = value;
+                break;
+            }
+            case SettingType::ENUM_LPF_BANDWIDTH:
+            {
+                LpfBandwidth value;
+                result = _parseAndValidateLpfBandwidthSetting(valueStr, value, expectedValueType);
+                if (result == SetResult::SUCCESS)
+                    *(LpfBandwidth *)foundSetting->value = value;
+                break;
+            }
+            case SettingType::ENUM_IMU_ROTATION:
+            {
+                ImuRotation value;
+                result = _parseAndValidateImuRotationSetting(valueStr, value, expectedValueType);
+                if (result == SetResult::SUCCESS)
+                    *(ImuRotation *)foundSetting->value = value;
+                break;
+            }
+            case SettingType::ENUM_DSHOT_MODE:
+            {
+                dshot_mode_t value;
+                result = _parseAndValidateDShotModeSetting(valueStr, value, expectedValueType);
+                if (result == SetResult::SUCCESS)
+                    *(dshot_mode_t *)foundSetting->value = value;
+                break;
+            }
+            case SettingType::STRING:
+            {
+                String *value = static_cast<String *>(foundSetting->value);
+                *value = valueStr;
+                result = SetResult::SUCCESS;
+                break;
+            }
+            case SettingType::ENUM_RX_CHANNEL_MAP:
+                // Handled above
+                break;
+            }
+        }
+
+        if (settings.logging.inCliMode) {
+            if (result == SetResult::SUCCESS)
+            {
+                Serial.print("INFO: Setting '");
+                Serial.print(settingName);
+                Serial.println("' updated.");
+            }
+            else
+            {
+                Serial.print("ERROR: Failed to set '");
+                Serial.print(settingName);
+                Serial.print("' - ");
+                if (result == SetResult::INVALID_VALUE)
+                {
+                    Serial.print("Invalid value. Expected: ");
+                    Serial.println(expectedValueType);
+                }
+                else if (result == SetResult::OUT_OF_RANGE)
+                {
+                    Serial.print("Value out of range. Expected: ");
+                    Serial.println(expectedValueType);
+                }
+                else if (result == SetResult::UNKNOWN_PARAMETER)
+                {
+                    Serial.println("Unknown parameter.");
+                }
+                else
+                {
+                    Serial.println("Unknown error.");
+                }
+            }
+        }
+    }
+    else
+    {
+        if (settings.logging.inCliMode) {
+            Serial.print("ERROR: Unknown setting: ");
+            Serial.println(settingName);
         }
     }
 }
 
 // --- Refactored Command Implementations ---
 
-void CommunicationManager::_printCliHelp()
+void CommunicationManager::_displayCliHelp()
 {
     if (settings.logging.inCliMode) {
         // --- Helper function to print a formatted line ---
@@ -1247,7 +1530,7 @@ void CommunicationManager::_printCliHelp()
             {
                 description += "[enum]  ";
                 ReceiverProtocol dummy;
-                _parseAndValidateReceiverProtocol("invalid", dummy, expectedValue);
+                _parseAndValidateReceiverProtocolSetting("invalid", dummy, expectedValue);
                 description += "Values: " + expectedValue;
                 break;
             }
@@ -1255,7 +1538,7 @@ void CommunicationManager::_printCliHelp()
             {
                 description += "[enum]  ";
                 ImuProtocol dummy;
-                _parseAndValidateImuProtocol("invalid", dummy, expectedValue);
+                _parseAndValidateImuProtocolSetting("invalid", dummy, expectedValue);
                 description += "Values: " + expectedValue;
                 break;
             }
@@ -1263,7 +1546,7 @@ void CommunicationManager::_printCliHelp()
             {
                 description += "[enum]  ";
                 LpfBandwidth dummy;
-                _parseAndValidateLpfBandwidth("invalid", dummy, expectedValue);
+                _parseAndValidateLpfBandwidthSetting("invalid", dummy, expectedValue);
                 description += "Values: " + expectedValue;
                 break;
             }
@@ -1271,7 +1554,7 @@ void CommunicationManager::_printCliHelp()
             {
                 description += "[enum]  ";
                 ImuRotation dummy;
-                _parseAndValidateImuRotation("invalid", dummy, expectedValue);
+                _parseAndValidateImuRotationSetting("invalid", dummy, expectedValue);
                 description += "Values: " + expectedValue;
                 break;
             }
@@ -1279,7 +1562,7 @@ void CommunicationManager::_printCliHelp()
             {
                 description += "[enum]  ";
                 dshot_mode_t dummy;
-                _parseAndValidateDShotMode("invalid", dummy, expectedValue);
+                _parseAndValidateDShotModeSetting("invalid", dummy, expectedValue);
                 description += "Values: " + expectedValue;
                 break;
             }
@@ -1301,7 +1584,7 @@ void CommunicationManager::_printCliHelp()
     }
 }
 
-void CommunicationManager::_handleDumpCommand()
+void CommunicationManager::_displayAllSettingsCliCommand()
 {
     if (settings.logging.inCliMode) {
         Serial.println("--- Current Flight Controller Settings ---");
@@ -1318,7 +1601,7 @@ void CommunicationManager::_handleDumpCommand()
             case SettingType::INT:
                 if (s.scaleFactor == PID_SCALE_FACTOR)
                 {
-                    Serial.println(*(int *)s.value / 10);
+                    Serial.println(*(int *)s.value / PID_DISPLAY_SCALE_FACTOR);
                 }
                 else
                 {
@@ -1335,22 +1618,22 @@ void CommunicationManager::_handleDumpCommand()
                 Serial.println(*(unsigned long *)s.value);
                 break;
             case SettingType::ENUM_IBUS_PROTOCOL:
-                Serial.println(_getReceiverProtocolString(*(ReceiverProtocol *)s.value));
+                Serial.println(_getReceiverProtocolName(*(ReceiverProtocol *)s.value));
                 break;
             case SettingType::ENUM_IMU_PROTOCOL:
-                Serial.println(_getImuProtocolString(*(ImuProtocol *)s.value));
+                Serial.println(_getImuProtocolName(*(ImuProtocol *)s.value));
                 break;
             case SettingType::ENUM_LPF_BANDWIDTH:
-                Serial.println(_getLpfBandwidthString(*(LpfBandwidth *)s.value));
+                Serial.println(_getLpfBandwidthName(*(LpfBandwidth *)s.value));
                 break;
             case SettingType::ENUM_IMU_ROTATION:
-                Serial.println(_getImuRotationString(*(ImuRotation *)s.value));
+                Serial.println(_getImuRotationName(*(ImuRotation *)s.value));
                 break;
             case SettingType::BOOL:
-                Serial.println(_getBoolString(*(bool *)s.value));
+                Serial.println(_getBoolName(*(bool *)s.value));
                 break;
             case SettingType::ENUM_DSHOT_MODE:
-                Serial.println(_getDShotModeString(*(dshot_mode_t *)s.value));
+                Serial.println(_getDShotModeName(*(dshot_mode_t *)s.value));
                 break;
             case SettingType::STRING:
                 Serial.println(*(String *)s.value);
@@ -1361,7 +1644,7 @@ void CommunicationManager::_handleDumpCommand()
         for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)
         {
             Serial.print("  ");
-            Serial.print(_getFlightControlInputString((FlightControlInput)i));
+            Serial.print(_getFlightControlInputName((FlightControlInput)i));
             Serial.print(": ");
             Serial.println(settings.receiver.channelMapping.channel[i]);
         }
@@ -1375,20 +1658,20 @@ void CommunicationManager::_handleDumpCommand()
 
 
 
-void CommunicationManager::_handleStatusCommand() const
+void CommunicationManager::_displaySystemStatusCliCommand() const
 {
     if (settings.logging.inCliMode) {
         Serial.println("--- System Status ---");
         Serial.print("Target Loop Time (us): ");
         Serial.println(TARGET_LOOP_TIME_US);
         Serial.print("Actual Loop Time (us): ");
-        Serial.println(_fc->state.loopTimeUs);
+        Serial.println(_flightController->state.loopTimeUs);
         Serial.print("CPU Load (%): ");
-        Serial.println(_fc->state.cpuLoad, 2);
+        Serial.println(_flightController->state.cpuLoad, 2);
         Serial.print("Battery Voltage (V): ");
-        Serial.println(_fc->state.voltage, 2);
+        Serial.println(_flightController->state.voltage, 2);
         Serial.print("Current Draw (A): ");
-        Serial.println(_fc->state.current, 2);
+        Serial.println(_flightController->state.current, 2);
         Serial.print("Free Heap (bytes): ");
         Serial.println(esp_get_free_heap_size());
         Serial.print("Min Free Heap (bytes): ");
@@ -1397,7 +1680,7 @@ void CommunicationManager::_handleStatusCommand() const
     }
 }
 
-void CommunicationManager::_handleVersionCommand() const
+void CommunicationManager::_displayFirmwareVersionCliCommand() const
 {
     if (settings.logging.inCliMode) {
         Serial.print("Firmware Version: ");

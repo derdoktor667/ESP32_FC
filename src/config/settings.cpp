@@ -10,6 +10,8 @@
 #include <Preferences.h>
 #include "src/config/settings.h"
 
+
+
 // Instantiate the global settings object, initialized with default values from config.h
 FlightControllerSettings settings;
 
@@ -24,7 +26,7 @@ static constexpr uint16_t NVS_DEFAULT_BUILD_ID = 0;
 
 
 
-void saveSettings()
+void saveSettings(std::function<void(const String&)> sendDebugMessage)
 {
     preferences.begin(PREFERENCES_NAMESPACE, false);
 
@@ -32,6 +34,7 @@ void saveSettings()
     preferences.putBool(INIT_KEY, true);
 
     // Save all settings from the struct
+    sendDebugMessage("Saving pid.roll.kp: " + String(settings.pid.roll.kp));
     preferences.putInt(NVSKeys::PID_ROLL_KP, settings.pid.roll.kp);
     preferences.putInt(NVSKeys::PID_ROLL_KI, settings.pid.roll.ki);
     preferences.putInt(NVSKeys::PID_ROLL_KD, settings.pid.roll.kd);
@@ -43,9 +46,9 @@ void saveSettings()
     preferences.putInt(NVSKeys::PID_YAW_KD, settings.pid.yaw.kd);
     preferences.putFloat(NVSKeys::PID_INTEGRAL_LIMIT, settings.pid.integralLimit);
 
-    preferences.putFloat(NVSKeys::RATES_MAX_ANGLE_ROLL_PITCH, settings.rates.maxAngleRollPitch);
-    preferences.putFloat(NVSKeys::RATES_MAX_RATE_YAW, settings.rates.maxRateYaw);
-    preferences.putFloat(NVSKeys::RATES_MAX_RATE_ROLL_PITCH, settings.rates.maxRateRollPitch);
+    preferences.putFloat(NVSKeys::RATES_MAX_ANGLE_ROLL_PITCH, settings.flightRates.maxAngleRollPitch);
+    preferences.putFloat(NVSKeys::RATES_MAX_RATE_YAW, settings.flightRates.maxRateYaw);
+    preferences.putFloat(NVSKeys::RATES_MAX_RATE_ROLL_PITCH, settings.flightRates.maxRateRollPitch);
 
     preferences.putFloat(NVSKeys::FILTER_COMPLEMENTARY_TAU, settings.filter.complementaryFilterTau);
     preferences.putFloat(NVSKeys::FILTER_GYRO_LPF_CUTOFF_FREQ, settings.filter.gyroLpfCutoffFreq);
@@ -106,7 +109,7 @@ void loadSettings()
     if (!initialized || storedBuildId != FIRMWARE_BUILD_ID)
     {
         settings = FlightControllerSettings(); // Reset to default values
-        saveSettings(); // This will also set the 'initialized' flag and save the new build ID.
+        saveSettings([](const String&){}); // This will also set the 'initialized' flag and save the new build ID.
     }
     else
     {
@@ -122,9 +125,9 @@ void loadSettings()
         settings.pid.yaw.kd = preferences.getInt(NVSKeys::PID_YAW_KD, settings.pid.yaw.kd);
         settings.pid.integralLimit = preferences.getFloat(NVSKeys::PID_INTEGRAL_LIMIT, settings.pid.integralLimit);
 
-        settings.rates.maxAngleRollPitch = preferences.getFloat(NVSKeys::RATES_MAX_ANGLE_ROLL_PITCH, settings.rates.maxAngleRollPitch);
-        settings.rates.maxRateYaw = preferences.getFloat(NVSKeys::RATES_MAX_RATE_YAW, settings.rates.maxRateYaw);
-        settings.rates.maxRateRollPitch = preferences.getFloat(NVSKeys::RATES_MAX_RATE_ROLL_PITCH, settings.rates.maxRateRollPitch);
+        settings.flightRates.maxAngleRollPitch = preferences.getFloat(NVSKeys::RATES_MAX_ANGLE_ROLL_PITCH, settings.flightRates.maxAngleRollPitch);
+        settings.flightRates.maxRateYaw = preferences.getFloat(NVSKeys::RATES_MAX_RATE_YAW, settings.flightRates.maxRateYaw);
+        settings.flightRates.maxRateRollPitch = preferences.getFloat(NVSKeys::RATES_MAX_RATE_ROLL_PITCH, settings.flightRates.maxRateRollPitch);
 
         settings.filter.complementaryFilterTau = preferences.getFloat(NVSKeys::FILTER_COMPLEMENTARY_TAU, settings.filter.complementaryFilterTau);
         settings.filter.gyroLpfCutoffFreq = preferences.getFloat(NVSKeys::FILTER_GYRO_LPF_CUTOFF_FREQ, settings.filter.gyroLpfCutoffFreq);

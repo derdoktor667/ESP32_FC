@@ -20,7 +20,7 @@
 
 // Define IBUS RX Pin for Serial2
 // Default RX pin for Serial2 on ESP32 is GPIO_NUM_16
-const gpio_num_t IBUS_RX_PIN = GPIO_NUM_16;
+const gpio_num_t RECEIVER_RX_PIN = GPIO_NUM_16;
 
 // Define ESC pins
 const gpio_num_t ESC_PIN_FRONT_RIGHT = GPIO_NUM_27; // Front-Right motor
@@ -97,7 +97,7 @@ static constexpr int IBUS_CHANNEL_FAILSAFE_SWITCH = 5;
 static constexpr int IBUS_CHANNEL_FLIGHT_MODE_SWITCH = 6;
 
 // Structs for organizing FlightControllerSettings
-struct PidAxisSettings
+struct PidAxisGains
 {
     int kp, ki, kd;
 };
@@ -113,9 +113,9 @@ static constexpr float DEFAULT_PID_INTEGRAL_LIMIT = 400.0f;
 
 struct PidSettings
 {
-    PidAxisSettings roll{DEFAULT_PID_KP_ROLL_PITCH, DEFAULT_PID_KI_ROLL_PITCH, DEFAULT_PID_KD_ROLL_PITCH};
-    PidAxisSettings pitch{DEFAULT_PID_KP_ROLL_PITCH, DEFAULT_PID_KI_ROLL_PITCH, DEFAULT_PID_KD_ROLL_PITCH};
-    PidAxisSettings yaw{DEFAULT_PID_KP_YAW, DEFAULT_PID_KI_YAW, DEFAULT_PID_KD_YAW};
+    PidAxisGains roll{DEFAULT_PID_KP_ROLL_PITCH, DEFAULT_PID_KI_ROLL_PITCH, DEFAULT_PID_KD_ROLL_PITCH};
+    PidAxisGains pitch{DEFAULT_PID_KP_ROLL_PITCH, DEFAULT_PID_KI_ROLL_PITCH, DEFAULT_PID_KD_ROLL_PITCH};
+    PidAxisGains yaw{DEFAULT_PID_KP_YAW, DEFAULT_PID_KI_YAW, DEFAULT_PID_KD_YAW};
     float integralLimit = DEFAULT_PID_INTEGRAL_LIMIT;
 };
 
@@ -124,7 +124,7 @@ static constexpr float DEFAULT_MAX_ANGLE_ROLL_PITCH = 30.0f;
 static constexpr float DEFAULT_MAX_RATE_YAW = 90.0f;
 static constexpr float DEFAULT_MAX_RATE_ROLL_PITCH = 90.0f;
 
-struct RateSettings
+struct FlightRateSettings
 {
     float maxAngleRollPitch = DEFAULT_MAX_ANGLE_ROLL_PITCH;
     float maxRateYaw = DEFAULT_MAX_RATE_YAW;
@@ -236,7 +236,7 @@ struct FlightControllerSettings
     ImuSettings imu;
     ReceiverSettings receiver;
     PidSettings pid;
-    RateSettings rates;
+    FlightRateSettings flightRates;
     CalibrationSettings calibration;
     FilterSettings filter;
     MotorSettings motor;

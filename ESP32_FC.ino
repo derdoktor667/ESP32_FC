@@ -13,8 +13,8 @@
 #include "src/config/config.h"
 
 // Global instances of the core components
-FlightController *fc;
-CommunicationManager *comms;
+FlightController *flightController;
+CommunicationManager *communicationManager;
 
 void setup()
 {
@@ -22,15 +22,15 @@ void setup()
     Serial.flush(); // Clear any pending incoming serial data
 
     // Instantiate after Serial.begin()
-    fc = new FlightController();
-    comms = new CommunicationManager(fc);
+    flightController = new FlightController();
+    communicationManager = new CommunicationManager(flightController);
 
-    fc->initialize();
-    comms->initializeCommunication();
+    flightController->initialize();
+    communicationManager->initializeCommunication();
 }
 
 void loop()
 {
-    fc->runLoop();
-    comms->processCommunication();
+    flightController->runLoop();
+    communicationManager->processCommunication();
 }

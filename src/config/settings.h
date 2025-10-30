@@ -11,6 +11,7 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
+#include <functional> // Required for std::function
 #include "src/config/config.h"
 
 // Declare the global settings instance to be accessible across the project
@@ -74,7 +75,7 @@ namespace NVSKeys
 }
 
 // Functions to manage persistent storage
-void saveSettings();
+void saveSettings(std::function<void(const String&)> sendDebugMessage = [](const String&){});
 void loadSettings();
 
 #endif

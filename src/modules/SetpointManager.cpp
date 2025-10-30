@@ -14,7 +14,7 @@
 #include <Arduino.h>
 
 // Constructor: Initializes the SetpointManager with references to the receiver and settings.
-SetpointManager::SetpointManager(ReceiverInterface &receiver, const ReceiverSettings &receiverSettings, const RateSettings &rateSettings)
+SetpointManager::SetpointManager(ReceiverInterface &receiver, const ReceiverSettings &receiverSettings, const FlightRateSettings &rateSettings)
     : _receiver(receiver), _receiverSettings(receiverSettings), _rateSettings(rateSettings)
 {
 }

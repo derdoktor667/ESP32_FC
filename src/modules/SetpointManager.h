@@ -23,7 +23,7 @@ class SetpointManager
 {
 public:
     // Constructor: Initializes the SetpointManager with references to the receiver and settings.
-    SetpointManager(ReceiverInterface &receiver, const ReceiverSettings &receiverSettings, const RateSettings &rateSettings);
+    SetpointManager(ReceiverInterface &receiver, const ReceiverSettings &receiverSettings, const FlightRateSettings &rateSettings);
 
     // Performs one cycle of setpoint calculation.
     // It reads the relevant receiver channels and the current flight mode from the FlightState,
@@ -34,7 +34,7 @@ public:
 private:
     ReceiverInterface &_receiver;              // Reference to the active RC receiver
     const ReceiverSettings &_receiverSettings; // Reference to receiver-specific settings
-    const RateSettings &_rateSettings;         // Reference to rate-specific settings
+    const FlightRateSettings &_rateSettings;         // Reference to rate-specific settings
 
     // Private helper methods for setpoint calculations
     float _calculateSetpoint(uint16_t channelValue, float maxRateOrAngle) const;

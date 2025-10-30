@@ -47,7 +47,7 @@ void FlightController::initialize()
 void FlightController::runLoop()
 {
     // Start loop timer
-    _loopTimer = micros();
+    _currentLoopStartTimeUs = micros();
 
     // Always read raw receiver channel values into the flight state.
     // This is crucial for live data streaming in communication mode.
@@ -83,7 +83,7 @@ void FlightController::runLoop()
     }
 
     // Calculate actual loop time
-    unsigned long currentLoopTimeUs = micros() - _loopTimer;
+    unsigned long currentLoopTimeUs = micros() - _currentLoopStartTimeUs;
     state.loopTimeUs = currentLoopTimeUs; // Store actual loop time in state
 
     // Enforce target loop time
@@ -117,10 +117,10 @@ void FlightController::_initializeReceiver()
     switch (settings.receiver.protocol)
     {
     case PROTOCOL_IBUS:
-        _receiver = std::make_unique<IbusReceiver>(Serial2, IBUS_RX_PIN);
+        _receiver = std::make_unique<IbusReceiver>(Serial2, RECEIVER_RX_PIN);
         break;
     case PROTOCOL_PPM:
-        _receiver = std::make_unique<PpmReceiver>(IBUS_RX_PIN);
+        _receiver = std::make_unique<PpmReceiver>(RECEIVER_RX_PIN);
         break;
     default:
         _haltOnError("ERROR: Unknown receiver protocol! Halting.");
@@ -144,13 +144,13 @@ void FlightController::_initializeImu()
 void FlightController::_initializeModules()
 {
     _safetyManager = std::make_unique<SafetyManager>(*_receiver, settings.receiver);
-    _setpointManager = std::make_unique<SetpointManager>(*_receiver, settings.receiver, settings.rates);
+    _setpointManager = std::make_unique<SetpointManager>(*_receiver, settings.receiver, settings.flightRates);
     _attitudeEstimator.init(*_imuInterface, settings.imu, settings.filter, settings.calibration);
     _attitudeEstimator.begin();
 }
 
 void FlightController::_haltOnError(const char *message)
 {
-    while (INFINITE_LOOP_CONDITION)
+    while (true)
         ; // Halt on critical error
 }
