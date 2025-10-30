@@ -68,6 +68,7 @@ namespace NVSKeys
     static constexpr const char *LOGGING_PRINT_INTERVAL_MS = "log.print_int";
     static constexpr const char *LOGGING_ENABLE = "log.enable";
     static constexpr const char *BENCH_RUN_MODE_ENABLE = "bench.run.en";
+    static constexpr const char *LOGGING_DEBUG_ENABLE = "log.debug.en"; // Add this line
     static constexpr const char *LOGGING_TEST_STRING = "log.test_str";
     static constexpr const char *FIRMWARE_BUILD_ID = "fw.build.id";
 }

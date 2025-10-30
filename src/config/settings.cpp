@@ -24,15 +24,8 @@ static constexpr uint16_t NVS_DEFAULT_BUILD_ID = 0;
 
 
 
-static void _logSettingsStatus(const char *message)
-{
-    Serial.print("INFO: ");
-    Serial.println(message);
-}
-
 void saveSettings()
 {
-    _logSettingsStatus("Saving settings to flash...");
     preferences.begin(PREFERENCES_NAMESPACE, false);
 
     // Mark settings as initialized
@@ -96,10 +89,9 @@ void saveSettings()
     preferences.putULong(NVSKeys::LOGGING_PRINT_INTERVAL_MS, settings.logging.printIntervalMs);
     preferences.putBool(NVSKeys::LOGGING_ENABLE, settings.logging.enableLogging);
     preferences.putBool(NVSKeys::BENCH_RUN_MODE_ENABLE, settings.logging.enableBenchRunMode);
+    preferences.putBool(NVSKeys::LOGGING_DEBUG_ENABLE, settings.logging.enableDebugLogging); // Add this line
     preferences.putString(NVSKeys::LOGGING_TEST_STRING, settings.logging.testString);
     preferences.putUShort(NVSKeys::FIRMWARE_BUILD_ID, FIRMWARE_BUILD_ID);
-
-    _logSettingsStatus("Settings saved.");
 }
 
 void loadSettings()
@@ -113,13 +105,11 @@ void loadSettings()
     // If not initialized, or firmware build ID mismatch, reset to defaults.
     if (!initialized || storedBuildId != FIRMWARE_BUILD_ID)
     {
-        _logSettingsStatus("No saved settings found or firmware updated. Saving default values...");
         settings = FlightControllerSettings(); // Reset to default values
         saveSettings(); // This will also set the 'initialized' flag and save the new build ID.
     }
     else
     {
-        _logSettingsStatus("Saved settings found. Loading...");
         // Load all settings into the struct
         settings.pid.roll.kp = preferences.getInt(NVSKeys::PID_ROLL_KP, settings.pid.roll.kp);
         settings.pid.roll.ki = preferences.getInt(NVSKeys::PID_ROLL_KI, settings.pid.roll.ki);
@@ -171,6 +161,7 @@ void loadSettings()
         settings.logging.printIntervalMs = preferences.getULong(NVSKeys::LOGGING_PRINT_INTERVAL_MS, settings.logging.printIntervalMs);
         settings.logging.enableLogging = preferences.getBool(NVSKeys::LOGGING_ENABLE, settings.logging.enableLogging);
         settings.logging.enableBenchRunMode = preferences.getBool(NVSKeys::BENCH_RUN_MODE_ENABLE, settings.logging.enableBenchRunMode);
+        settings.logging.enableDebugLogging = preferences.getBool(NVSKeys::LOGGING_DEBUG_ENABLE, settings.logging.enableDebugLogging); // Add this line
         settings.logging.testString = preferences.getString(NVSKeys::LOGGING_TEST_STRING, settings.logging.testString);
 
         // Load channel mapping
@@ -179,7 +170,6 @@ void loadSettings()
             String key = String(NVSKeys::RX_CHANNEL_MAP_PREFIX) + String(i);
             settings.receiver.channelMapping.channel[i] = preferences.getInt(key.c_str(), settings.receiver.channelMapping.channel[i]);
         }
-        _logSettingsStatus("Settings loaded.");
     }
 
     preferences.end();

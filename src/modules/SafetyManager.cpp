@@ -39,7 +39,6 @@ void SafetyManager::update(FlightState &state)
         {
             state.isFailsafeActive = true;
             state.isArmed = false; // Crucial: Always disarm when failsafe is active.
-            _logSafetyStatus("FAILSAFE ACTIVATED - MOTORS STOPPED");
         }
         // When in failsafe, no further arming/disarming logic should be processed.
         // Motors are commanded to stop by MotorMixer.
@@ -51,7 +50,6 @@ void SafetyManager::update(FlightState &state)
         if (state.isFailsafeActive)
         {
             state.isFailsafeActive = false;
-            _logSafetyStatus("Failsafe deactivated.");
         }
     }
 
@@ -63,18 +61,10 @@ void SafetyManager::update(FlightState &state)
     if (armingSwitchEngaged && !state.isArmed)
     {
         state.isArmed = true;
-        _logSafetyStatus("ARMED");
     }
     // Check if the arming switch is in the "disarmed" position and the drone is currently armed.
     else if (disarmingSwitchEngaged && state.isArmed)
     {
         state.isArmed = false;
-        _logSafetyStatus("DISARMED");
     }
-}
-
-void SafetyManager::_logSafetyStatus(const char *message)
-{
-    Serial.print("INFO: ");
-    Serial.println(message);
 }

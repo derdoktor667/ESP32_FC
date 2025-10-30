@@ -25,7 +25,6 @@ void MotorMixer::begin()
     _motor2->begin();
     _motor3->begin();
     _motor4->begin();
-    Serial.println("INFO: DShot motors initialized.");
 }
 
 // Applies the final calculated throttle values to the motors based on flight state.

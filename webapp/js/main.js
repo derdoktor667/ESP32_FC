@@ -958,7 +958,6 @@ function _update3DModel(attitude) {
 
 
 function handleIncomingMspData(command, payload) {
-    log.textContent += `Received MSP command 0x${command.toString(16)} with payload size ${payload.length}\n`;
     log.scrollTop = log.scrollHeight;
 
     switch (command) {
@@ -1209,54 +1208,36 @@ async function sendMspMessage(command, payload = []) {
     const size = payload.length;
     let buffer;
 
-    // Determine if MSPv1 or MSPv2 is needed
-    // MSPv2 is required if command > 255 or payload size > 255
-    const useMspV2 = (command > 255 || size > 255);
+    // MSPv2 message construction
+    let mspCrc = 0;
+    const directionChar = '>'.charCodeAt(0); // Host to device
+    const flags = 0; // No flags for now
 
-    if (useMspV2) {
-        // MSPv2 message construction
-        let mspCrc = 0;
-        const directionChar = '>'.charCodeAt(0); // Host to device
-        const flags = 0; // No flags for now
+    // Calculate CRC for header
+    mspCrc = crc8_dvb_s2(mspCrc, directionChar);
+    mspCrc = crc8_dvb_s2(mspCrc, flags);
+    mspCrc = crc8_dvb_s2(mspCrc, (size & 0xFF));
+    mspCrc = crc8_dvb_s2(mspCrc, (size >> 8));
+    mspCrc = crc8_dvb_s2(mspCrc, (command & 0xFF));
+    mspCrc = crc8_dvb_s2(mspCrc, (command >> 8));
 
-        // Calculate CRC for header
-        mspCrc = crc8_dvb_s2(mspCrc, flags);
-        mspCrc = crc8_dvb_s2(mspCrc, (size & 0xFF));
-        mspCrc = crc8_dvb_s2(mspCrc, (size >> 8));
-        mspCrc = crc8_dvb_s2(mspCrc, (command & 0xFF));
-        mspCrc = crc8_dvb_s2(mspCrc, (command >> 8));
-
-        // Calculate CRC for payload
-        for (let i = 0; i < payload.length; i++) {
-            mspCrc = crc8_dvb_s2(mspCrc, payload[i]);
-        }
-
-        buffer = new Uint8Array([
-            '$'.charCodeAt(0),
-            'X'.charCodeAt(0),
-            directionChar,
-            flags,
-            (size & 0xFF),       // Size LSB
-            (size >> 8),         // Size MSB
-            (command & 0xFF),    // Command LSB
-            (command >> 8),      // Command MSB
-            ...payload,
-            mspCrc
-        ]);
-
-    } else {
-        // MSPv1 message construction
-        const data = [size, command, ...payload];
-        const checksum = calculateChecksum(data);
-
-        buffer = new Uint8Array([
-            MSP_HEADER_V1.charCodeAt(0),
-            MSP_HEADER_V1.charCodeAt(1),
-            MSP_HEADER_V1.charCodeAt(2),
-            ...data,
-            checksum
-        ]);
+    // Calculate CRC for payload
+    for (let i = 0; i < payload.length; i++) {
+        mspCrc = crc8_dvb_s2(mspCrc, payload[i]);
     }
+
+    buffer = new Uint8Array([
+        '$'.charCodeAt(0),
+        'X'.charCodeAt(0),
+        directionChar,
+        flags,
+        (size & 0xFF),       // Size LSB
+        (size >> 8),         // Size MSB
+        (command & 0xFF),    // Command LSB
+        (command >> 8),      // Command MSB
+        ...payload,
+        mspCrc
+    ]);
 
     log.textContent += `Sending MSP command 0x${command.toString(16)} with payload size ${size}.\n`;
     try {

@@ -522,6 +522,7 @@ const Setting CommunicationManager::settingsRegistry[] = {
     {"cal.accel_z_g", SettingType::FLOAT, &settings.calibration.accelZGravity, DEFAULT_SCALE_FACTOR},
     {"log.print_interval", SettingType::ULONG, &settings.logging.printIntervalMs, DEFAULT_SCALE_FACTOR},
     {"log.enable", SettingType::BOOL, &settings.logging.enableLogging, DEFAULT_SCALE_FACTOR},
+    {"log.debug.en", SettingType::BOOL, &settings.logging.enableDebugLogging, DEFAULT_SCALE_FACTOR}, // Add this line
     {"log.test_string", SettingType::STRING, &settings.logging.testString, DEFAULT_SCALE_FACTOR},
     {"bench.run.en", SettingType::BOOL, &settings.logging.enableBenchRunMode, DEFAULT_SCALE_FACTOR},
 };const int CommunicationManager::numSettings = sizeof(CommunicationManager::settingsRegistry) / sizeof(Setting);
@@ -726,16 +727,12 @@ SetResult CommunicationManager::_parseAndValidateRxChannelMap(const String &para
 
 void CommunicationManager::_sendMspResponse(uint16_t command, const uint8_t *payload, uint16_t payloadSize)
 {
-    Serial.print("DEBUG: Sending MSP response - Command: 0x");
-    Serial.print(command, HEX);
-    Serial.print(", Payload Size: ");
-    Serial.println(payloadSize);
     _mspParser.sendMspMessage(Serial, '>', command, payload, payloadSize, true);
 }
 
 void CommunicationManager::_sendMspDebugMessage(const String& message)
 {
-    if (_instance) { // Ensure instance exists before calling non-static method
+    if (_instance && settings.logging.enableDebugLogging) { // Ensure instance exists and debug logging is enabled
         uint8_t payload[message.length() + 1]; // +1 for null terminator
         message.getBytes(payload, message.length() + 1);
         _instance->_sendMspResponse(MSP_FC_DEBUG_MESSAGE, payload, message.length() + 1);

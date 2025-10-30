@@ -80,14 +80,6 @@ void Mpu6050Imu::update()
 // Performs MPU6050-specific calibration.
 bool Mpu6050Imu::calibrate(int numReadings)
 {
-    _logCalibrationStatus("Calibrating MPU6050... Keep the drone still.");
     _mpu.calibrate(numReadings);
-    _logCalibrationStatus("MPU6050 Calibration complete.");
     return true; // MPU6050 library calibration always returns true if it runs
-}
-
-void Mpu6050Imu::_logCalibrationStatus(const char *message)
-{
-    Serial.print("INFO: ");
-    Serial.println(message);
 }

@@ -114,38 +114,31 @@ void FlightController::_initializeMotors()
 
 void FlightController::_initializeReceiver()
 {
-    Serial.print("INFO: Initializing Receiver Protocol: ");
     switch (settings.receiver.protocol)
     {
     case PROTOCOL_IBUS:
-        Serial.println("iBUS");
         _receiver = std::make_unique<IbusReceiver>(Serial2, IBUS_RX_PIN);
         break;
     case PROTOCOL_PPM:
-        Serial.println("PPM");
         _receiver = std::make_unique<PpmReceiver>(IBUS_RX_PIN);
         break;
     default:
         _haltOnError("ERROR: Unknown receiver protocol! Halting.");
     }
     _receiver->begin();
-    Serial.println("INFO: Receiver initialized.");
 }
 
 void FlightController::_initializeImu()
 {
-    Serial.print("INFO: Initializing IMU Protocol: ");
     switch (settings.imu.protocol)
     {
     case IMU_MPU6050:
-        Serial.println("MPU6050");
         _imuInterface = std::make_unique<Mpu6050Imu>(settings.imu.lpfBandwidth, settings.imu.rotation);
         break;
     default:
         _haltOnError("ERROR: Unknown IMU protocol! Halting.");
     }
     _imuInterface->begin();
-    Serial.println("INFO: IMU initialized.");
 }
 
 void FlightController::_initializeModules()
@@ -158,7 +151,6 @@ void FlightController::_initializeModules()
 
 void FlightController::_haltOnError(const char *message)
 {
-    Serial.println(message);
     while (INFINITE_LOOP_CONDITION)
         ; // Halt on critical error
 }

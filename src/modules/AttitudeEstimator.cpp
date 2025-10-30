@@ -44,7 +44,6 @@ void AttitudeEstimator::update(FlightState &state)
 {
     if (!_imu)
     {
-        Serial.println("ERROR: IMU interface not initialized in AttitudeEstimator.");
         return;
     }
 
