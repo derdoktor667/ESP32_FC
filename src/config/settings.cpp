@@ -89,7 +89,7 @@ void saveSettings()
     preferences.putULong(NVSKeys::LOGGING_PRINT_INTERVAL_MS, settings.logging.printIntervalMs);
     preferences.putBool(NVSKeys::LOGGING_ENABLE, settings.logging.enableLogging);
     preferences.putBool(NVSKeys::BENCH_RUN_MODE_ENABLE, settings.logging.enableBenchRunMode);
-    preferences.putBool(NVSKeys::LOGGING_DEBUG_ENABLE, settings.logging.enableDebugLogging); // Add this line
+    preferences.putBool(NVSKeys::LOGGING_DEBUG_ENABLE, settings.logging.enableDebugLogging);
     preferences.putString(NVSKeys::LOGGING_TEST_STRING, settings.logging.testString);
     preferences.putUShort(NVSKeys::FIRMWARE_BUILD_ID, FIRMWARE_BUILD_ID);
 }
@@ -161,7 +161,7 @@ void loadSettings()
         settings.logging.printIntervalMs = preferences.getULong(NVSKeys::LOGGING_PRINT_INTERVAL_MS, settings.logging.printIntervalMs);
         settings.logging.enableLogging = preferences.getBool(NVSKeys::LOGGING_ENABLE, settings.logging.enableLogging);
         settings.logging.enableBenchRunMode = preferences.getBool(NVSKeys::BENCH_RUN_MODE_ENABLE, settings.logging.enableBenchRunMode);
-        settings.logging.enableDebugLogging = preferences.getBool(NVSKeys::LOGGING_DEBUG_ENABLE, settings.logging.enableDebugLogging); // Add this line
+        settings.logging.enableDebugLogging = preferences.getBool(NVSKeys::LOGGING_DEBUG_ENABLE, settings.logging.enableDebugLogging);
         settings.logging.testString = preferences.getString(NVSKeys::LOGGING_TEST_STRING, settings.logging.testString);
 
         // Load channel mapping

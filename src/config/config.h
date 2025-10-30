@@ -225,7 +225,8 @@ struct LoggingSettings
     bool enableLogging = DEFAULT_ENABLE_LOGGING;
     bool enforceLoopTime = DEFAULT_ENFORCE_LOOP_TIME;
     bool enableBenchRunMode = DEFAULT_ENABLE_BENCH_RUN_MODE;
-    bool enableDebugLogging = false; // Add this line
+    bool enableDebugLogging = false;
+    bool inCliMode = false; // Add this line
     String testString = DEFAULT_TEST_STRING; // Added for MSP string testing
 };
 

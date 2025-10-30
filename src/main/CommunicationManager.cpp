@@ -973,6 +973,7 @@ void CommunicationManager::_handleFlightModeInput(const String &input)
     {
         _currentMode = OperatingMode::CLI;
         settings.logging.enableLogging = false;
+        settings.logging.inCliMode = true; // Set in_cli_mode to true
         Serial.println("--- CLI  Activated ---");
         Serial.print("ESP32_FC > ");
     }
@@ -980,6 +981,7 @@ void CommunicationManager::_handleFlightModeInput(const String &input)
     {
         _currentMode = OperatingMode::MSP_API;
         settings.logging.enableLogging = true;
+        settings.logging.inCliMode = false; // Set in_cli_mode to false
         Serial.println("--- MSP API Activated ---");
     }
 }
@@ -1027,13 +1029,14 @@ void CommunicationManager::_handleSerialInput()
         if (commandName.equalsIgnoreCase("exit"))
         {
             _currentMode = OperatingMode::FLIGHT;
+            settings.logging.inCliMode = false; // Set in_cli_mode to false
             Serial.println("--- CLI  Deactivated ---");
             return;
         }
         _executeCommand(input, false);
         if (!commandName.equalsIgnoreCase("save") && !commandName.equalsIgnoreCase("reboot") && !commandName.equalsIgnoreCase("reset"))
         {
-            Serial.print("ESP32_FC > ");
+            if (settings.logging.inCliMode) Serial.print("ESP32_FC > ");
         }
         break;
     }
@@ -1076,8 +1079,10 @@ void CommunicationManager::_executeCommand(String command, bool isApiMode)
     }
     else
     {
-        Serial.print("Unknown command: ");
-        Serial.println(commandName);
+        if (settings.logging.inCliMode) {
+            Serial.print("Unknown command: ");
+            Serial.println(commandName);
+        }
     }
 }
 
@@ -1089,8 +1094,10 @@ void CommunicationManager::_handleSettingsCommand(String commandName, String com
         _handleDumpCommand();
     else
     {
-        Serial.print("Unknown command: ");
-        Serial.println(commandName);
+        if (settings.logging.inCliMode) {
+            Serial.print("Unknown command: ");
+            Serial.println(commandName);
+        }
     }
 }
 
@@ -1098,7 +1105,7 @@ void CommunicationManager::_handleSystemCommand(String commandName, bool isApiMo
 {
     if (commandName.equals("save"))
     {
-        if (!isApiMode)
+        if (settings.logging.inCliMode)
             Serial.println("INFO: Settings saved. Rebooting...");
         saveSettings();
         delay(CLI_REBOOT_DELAY_MS);
@@ -1106,7 +1113,7 @@ void CommunicationManager::_handleSystemCommand(String commandName, bool isApiMo
     }
     else if (commandName.equals("reset"))
     {
-        if (!isApiMode)
+        if (settings.logging.inCliMode)
             Serial.println("INFO: All settings have been reset to their default values and saved.");
         settings = FlightControllerSettings();
         saveSettings();
@@ -1115,7 +1122,7 @@ void CommunicationManager::_handleSystemCommand(String commandName, bool isApiMo
     }
     else if (commandName.equals("reboot"))
     {
-        if (!isApiMode)
+        if (settings.logging.inCliMode)
             Serial.println("Rebooting...");
         delay(CLI_REBOOT_DELAY_MS);
         ESP.restart();
@@ -1130,8 +1137,10 @@ void CommunicationManager::_handleSystemCommand(String commandName, bool isApiMo
     }
     else
     {
-        Serial.print("Unknown command: ");
-        Serial.println(commandName);
+        if (settings.logging.inCliMode) {
+            Serial.print("Unknown command: ");
+            Serial.println(commandName);
+        }
     }
 }
 
@@ -1139,7 +1148,7 @@ void CommunicationManager::_handleUtilityCommand(String commandName, bool isApiM
 {
     if (commandName.equals("calibrate_imu"))
     {
-        if (!isApiMode)
+        if (settings.logging.inCliMode)
             Serial.println("INFO: IMU calibration requested.");
         _fc->requestImuCalibration();
     }
@@ -1149,8 +1158,10 @@ void CommunicationManager::_handleUtilityCommand(String commandName, bool isApiM
     }
     else
     {
-        Serial.print("Unknown command: ");
-        Serial.println(commandName);
+        if (settings.logging.inCliMode) {
+            Serial.print("Unknown command: ");
+            Serial.println(commandName);
+        }
     }
 }
 
@@ -1158,200 +1169,204 @@ void CommunicationManager::_handleUtilityCommand(String commandName, bool isApiM
 
 void CommunicationManager::_printCliHelp()
 {
-    // --- Helper function to print a formatted line ---
-    auto printFormattedLine = [](const String &item, const String &description)
-    {
-        int itemPadding = 25 - item.length();
-        if (itemPadding < 1)
-            itemPadding = 1;
-        Serial.print("  ");
-        Serial.print(item);
-        for (int i = 0; i < itemPadding; ++i)
-            Serial.print(" ");
-        Serial.print("- ");
-        Serial.println(description);
-    };
-
-    // --- Header ---
-    Serial.println("\n--- ESP32 Flight Controller CLI Help ---");
-    Serial.println("Provides commands to get, set, and manage flight controller settings.");
-
-    // --- Commands ---
-    Serial.println("\n--- Commands ---");
-    printFormattedLine("get <param>", "Get the current value of a setting.");
-    printFormattedLine("set <param> <value>", "Set a new value for a setting.");
-    printFormattedLine("dump", "Display all current settings.");
-    printFormattedLine("save", "Save current settings to flash and reboot.");
-    printFormattedLine("reset", "Reset all settings to default and reboot.");
-    printFormattedLine("reboot", "Reboot the ESP32.");
-    printFormattedLine("calibrate_imu", "Start IMU calibration sequence.");
-    printFormattedLine("status", "Display system status and metrics.");
-    printFormattedLine("version", "Display firmware version.");
-    printFormattedLine("help", "Display this help message.");
-    printFormattedLine("exit", "Exit CLI mode and return to flight mode.");
-
-    // --- Settings ---
-    Serial.println("\n--- Available Settings ---");
-    String currentGroup = "";
-
-    for (int i = 0; i < numSettings; ++i)
-    {
-        const Setting &s = settingsRegistry[i];
-        String settingName(s.name);
-
-        // Print group header if it changes
-        int dotIndex = settingName.indexOf('.');
-        String group = (dotIndex != -1) ? settingName.substring(0, dotIndex) : settingName;
-        if (group != currentGroup)
+    if (settings.logging.inCliMode) {
+        // --- Helper function to print a formatted line ---
+        auto printFormattedLine = [](const String &item, const String &description)
         {
-            currentGroup = group;
-            String groupHeader = "\n  " + group + " Settings:";
-            groupHeader.toUpperCase();
-            Serial.println(groupHeader);
+            int itemPadding = 25 - item.length();
+            if (itemPadding < 1)
+                itemPadding = 1;
+            Serial.print("  ");
+            Serial.print(item);
+            for (int i = 0; i < itemPadding; ++i)
+                Serial.print(" ");
+            Serial.print("- ");
+            Serial.println(description);
+        };
+
+        // --- Header ---
+        Serial.println("\n--- ESP32 Flight Controller CLI Help ---");
+        Serial.println("Provides commands to get, set, and manage flight controller settings.");
+
+        // --- Commands ---
+        Serial.println("\n--- Commands ---");
+        printFormattedLine("get <param>", "Get the current value of a setting.");
+        printFormattedLine("set <param> <value>", "Set a new value for a setting.");
+        printFormattedLine("dump", "Display all current settings.");
+        printFormattedLine("save", "Save current settings to flash and reboot.");
+        printFormattedLine("reset", "Reset all settings to default and reboot.");
+        printFormattedLine("reboot", "Reboot the ESP32.");
+        printFormattedLine("calibrate_imu", "Start IMU calibration sequence.");
+        printFormattedLine("status", "Display system status and metrics.");
+        printFormattedLine("version", "Display firmware version.");
+        printFormattedLine("help", "Display this help message.");
+        printFormattedLine("exit", "Exit CLI mode and return to flight mode.");
+
+        // --- Settings ---
+        Serial.println("\n--- Available Settings ---");
+        String currentGroup = "";
+
+        for (int i = 0; i < numSettings; ++i)
+        {
+            const Setting &s = settingsRegistry[i];
+            String settingName(s.name);
+
+            // Print group header if it changes
+            int dotIndex = settingName.indexOf('.');
+            String group = (dotIndex != -1) ? settingName.substring(0, dotIndex) : settingName;
+            if (group != currentGroup)
+            {
+                currentGroup = group;
+                String groupHeader = "\n  " + group + " Settings:";
+                groupHeader.toUpperCase();
+                Serial.println(groupHeader);
+            }
+
+            // Prepare description string with type and valid values
+            String description = "";
+            String expectedValue = "";
+            switch (s.type)
+            {
+            case SettingType::FLOAT:
+                description += "[float] ";
+                break;
+            case SettingType::INT:
+                description += "[int]   ";
+                break;
+            case SettingType::UINT8:
+                description += "[uint8] ";
+                break;
+            case SettingType::UINT16:
+                description += "[uint16]";
+                break;
+            case SettingType::BOOL:
+                description += "[bool]  ";
+                description += "Values: true, false";
+                break;
+            case SettingType::ENUM_IBUS_PROTOCOL:
+            {
+                description += "[enum]  ";
+                ReceiverProtocol dummy;
+                _parseAndValidateReceiverProtocol("invalid", dummy, expectedValue);
+                description += "Values: " + expectedValue;
+                break;
+            }
+            case SettingType::ENUM_IMU_PROTOCOL:
+            {
+                description += "[enum]  ";
+                ImuProtocol dummy;
+                _parseAndValidateImuProtocol("invalid", dummy, expectedValue);
+                description += "Values: " + expectedValue;
+                break;
+            }
+            case SettingType::ENUM_LPF_BANDWIDTH:
+            {
+                description += "[enum]  ";
+                LpfBandwidth dummy;
+                _parseAndValidateLpfBandwidth("invalid", dummy, expectedValue);
+                description += "Values: " + expectedValue;
+                break;
+            }
+            case SettingType::ENUM_IMU_ROTATION:
+            {
+                description += "[enum]  ";
+                ImuRotation dummy;
+                _parseAndValidateImuRotation("invalid", dummy, expectedValue);
+                description += "Values: " + expectedValue;
+                break;
+            }
+            case SettingType::ENUM_DSHOT_MODE:
+            {
+                description += "[enum]  ";
+                dshot_mode_t dummy;
+                _parseAndValidateDShotMode("invalid", dummy, expectedValue);
+                description += "Values: " + expectedValue;
+                break;
+            }
+            default:
+                break;
+            }
+
+            printFormattedLine("  " + settingName, description);
         }
 
-        // Prepare description string with type and valid values
-        String description = "";
-        String expectedValue = "";
-        switch (s.type)
-        {
-        case SettingType::FLOAT:
-            description += "[float] ";
-            break;
-        case SettingType::INT:
-            description += "[int]   ";
-            break;
-        case SettingType::UINT8:
-            description += "[uint8] ";
-            break;
-        case SettingType::UINT16:
-            description += "[uint16]";
-            break;
-        case SettingType::BOOL:
-            description += "[bool]  ";
-            description += "Values: true, false";
-            break;
-        case SettingType::ENUM_IBUS_PROTOCOL:
-        {
-            description += "[enum]  ";
-            ReceiverProtocol dummy;
-            _parseAndValidateReceiverProtocol("invalid", dummy, expectedValue);
-            description += "Values: " + expectedValue;
-            break;
-        }
-        case SettingType::ENUM_IMU_PROTOCOL:
-        {
-            description += "[enum]  ";
-            ImuProtocol dummy;
-            _parseAndValidateImuProtocol("invalid", dummy, expectedValue);
-            description += "Values: " + expectedValue;
-            break;
-        }
-        case SettingType::ENUM_LPF_BANDWIDTH:
-        {
-            description += "[enum]  ";
-            LpfBandwidth dummy;
-            _parseAndValidateLpfBandwidth("invalid", dummy, expectedValue);
-            description += "Values: " + expectedValue;
-            break;
-        }
-        case SettingType::ENUM_IMU_ROTATION:
-        {
-            description += "[enum]  ";
-            ImuRotation dummy;
-            _parseAndValidateImuRotation("invalid", dummy, expectedValue);
-            description += "Values: " + expectedValue;
-            break;
-        }
-        case SettingType::ENUM_DSHOT_MODE:
-        {
-            description += "[enum]  ";
-            dshot_mode_t dummy;
-            _parseAndValidateDShotMode("invalid", dummy, expectedValue);
-            description += "Values: " + expectedValue;
-            break;
-        }
-        default:
-            break;
-        }
+        // Manual entry for test string
+        Serial.println("\n  Logging Settings (Test String):");
+        printFormattedLine("  log.test_string <value>", "[string] Set a test string for logging.");
 
-        printFormattedLine("  " + settingName, description);
+        // Manual entry for channel mapping
+        Serial.println("\n  RX Settings (Channel Mapping):");
+        printFormattedLine("  rx.map.<input> <ch>", "[int]   Map a flight control input to a receiver channel (0-15).");
+        Serial.println("\n----------------------------------------\n");
     }
-
-    // Manual entry for test string
-    Serial.println("\n  Logging Settings (Test String):");
-    printFormattedLine("  log.test_string <value>", "[string] Set a test string for logging.");
-
-    // Manual entry for channel mapping
-    Serial.println("\n  RX Settings (Channel Mapping):");
-    printFormattedLine("  rx.map.<input> <ch>", "[int]   Map a flight control input to a receiver channel (0-15).");
-    Serial.println("\n----------------------------------------\n");
 }
 
 void CommunicationManager::_handleDumpCommand()
 {
-    Serial.println("--- Current Flight Controller Settings ---");
-    for (int i = 0; i < numSettings; ++i)
-    {
-        const Setting &s = settingsRegistry[i];
-        Serial.print(s.name);
-        Serial.print(": ");
-        switch (s.type)
+    if (settings.logging.inCliMode) {
+        Serial.println("--- Current Flight Controller Settings ---");
+        for (int i = 0; i < numSettings; ++i)
         {
-        case SettingType::FLOAT:
-            Serial.println(*(float *)s.value / s.scaleFactor, 4);
-            break;
-        case SettingType::INT:
-            if (s.scaleFactor == PID_SCALE_FACTOR)
+            const Setting &s = settingsRegistry[i];
+            Serial.print(s.name);
+            Serial.print(": ");
+            switch (s.type)
             {
-                Serial.println(*(int *)s.value / 10);
+            case SettingType::FLOAT:
+                Serial.println(*(float *)s.value / s.scaleFactor, 4);
+                break;
+            case SettingType::INT:
+                if (s.scaleFactor == PID_SCALE_FACTOR)
+                {
+                    Serial.println(*(int *)s.value / 10);
+                }
+                else
+                {
+                    Serial.println(*(int *)s.value);
+                }
+                break;
+            case SettingType::UINT8:
+                Serial.println(*(uint8_t *)s.value);
+                break;
+            case SettingType::UINT16:
+                Serial.println(*(uint16_t *)s.value);
+                break;
+            case SettingType::ULONG:
+                Serial.println(*(unsigned long *)s.value);
+                break;
+            case SettingType::ENUM_IBUS_PROTOCOL:
+                Serial.println(_getReceiverProtocolString(*(ReceiverProtocol *)s.value));
+                break;
+            case SettingType::ENUM_IMU_PROTOCOL:
+                Serial.println(_getImuProtocolString(*(ImuProtocol *)s.value));
+                break;
+            case SettingType::ENUM_LPF_BANDWIDTH:
+                Serial.println(_getLpfBandwidthString(*(LpfBandwidth *)s.value));
+                break;
+            case SettingType::ENUM_IMU_ROTATION:
+                Serial.println(_getImuRotationString(*(ImuRotation *)s.value));
+                break;
+            case SettingType::BOOL:
+                Serial.println(_getBoolString(*(bool *)s.value));
+                break;
+            case SettingType::ENUM_DSHOT_MODE:
+                Serial.println(_getDShotModeString(*(dshot_mode_t *)s.value));
+                break;
+            case SettingType::STRING:
+                Serial.println(*(String *)s.value);
+                break;
             }
-            else
-            {
-                Serial.println(*(int *)s.value);
-            }
-            break;
-        case SettingType::UINT8:
-            Serial.println(*(uint8_t *)s.value);
-            break;
-        case SettingType::UINT16:
-            Serial.println(*(uint16_t *)s.value);
-            break;
-        case SettingType::ULONG:
-            Serial.println(*(unsigned long *)s.value);
-            break;
-        case SettingType::ENUM_IBUS_PROTOCOL:
-            Serial.println(_getReceiverProtocolString(*(ReceiverProtocol *)s.value));
-            break;
-        case SettingType::ENUM_IMU_PROTOCOL:
-            Serial.println(_getImuProtocolString(*(ImuProtocol *)s.value));
-            break;
-        case SettingType::ENUM_LPF_BANDWIDTH:
-            Serial.println(_getLpfBandwidthString(*(LpfBandwidth *)s.value));
-            break;
-        case SettingType::ENUM_IMU_ROTATION:
-            Serial.println(_getImuRotationString(*(ImuRotation *)s.value));
-            break;
-        case SettingType::BOOL:
-            Serial.println(_getBoolString(*(bool *)s.value));
-            break;
-        case SettingType::ENUM_DSHOT_MODE:
-            Serial.println(_getDShotModeString(*(dshot_mode_t *)s.value));
-            break;
-        case SettingType::STRING:
-            Serial.println(*(String *)s.value);
-            break;
         }
+        Serial.println("\n--- Receiver Channel Mapping ---");
+        for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)
+        {
+            Serial.print("  ");
+            Serial.print(_getFlightControlInputString((FlightControlInput)i));
+            Serial.print(": ");
+            Serial.println(settings.receiver.channelMapping.channel[i]);
+        }
+        Serial.println("----------------------------------------");
     }
-    Serial.println("\n--- Receiver Channel Mapping ---");
-    for (int i = 0; i < NUM_FLIGHT_CONTROL_INPUTS; ++i)
-    {
-        Serial.print("  ");
-        Serial.print(_getFlightControlInputString((FlightControlInput)i));
-        Serial.print(": ");
-        Serial.println(settings.receiver.channelMapping.channel[i]);
-    }
-    Serial.println("----------------------------------------");
 }
 
 
@@ -1362,29 +1377,33 @@ void CommunicationManager::_handleDumpCommand()
 
 void CommunicationManager::_handleStatusCommand() const
 {
-    Serial.println("--- System Status ---");
-    Serial.print("Target Loop Time (us): ");
-    Serial.println(TARGET_LOOP_TIME_US);
-    Serial.print("Actual Loop Time (us): ");
-    Serial.println(_fc->state.loopTimeUs);
-    Serial.print("CPU Load (%): ");
-    Serial.println(_fc->state.cpuLoad, 2);
-    Serial.print("Battery Voltage (V): ");
-    Serial.println(_fc->state.voltage, 2);
-    Serial.print("Current Draw (A): ");
-    Serial.println(_fc->state.current, 2);
-    Serial.print("Free Heap (bytes): ");
-    Serial.println(esp_get_free_heap_size());
-    Serial.print("Min Free Heap (bytes): ");
-    Serial.println(esp_get_minimum_free_heap_size());
-    Serial.println("---------------------");
+    if (settings.logging.inCliMode) {
+        Serial.println("--- System Status ---");
+        Serial.print("Target Loop Time (us): ");
+        Serial.println(TARGET_LOOP_TIME_US);
+        Serial.print("Actual Loop Time (us): ");
+        Serial.println(_fc->state.loopTimeUs);
+        Serial.print("CPU Load (%): ");
+        Serial.println(_fc->state.cpuLoad, 2);
+        Serial.print("Battery Voltage (V): ");
+        Serial.println(_fc->state.voltage, 2);
+        Serial.print("Current Draw (A): ");
+        Serial.println(_fc->state.current, 2);
+        Serial.print("Free Heap (bytes): ");
+        Serial.println(esp_get_free_heap_size());
+        Serial.print("Min Free Heap (bytes): ");
+        Serial.println(esp_get_minimum_free_heap_size());
+        Serial.println("---------------------");
+    }
 }
 
 void CommunicationManager::_handleVersionCommand() const
 {
-    Serial.print("Firmware Version: ");
-    Serial.println(FIRMWARE_VERSION);
-    // Also print build ID in CLI mode
-    Serial.print("Build ID: ");
-    Serial.println(FIRMWARE_BUILD_ID);
+    if (settings.logging.inCliMode) {
+        Serial.print("Firmware Version: ");
+        Serial.println(FIRMWARE_VERSION);
+        // Also print build ID in CLI mode
+        Serial.print("Build ID: ");
+        Serial.println(FIRMWARE_BUILD_ID);
+    }
 }
