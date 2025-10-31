@@ -19,10 +19,35 @@
 | Icon | Feature                        | Description                                                                                                                              |
 | :--: | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `🧠` | **Modular C++ Architecture**   | Clean separation of flight logic and communication using modern C++ principles for enhanced stability and maintainability.                 |
-| `💻` | **Web-Based Configurator**     | A powerful and reliable UI for real-time tuning, configuration, and 3D attitude visualization, accessible from any modern web browser.      |
+| `💻` | **Web-Based Configurator**     | A powerful and reliable UI for real-time tuning, configuration, and a rock-solid 3D attitude visualization.      |
 | `⚡` | **Robust MSP Protocol**        | Implements the MultiWii Serial Protocol (MSP) with automatic switching between V1 and V2, ensuring reliable, high-frequency data streaming. |
+| `📈` | **High-Fidelity Sensor Fusion**| Features a fine-tuned digital low-pass filter and robust calibration logic that provides exceptionally clean and stable attitude data. |
 | `🔌` | **Flexible Hardware Support**  | Works with MPU6050 IMUs, DShot ESCs, and multiple RC receiver protocols (iBUS, PPM), allowing for versatile hardware configurations.      |
 | `💾` | **Persistent Settings**        | All tunable parameters are saved to non-volatile storage, ensuring your configuration is preserved across reboots.                         |
+
+---
+
+## 🏛️ Architecture & Design
+
+This project is built from the ground up with a focus on modularity, performance, and maintainability. The firmware is not a monolithic block; instead, it is a collection of specialized modules that work together, each with a single responsibility.
+
+### Core Principles
+
+*   **Separation of Concerns:** Flight-critical logic (like PID processing and attitude estimation) is completely decoupled from communication and other non-essential tasks. This ensures that a high-frequency, stable flight loop is always maintained.
+*   **Hardware Abstraction:** The core logic does not depend on specific hardware. It communicates with hardware (like the IMU and RC receiver) through clean interfaces, making it easy to adapt the firmware to new sensors or components.
+*   **Testability:** By breaking the system into smaller, independent modules, each component can be tested in isolation, leading to a more robust and reliable system.
+
+### Module Breakdown
+
+The `src/` directory contains the heart of the firmware, organized into the following key areas:
+
+| Path         | Responsibility                                                                                                                            |
+| :----------- | :---------------------------------------------------------------------------------------------------------------------------------------- |
+| `main/`      | Contains the top-level orchestrator classes: `FlightController`, which runs the main flight loop, and `CommunicationManager`, which handles all serial I/O. |
+| `config/`    | Defines all global settings, data structures (like `FlightState`), and the logic for saving and loading parameters from flash memory.      |
+| `hardware/`  | Provides the hardware abstraction layers. Each driver (e.g., `Mpu6050Imu`, `IbusReceiver`) implements a common interface (`ImuInterface`, `ReceiverInterface`). |
+| `modules/`   | Contains the core flight algorithms. Each module encapsulates a specific part of the flight process, such as `AttitudeEstimator`, `PidProcessor`, and `SafetyManager`. |
+| `utils/`     | A collection of reusable, low-level components like the `ComplementaryFilter` and `PidController` that are used by the higher-level modules. |
 
 ---
 
@@ -111,21 +136,6 @@ To simplify PID tuning without requiring decimal points, all PID gain values (`k
 
 ---
 
-## 🛠️ Code Structure
-
-The firmware is organized into a clean, modular, object-oriented structure within the `src/` directory.
-
-| Module                        | Responsibility                                                                  |
-| ----------------------------- | ------------------------------------------------------------------------------- |
-| `ESP32_FC.ino`                | Main entry point. Creates and runs the `FlightController` and `CommunicationManager`. |
-| `main/`                       | Contains the top-level orchestrator classes.                                    |
-| `config/`                     | Contains global configuration, state definitions, and persistence logic.        |
-| `hardware/`                   | Contains hardware abstraction layers for the IMU and RC receiver.               |
-| `modules/`                    | Contains the core flight processing modules (Attitude, PID, Safety, etc.).      |
-| `utils/`                      | Contains reusable utility components like filters and PID controllers.          |
-
----
-
 ## 📚 Libraries & Submodules
 
 This project stands on the shoulders of giants. The core hardware interaction is handled by these libraries, included as Git submodules:
@@ -134,7 +144,7 @@ This project stands on the shoulders of giants. The core hardware interaction is
 *   [**ESP32_MPU6050**](https://github.com/derdoktor667/ESP32_MPU6050): Driver for the MPU6050 IMU.
 *   [**FlyskyIBUS**](https://github.com/derdoktor667/FlyskyIBUS): Decodes the Flysky i-BUS protocol.
 *   [**MspParser**](https://github.com/derdoktor667/MspParser): A custom library for parsing and creating MSP messages.
-
+*   [**ArduinoJson**](https://github.com/bblanchon/ArduinoJson): Efficient JSON serialization/deserialization (used by the web app).
 
 ---
 

@@ -3,8 +3,11 @@
 
 FROM archlinux:latest
 
-RUN pacman -Syu --noconfirm && \
-    pacman -S --noconfirm git openssh wget python base-devel
+RUN pacman-key --init && \
+    pacman-key --populate archlinux && \
+    pacman -Syu --noconfirm && \
+    pacman -S --noconfirm git openssh wget python base-devel && \
+    pacman -Scc --noconfirm
 
 ARG SOURCE_REPO_URL
 ARG FQBN="esp32:esp32:esp32"

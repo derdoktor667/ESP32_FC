@@ -51,9 +51,9 @@ public:
     void updateNotchFilterState();
 
 private:
-    ImuInterface *_imu = nullptr;                        // Pointer to the IMU sensor interface
-    const ImuSettings *_imuSettings = nullptr;           // Pointer to IMU-specific settings
-    const FilterSettings *_filterSettings = nullptr;     // Pointer to filter-specific settings
+    ImuInterface *_imu = nullptr;                              // Pointer to the IMU sensor interface
+    const ImuSettings *_imuSettings = nullptr;                 // Pointer to IMU-specific settings
+    const FilterSettings *_filterSettings = nullptr;           // Pointer to filter-specific settings
     const CalibrationSettings *_calibrationSettings = nullptr; // Pointer to calibration-specific settings
 
     std::unique_ptr<ComplementaryFilter> _complementaryFilter; // Instance of the Complementary filter for sensor fusion

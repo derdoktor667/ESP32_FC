@@ -16,8 +16,8 @@
 class PpmReceiver : public ReceiverInterface
 {
 public:
-    static constexpr int PPM_CHANNEL_COUNT = 8;                 // Number of channels expected in the PPM stream
-    static constexpr unsigned long PPM_SYNC_GAP_US = 4000;      // Minimum time (in microseconds) for a pulse to be considered a sync pulse.
+    static constexpr int PPM_CHANNEL_COUNT = 8;            // Number of channels expected in the PPM stream
+    static constexpr unsigned long PPM_SYNC_GAP_US = 4000; // Minimum time (in microseconds) for a pulse to be considered a sync pulse.
 
     // Constructor.
     // - ppmPin: The GPIO pin connected to the PPM signal.

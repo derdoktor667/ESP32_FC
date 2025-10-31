@@ -33,7 +33,7 @@ const gpio_num_t ESC_PIN_REAR_LEFT = GPIO_NUM_33;   // Rear-Left motor
 // =================================================================================
 
 // Supported Receiver Protocols
-enum ReceiverProtocol
+enum ReceiverProtocol : uint8_t
 {
     PROTOCOL_IBUS,
     PROTOCOL_PPM,
@@ -41,14 +41,14 @@ enum ReceiverProtocol
 };
 
 // Supported IMU Protocols
-enum ImuProtocol
+enum ImuProtocol : uint8_t
 {
     IMU_MPU6050,
     IMU_PROTOCOL_COUNT // Keep this last to count the number of protocols
 };
 
 // Supported IMU Rotations
-enum ImuRotation
+enum ImuRotation : uint8_t
 {
     IMU_ROTATION_NONE,
     IMU_ROTATION_90_DEG_CW,
@@ -143,7 +143,7 @@ struct CalibrationSettings
 
 // Filter Default Values
 static constexpr float DEFAULT_COMPLEMENTARY_FILTER_TAU = 0.995f;
-static constexpr float DEFAULT_GYRO_LPF_CUTOFF_FREQ = 10.0f;
+static constexpr float DEFAULT_GYRO_LPF_CUTOFF_FREQ = 1.0f; // Default gyroscope low-pass filter cutoff frequency in Hz. A lower value reduces noise but increases latency.
 static constexpr float DEFAULT_ACCEL_LPF_CUTOFF_FREQ = 5.0f;
 static constexpr uint8_t DEFAULT_GYRO_LPF_STAGES = 2;
 static constexpr uint8_t DEFAULT_ACCEL_LPF_STAGES = 2;
@@ -275,7 +275,7 @@ static constexpr unsigned long TARGET_LOOP_TIME_US = 1000; // Target loop time i
 static constexpr size_t ATTITUDE_BUFFER_SIZE = 16; // Buffer size for attitude float to string conversion
 
 // Firmware Version
-static constexpr const char *FIRMWARE_VERSION = "0.2.6";
+static constexpr const char *FIRMWARE_VERSION = "0.3.0";
 
 // Simple compile-time string hash function (DJB2 variant, truncated to 15 bits)
 constexpr uint16_t compileTimeHash15Bit(const char* str) {

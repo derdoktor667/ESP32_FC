@@ -39,8 +39,6 @@ public:
     // Runs one iteration of the main flight loop.
     void runLoop();
 
-
-
     // Requests IMU calibration from the AttitudeEstimator module.
     void requestImuCalibration();
 
@@ -71,7 +69,6 @@ private:
     std::unique_ptr<SetpointManager> _setpointManager;
     PidProcessor _pidProcessor;
     std::unique_ptr<MotorMixer> _motorMixer;
-
 
     // --- Loop Timing ---
     unsigned long _currentLoopStartTimeUs = 0;
