@@ -158,7 +158,7 @@ private:
     void _sendMspMessageResponse(uint16_t command, const uint8_t *payload, uint16_t payloadSize);
 
     uint16_t _serializeSettingToMspPayload(const Setting *setting, uint8_t *buffer) const;
-    SetResult _deserializeMspPayloadToSetting(const uint8_t *payload, uint16_t payloadSize, Setting *setting);
+    uint16_t _deserializeMspPayloadToSetting(const uint8_t *payload, uint16_t payloadSize, Setting *setting, uint16_t offset);
     uint16_t _serializeReceiverChannelMapToMspPayload(uint8_t *buffer) const;
     SetResult _deserializeMspPayloadToReceiverChannelMap(const uint8_t *payload, uint16_t payloadSize);
     uint16_t _serializeFlightStatusToMspPayload(uint8_t *buffer) const;

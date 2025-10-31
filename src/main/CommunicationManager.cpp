@@ -245,49 +245,24 @@ uint16_t CommunicationManager::_serializeSettingToMspPayload(const Setting *sett
     return offset;
 }
 
-SetResult CommunicationManager::_deserializeMspPayloadToSetting(const uint8_t *payload, uint16_t payloadSize, Setting *setting)
+uint16_t CommunicationManager::_deserializeMspPayloadToSetting(const uint8_t *payload, uint16_t payloadSize, Setting *setting, uint16_t offset)
 {
-    uint16_t offset = 0;
-
-    // Read setting name (null-terminated string)
-    uint16_t receivedNameLength = 0;
-    while (offset + receivedNameLength < payloadSize && payload[offset + receivedNameLength] != '\0')
-    {
-        receivedNameLength++;
-    }
-    String receivedSettingName = _convertPayloadToString(payload + offset, receivedNameLength);
-    offset += receivedNameLength + 1; // +1 for null terminator
-
-    // Check if there's enough payload left for the setting type
-    if (payloadSize - offset < sizeof(uint8_t))
-    {
-        return SetResult::INVALID_FORMAT;
-    }
-    // Read setting type (1 byte)
-    SettingType receivedSettingType = (SettingType)payload[offset++];
-
-    // Check if the received setting name and type match the provided setting
-    if (!receivedSettingName.equalsIgnoreCase(setting->name) || receivedSettingType != setting->type)
-    {
-        return SetResult::UNKNOWN_PARAMETER; // Or a more specific error like INVALID_FORMAT
-    }
-
     // Deserialize setting value based on type
     switch (setting->type)
     {
     case SettingType::FLOAT:
     {
         if (payloadSize - offset < sizeof(float))
-            return SetResult::INVALID_FORMAT;
+            return 0;
         float value;
         memcpy(&value, payload + offset, sizeof(float));
         *(float *)setting->value = value * setting->scaleFactor;
-        break;
+        return sizeof(float);
     }
     case SettingType::INT:
     {
         if (payloadSize - offset < sizeof(int))
-            return SetResult::INVALID_FORMAT;
+            return 0;
         int value;
         memcpy(&value, payload + offset, sizeof(int));
         // Apply scaling to match firmware's internal PID_SCALE_FACTOR
@@ -299,100 +274,100 @@ SetResult CommunicationManager::_deserializeMspPayloadToSetting(const uint8_t *p
         {
             *(int *)setting->value = value;
         }
-        break;
+        return sizeof(int);
     }
     case SettingType::UINT8:
     {
         if (payloadSize - offset < sizeof(uint8_t))
-            return SetResult::INVALID_FORMAT;
+            return 0;
         uint8_t value;
         memcpy(&value, payload + offset, sizeof(uint8_t));
         *(uint8_t *)setting->value = value;
-        break;
+        return sizeof(uint8_t);
     }
     case SettingType::UINT16:
     {
         if (payloadSize - offset < sizeof(uint16_t))
-            return SetResult::INVALID_FORMAT;
+            return 0;
         uint16_t value;
         memcpy(&value, payload + offset, sizeof(uint16_t));
         *(uint16_t *)setting->value = value;
-        break;
+        return sizeof(uint16_t);
     }
     case SettingType::ULONG:
     {
         if (payloadSize - offset < sizeof(unsigned long))
-            return SetResult::INVALID_FORMAT;
+            return 0;
         unsigned long value;
         memcpy(&value, payload + offset, sizeof(unsigned long));
         *(unsigned long *)setting->value = value;
-        break;
+        return sizeof(unsigned long);
     }
     case SettingType::BOOL:
     {
         if (payloadSize - offset < sizeof(uint8_t))
-            return SetResult::INVALID_FORMAT; // bool is 1 byte
+            return 0; // bool is 1 byte
         bool value = (bool)payload[offset];
         *(bool *)setting->value = value;
-        break;
+        return sizeof(uint8_t);
     }
     case SettingType::ENUM_IBUS_PROTOCOL:
     {
         if (payloadSize - offset < sizeof(ReceiverProtocol))
-            return SetResult::INVALID_FORMAT;
+            return 0;
         ReceiverProtocol value;
         memcpy(&value, payload + offset, sizeof(ReceiverProtocol));
         *(ReceiverProtocol *)setting->value = value;
-        break;
+        return sizeof(ReceiverProtocol);
     }
     case SettingType::ENUM_IMU_PROTOCOL:
     {
         if (payloadSize - offset < sizeof(ImuProtocol))
-            return SetResult::INVALID_FORMAT;
+            return 0;
         ImuProtocol value;
         memcpy(&value, payload + offset, sizeof(ImuProtocol));
         *(ImuProtocol *)setting->value = value;
-        break;
+        return sizeof(ImuProtocol);
     }
     case SettingType::ENUM_LPF_BANDWIDTH:
     {
         if (payloadSize - offset < sizeof(LpfBandwidth))
-            return SetResult::INVALID_FORMAT;
+            return 0;
         LpfBandwidth value;
         memcpy(&value, payload + offset, sizeof(LpfBandwidth));
         *(LpfBandwidth *)setting->value = value;
-        break;
+        return sizeof(LpfBandwidth);
     }
     case SettingType::ENUM_IMU_ROTATION:
     {
         if (payloadSize - offset < sizeof(ImuRotation))
-            return SetResult::INVALID_FORMAT;
+            return 0;
         ImuRotation value;
         memcpy(&value, payload + offset, sizeof(ImuRotation));
         *(ImuRotation *)setting->value = value;
-        break;
+        return sizeof(ImuRotation);
     }
     case SettingType::ENUM_DSHOT_MODE:
     {
         if (payloadSize - offset < sizeof(dshot_mode_t))
-            return SetResult::INVALID_FORMAT;
+            return 0;
         dshot_mode_t value;
         memcpy(&value, payload + offset, sizeof(dshot_mode_t));
         *(dshot_mode_t *)setting->value = value;
-        break;
+        return sizeof(dshot_mode_t);
     }
     case SettingType::STRING:
     {
         // For strings, we read the remaining payload, so no fixed size check here
         String *value = static_cast<String *>(setting->value);
         *value = _convertPayloadToString(payload + offset, payloadSize - offset); // Read remaining payload as string
-        break;
+        return payloadSize - offset;
     }
     case SettingType::ENUM_RX_CHANNEL_MAP:
         // Not yet implemented for MSP (handled by dedicated commands)
-        return SetResult::UNKNOWN_PARAMETER;
+        return 0;
     }
-    return SetResult::SUCCESS;
+    return 0;
 }
 
 uint16_t CommunicationManager::_serializeReceiverChannelMapToMspPayload(uint8_t *buffer) const
@@ -826,18 +801,29 @@ void CommunicationManager::_processMspCommand(const MspMessage &message)
     }
     case MSP_FC_SET_SETTING:
     {
-        // Correctly extract the setting name from the payload
+        uint16_t offset = 0;
+
+        // Extract setting name
         uint16_t nameLength = 0;
-        while (nameLength < message.payloadSize && message.payload[nameLength] != '\0')
+        while (offset + nameLength < message.payloadSize && message.payload[offset + nameLength] != '\0')
         {
             nameLength++;
         }
-        String settingName = _convertPayloadToString(message.payload, nameLength);
+        String settingName = _convertPayloadToString(message.payload + offset, nameLength);
+        offset += nameLength + 1;
+
+        // Extract setting type
+        if (message.payloadSize - offset < sizeof(uint8_t))
+        {
+            // Handle error: not enough data for type
+            return;
+        }
+        SettingType receivedType = (SettingType)message.payload[offset++];
 
         const Setting *foundSetting = nullptr;
         for (int i = 0; i < numSettings; ++i)
         {
-            if (settingName.equalsIgnoreCase(settingsRegistry[i].name))
+            if (settingName.equalsIgnoreCase(settingsRegistry[i].name) && receivedType == settingsRegistry[i].type)
             {
                 foundSetting = &settingsRegistry[i];
                 break;
@@ -846,17 +832,15 @@ void CommunicationManager::_processMspCommand(const MspMessage &message)
 
         if (foundSetting)
         {
-            SetResult result = _deserializeMspPayloadToSetting(message.payload, message.payloadSize, (Setting *)foundSetting);
-            if (result == SetResult::SUCCESS)
+            uint16_t bytesRead = _deserializeMspPayloadToSetting(message.payload, message.payloadSize, (Setting *)foundSetting, offset);
+            if (bytesRead > 0)
             {
-                uint8_t responsePayload[1];
-                responsePayload[0] = (uint8_t)SetResult::SUCCESS;
-                _sendMspMessageResponse(MSP_FC_SETTING_RESPONSE, responsePayload, MSP_PAYLOAD_SIZE_STATUS);
+                uint8_t responsePayload[1] = {(uint8_t)SetResult::SUCCESS};
+                _sendMspMessageResponse(MSP_FC_SETTING_RESPONSE, responsePayload, 1);
             }
             else
             {
-                String errorMessage = "Failed to update setting: " + String((int)result);
-                String fullErrorMessage = "Failed to set " + settingName + ": Error " + String((int)result);
+                String fullErrorMessage = "Failed to set " + settingName + ": Error " + String((int)SetResult::INVALID_FORMAT);
                 uint8_t errorPayload[fullErrorMessage.length() + 1];
                 strcpy((char *)errorPayload, fullErrorMessage.c_str());
                 _sendMspMessageResponse(MSP_FC_ERROR, errorPayload, fullErrorMessage.length() + 1);
@@ -864,7 +848,6 @@ void CommunicationManager::_processMspCommand(const MspMessage &message)
         }
         else
         {
-            String errorMessage = "Setting not found: " + settingName;
             String fullErrorMessage = "Unknown setting: " + settingName;
             uint8_t errorPayload[fullErrorMessage.length() + 1];
             strcpy((char *)errorPayload, fullErrorMessage.c_str());
