@@ -198,7 +198,7 @@ struct ReceiverSettings
 struct ImuSettings
 {
     ImuProtocol protocol = IMU_MPU6050;
-    LpfBandwidth lpfBandwidth = LPF_42HZ_N_5MS;
+    LpfBandwidth lpfBandwidth = LPF_256HZ_N_0MS;
     ImuRotation rotation = IMU_ROTATION_180_DEG_CW;
 };
 
@@ -275,7 +275,7 @@ static constexpr unsigned long TARGET_LOOP_TIME_US = 1000; // Target loop time i
 static constexpr size_t ATTITUDE_BUFFER_SIZE = 16; // Buffer size for attitude float to string conversion
 
 // Firmware Version
-static constexpr const char *FIRMWARE_VERSION = "0.2.6";
+static constexpr const char *FIRMWARE_VERSION = "0.3.0";
 
 // Simple compile-time string hash function (DJB2 variant, truncated to 15 bits)
 constexpr uint16_t compileTimeHash15Bit(const char* str) {
