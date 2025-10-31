@@ -26,8 +26,6 @@ FlightController::FlightController()
     // settings have been loaded.
 }
 
-
-
 // Initializes all components of the flight controller in the correct sequence.
 void FlightController::initialize()
 {
