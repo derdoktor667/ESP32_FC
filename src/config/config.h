@@ -28,6 +28,9 @@ const gpio_num_t ESC_PIN_FRONT_LEFT = GPIO_NUM_25;  // Front-Left motor
 const gpio_num_t ESC_PIN_REAR_RIGHT = GPIO_NUM_26;  // Rear-Right motor
 const gpio_num_t ESC_PIN_REAR_LEFT = GPIO_NUM_33;   // Rear-Left motor
 
+// I2C clock speed for MPU6050
+static constexpr long I2C_CLOCK_SPEED_HZ = 400000;
+
 // =================================================================================
 // Flight Controller Settings (user-adjustable parameters)
 // =================================================================================
@@ -251,6 +254,10 @@ static constexpr uint8_t MAX_UINT8_VALUE = 255;
 // General Constants
 
 static constexpr int RECEIVER_CHANNEL_COUNT = 16;
+static constexpr int PPM_CHANNEL_COUNT = 8;            // Number of channels expected in the PPM stream
+static constexpr unsigned long PPM_SYNC_GAP_US = 4000; // Minimum time (in microseconds) for a pulse to be considered a sync pulse.
+static constexpr unsigned long PPM_SIGNAL_TIMEOUT_MS = 500; // Milliseconds before signal is considered lost
+static constexpr uint16_t PPM_INVALID_CHANNEL_VALUE = 0;    // Value indicating an invalid channel
 static constexpr int NUM_MOTORS = 4;
 static constexpr unsigned long CLI_REBOOT_DELAY_MS = 100;
 static constexpr unsigned long IMU_INIT_FAIL_DELAY_MS = 10;

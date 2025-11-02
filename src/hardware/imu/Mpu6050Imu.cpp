@@ -9,6 +9,7 @@
 // License: MIT
 
 #include "src/hardware/imu/Mpu6050Imu.h"
+#include "src/config/config.h"
 #include <Wire.h> // Required for I2C communication
 
 // Constructor: Initializes the MPU6050 object.

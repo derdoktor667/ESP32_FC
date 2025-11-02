@@ -20,11 +20,15 @@
 // --- Helper Functions for String Conversion ---
 String CommunicationManager::_getReceiverProtocolName(ReceiverProtocol protocol) const
 {
-    if (protocol == PROTOCOL_IBUS)
+    switch (protocol)
+    {
+    case PROTOCOL_IBUS:
         return "IBUS";
-    if (protocol == PROTOCOL_PPM)
+    case PROTOCOL_PPM:
         return "PPM";
-    return "UNKNOWN";
+    default:
+        return "UNKNOWN";
+    }
 }
 
 String CommunicationManager::_getImuProtocolName(ImuProtocol protocol) const
@@ -82,17 +86,21 @@ String CommunicationManager::_getFlightControlInputName(FlightControlInput input
 
 String CommunicationManager::_getDShotModeName(dshot_mode_t mode) const
 {
-    if (mode == DSHOT_OFF)
+    switch (mode)
+    {
+    case DSHOT_OFF:
         return "DSHOT_OFF";
-    if (mode == DSHOT150)
+    case DSHOT150:
         return "DSHOT150";
-    if (mode == DSHOT300)
+    case DSHOT300:
         return "DSHOT300";
-    if (mode == DSHOT600)
+    case DSHOT600:
         return "DSHOT600";
-    if (mode == DSHOT1200)
+    case DSHOT1200:
         return "DSHOT1200";
-    return "UNKNOWN";
+    default:
+        return "UNKNOWN";
+    }
 }
 
 String CommunicationManager::_getImuRotationName(ImuRotation rotation) const
@@ -127,6 +135,32 @@ String CommunicationManager::_getUint8Name(uint8_t value) const
 String CommunicationManager::_getULongName(unsigned long value) const
 {
     return String(value);
+}
+
+// Helper functions for getting valid enum values as strings
+String CommunicationManager::_getReceiverProtocolValues() const
+{
+    return "IBUS, PPM";
+}
+
+String CommunicationManager::_getImuProtocolValues() const
+{
+    return "MPU6050";
+}
+
+String CommunicationManager::_getLpfBandwidthValues() const
+{
+    return "LPF_256HZ_N_0MS, LPF_188HZ_N_2MS, LPF_98HZ_N_3MS, LPF_42HZ_N_5MS, LPF_20HZ_N_10MS, LPF_10HZ_N_13MS, LPF_5HZ_N_18MS";
+}
+
+String CommunicationManager::_getImuRotationValues() const
+{
+    return "NONE, 90_CW, 180_CW, 270_CW, FLIP";
+}
+
+String CommunicationManager::_getDShotModeValues() const
+{
+    return "DSHOT_OFF, DSHOT150, DSHOT300, DSHOT600, DSHOT1200";
 }
 
 String CommunicationManager::_convertPayloadToString(const uint8_t *payload, uint16_t size) const
@@ -534,10 +568,19 @@ CommunicationManager *CommunicationManager::_communicationManagerInstance = null
 
 // --- Helper Functions for Parsing and Validation ---
 
+bool CommunicationManager::_isStringNumericZero(const String &str) const
+{
+    if (str == "0" || str == "0.0")
+    {
+        return true;
+    }
+    return false;
+}
+
 SetResult CommunicationManager::_parseAndValidateFloatSetting(const String &valueStr, float &outValue, float scaleFactor, String &expectedValue) const
 {
     float val = valueStr.toFloat();
-    if (valueStr.length() > 0 && val == 0.0f && valueStr != "0" && valueStr != "0.0")
+    if (val == 0.0f && !_isStringNumericZero(valueStr))
     {
         expectedValue = "float";
         return SetResult::INVALID_VALUE;
@@ -549,7 +592,7 @@ SetResult CommunicationManager::_parseAndValidateFloatSetting(const String &valu
 SetResult CommunicationManager::_parseAndValidateIntSetting(const String &valueStr, int &outValue, String &expectedValue) const
 {
     long val = valueStr.toInt();
-    if (valueStr.length() > 0 && val == 0 && valueStr != "0")
+    if (val == 0 && !_isStringNumericZero(valueStr))
     {
         expectedValue = "integer";
         return SetResult::INVALID_VALUE;
@@ -563,7 +606,7 @@ SetResult CommunicationManager::_parseAndValidateIntSetting(const String &valueS
 SetResult CommunicationManager::_parseAndValidateUint16Setting(const String &valueStr, uint16_t &outValue, String &expectedValue) const
 {
     long val = valueStr.toInt();
-    if (valueStr.length() > 0 && val == 0 && valueStr != "0")
+    if (val == 0 && !_isStringNumericZero(valueStr))
     {
         expectedValue = "integer";
         return SetResult::INVALID_VALUE;
@@ -577,12 +620,27 @@ SetResult CommunicationManager::_parseAndValidateUint16Setting(const String &val
     return SetResult::SUCCESS;
 }
 
+SetResult CommunicationManager::_parseAndValidateUint8Setting(const String &valueStr, uint8_t &outValue, String &expectedValue) const
+{
+    long val = valueStr.toInt();
+    if (val == 0 && !_isStringNumericZero(valueStr))
+    {
+        expectedValue = "integer";
+        return SetResult::INVALID_VALUE;
+    }
+    else if (val < 0 || val > MAX_UINT8_VALUE)
+    {
+        expectedValue = "0-" + String(MAX_UINT8_VALUE);
+        return SetResult::OUT_OF_RANGE;
+    }
+    outValue = (uint8_t)val;
+    return SetResult::SUCCESS;
+}
+
 SetResult CommunicationManager::_parseAndValidateULongSetting(const String &valueStr, unsigned long &outValue, String &expectedValue) const
 {
-    // toULong() returns 0 if no valid conversion could be performed.
-    // We need to check if the string was actually "0" or if it was invalid.
     unsigned long val = strtoul(valueStr.c_str(), NULL, 10);
-    if (valueStr.length() > 0 && val == 0 && valueStr != "0")
+    if (val == 0 && !_isStringNumericZero(valueStr))
     {
         expectedValue = "unsigned long integer";
         return SetResult::INVALID_VALUE;
@@ -700,7 +758,7 @@ SetResult CommunicationManager::_parseAndValidateReceiverChannelMapSetting(const
     String inputName = param.substring(RX_MAP_PREFIX_LENGTH);
     int channelValue = valueStr.toInt();
 
-    if (valueStr.length() > 0 && channelValue == 0 && valueStr != "0")
+    if (channelValue == 0 && !_isStringNumericZero(valueStr))
     {
         expectedValue = "integer";
         return SetResult::INVALID_VALUE;
@@ -736,6 +794,7 @@ CommunicationManager::CommunicationManager(FlightController *flightController) :
     _communicationManagerInstance = this;
     _mspMessageParser.begin(Serial, "USB");
     _mspMessageParser.onMessage(_onMspMessageReceivedCallback);
+    _initializeCliCommandMap();
 }
 
 void CommunicationManager::_onMspMessageReceivedCallback(const MspMessage &message, const char *prefix)
@@ -933,8 +992,6 @@ void CommunicationManager::_processMspCommand(const MspMessage &message)
     }
 }
 
-void CommunicationManager::initializeCommunication() {}
-
 void CommunicationManager::processCommunication()
 {
     if (_currentOperatingMode == OperatingMode::MSP_API)
@@ -1036,6 +1093,64 @@ void CommunicationManager::_processMspApiInput()
     _mspMessageParser.update();
 }
 
+void CommunicationManager::_initializeCliCommandMap()
+{
+    _cliCommandMap["dump"] = [this](String args, bool isApiMode)
+    {
+        _displayAllSettingsCliCommand();
+    };
+    _cliCommandMap["save"] = [this](String args, bool isApiMode)
+    {
+        if (settings.logging.inCliMode)
+            Serial.println("INFO: Settings saved. Rebooting...");
+        saveSettings([](const String &) {});
+        delay(CLI_REBOOT_DELAY_MS);
+        ESP.restart();
+    };
+    _cliCommandMap["reset"] = [this](String args, bool isApiMode)
+    {
+        if (settings.logging.inCliMode)
+            Serial.println("INFO: All settings have been reset to their default values and saved.");
+        settings = FlightControllerSettings();
+        saveSettings([](const String &) {});
+        delay(CLI_REBOOT_DELAY_MS);
+        ESP.restart();
+    };
+    _cliCommandMap["reboot"] = [this](String args, bool isApiMode)
+    {
+        if (settings.logging.inCliMode)
+            Serial.println("Rebooting...");
+        delay(CLI_REBOOT_DELAY_MS);
+        ESP.restart();
+    };
+    _cliCommandMap["status"] = [this](String args, bool isApiMode)
+    {
+        _displaySystemStatusCliCommand();
+    };
+    _cliCommandMap["version"] = [this](String args, bool isApiMode)
+    {
+        _displayFirmwareVersionCliCommand();
+    };
+    _cliCommandMap["calibrate_imu"] = [this](String args, bool isApiMode)
+    {
+        if (settings.logging.inCliMode)
+            Serial.println("INFO: IMU calibration requested.");
+        _flightController->requestImuCalibration();
+    };
+    _cliCommandMap["help"] = [this](String args, bool isApiMode)
+    {
+        _displayCliHelp();
+    };
+    _cliCommandMap["get"] = [this](String args, bool isApiMode)
+    {
+        _processGetSettingCliCommand(args, isApiMode);
+    };
+    _cliCommandMap["set"] = [this](String args, bool isApiMode)
+    {
+        _processSetSettingCliCommand(args, isApiMode);
+    };
+}
+
 void CommunicationManager::_executeCliCommand(String command, bool isApiMode)
 {
     String commandName = "";
@@ -1050,111 +1165,12 @@ void CommunicationManager::_executeCliCommand(String command, bool isApiMode)
     {
         commandName = command;
     }
-    commandName.toLowerCase(); // Only lowercase the command name itself
+    commandName.toLowerCase();
 
-    if (commandName.equals("dump"))
+    auto it = _cliCommandMap.find(commandName);
+    if (it != _cliCommandMap.end())
     {
-        _displayAllSettingsCliCommand();
-    }
-    else if (commandName.equals("save") || commandName.equals("reset") || commandName.equals("reboot") || commandName.equals("status") || commandName.equals("version"))
-    {
-        _processSystemCliCommand(commandName, isApiMode);
-    }
-    else if (commandName.equals("calibrate_imu") || commandName.equals("help"))
-    {
-        _processUtilityCliCommand(commandName, isApiMode);
-    }
-    else if (commandName.equals("get") || commandName.equals("set"))
-    {
-        _processGetSetCliCommand(commandName, commandArgs, isApiMode);
-    }
-    else
-    {
-        if (settings.logging.inCliMode)
-        {
-            Serial.print("Unknown command: ");
-            Serial.println(commandName);
-        }
-    }
-}
-
-// --- New Helper Methods for Command Handling ---
-
-void CommunicationManager::_processSystemCliCommand(String commandName, bool isApiMode)
-{
-    if (commandName.equals("save"))
-    {
-        if (settings.logging.inCliMode)
-            Serial.println("INFO: Settings saved. Rebooting...");
-        saveSettings([](const String &) {});
-        delay(CLI_REBOOT_DELAY_MS);
-        ESP.restart();
-    }
-    else if (commandName.equals("reset"))
-    {
-        if (settings.logging.inCliMode)
-            Serial.println("INFO: All settings have been reset to their default values and saved.");
-        settings = FlightControllerSettings();
-        saveSettings([](const String &) {});
-        delay(CLI_REBOOT_DELAY_MS);
-        ESP.restart();
-    }
-    else if (commandName.equals("reboot"))
-    {
-        if (settings.logging.inCliMode)
-            Serial.println("Rebooting...");
-        delay(CLI_REBOOT_DELAY_MS);
-        ESP.restart();
-    }
-    else if (commandName.equals("status"))
-    {
-        _displaySystemStatusCliCommand();
-    }
-    else if (commandName.equals("version"))
-    {
-        _displayFirmwareVersionCliCommand();
-    }
-    else
-    {
-        if (settings.logging.inCliMode)
-        {
-            Serial.print("Unknown command: ");
-            Serial.println(commandName);
-        }
-    }
-}
-
-void CommunicationManager::_processUtilityCliCommand(String commandName, bool isApiMode)
-{
-    if (commandName.equals("calibrate_imu"))
-    {
-        if (settings.logging.inCliMode)
-            Serial.println("INFO: IMU calibration requested.");
-        _flightController->requestImuCalibration();
-    }
-    else if (commandName.equals("help"))
-    {
-        _displayCliHelp();
-    }
-    else
-    {
-        if (settings.logging.inCliMode)
-        {
-            Serial.print("Unknown command: ");
-            Serial.println(commandName);
-        }
-    }
-}
-
-void CommunicationManager::_processGetSetCliCommand(String commandName, String commandArgs, bool isApiMode)
-{
-    if (commandName.equals("get"))
-    {
-        _processGetSettingCliCommand(commandArgs, isApiMode);
-    }
-    else if (commandName.equals("set"))
-    {
-        _processSetSettingCliCommand(commandArgs, isApiMode);
+        it->second(commandArgs, isApiMode);
     }
     else
     {
@@ -1325,21 +1341,10 @@ void CommunicationManager::_processSetSettingCliCommand(String commandArgs, bool
             }
             case SettingType::UINT8:
             {
-                long val = valueStr.toInt();
-                if (valueStr.length() > 0 && val == 0 && valueStr != "0")
-                {
-                    expectedValueType = "integer";
-                    result = SetResult::INVALID_VALUE;
-                }
-                else if (val < 0 || val > MAX_UINT8_VALUE)
-                {
-                    expectedValueType = "0-" + String(MAX_UINT8_VALUE);
-                    result = SetResult::OUT_OF_RANGE;
-                }
-                else
-                {
-                    *(uint8_t *)foundSetting->value = (uint8_t)val;
-                }
+                uint8_t value;
+                result = _parseAndValidateUint8Setting(valueStr, value, expectedValueType);
+                if (result == SetResult::SUCCESS)
+                    *(uint8_t *)foundSetting->value = value;
                 break;
             }
             case SettingType::UINT16:
@@ -1545,41 +1550,31 @@ void CommunicationManager::_displayCliHelp()
             case SettingType::ENUM_IBUS_PROTOCOL:
             {
                 description += "[enum]  ";
-                ReceiverProtocol dummy;
-                _parseAndValidateReceiverProtocolSetting("invalid", dummy, expectedValue);
-                description += "Values: " + expectedValue;
+                description += "Values: " + _getReceiverProtocolValues();
                 break;
             }
             case SettingType::ENUM_IMU_PROTOCOL:
             {
                 description += "[enum]  ";
-                ImuProtocol dummy;
-                _parseAndValidateImuProtocolSetting("invalid", dummy, expectedValue);
-                description += "Values: " + expectedValue;
+                description += "Values: " + _getImuProtocolValues();
                 break;
             }
             case SettingType::ENUM_LPF_BANDWIDTH:
             {
                 description += "[enum]  ";
-                LpfBandwidth dummy;
-                _parseAndValidateLpfBandwidthSetting("invalid", dummy, expectedValue);
-                description += "Values: " + expectedValue;
+                description += "Values: " + _getLpfBandwidthValues();
                 break;
             }
             case SettingType::ENUM_IMU_ROTATION:
             {
                 description += "[enum]  ";
-                ImuRotation dummy;
-                _parseAndValidateImuRotationSetting("invalid", dummy, expectedValue);
-                description += "Values: " + expectedValue;
+                description += "Values: " + _getImuRotationValues();
                 break;
             }
             case SettingType::ENUM_DSHOT_MODE:
             {
                 description += "[enum]  ";
-                dshot_mode_t dummy;
-                _parseAndValidateDShotModeSetting("invalid", dummy, expectedValue);
-                description += "Values: " + expectedValue;
+                description += "Values: " + _getDShotModeValues();
                 break;
             }
             default:

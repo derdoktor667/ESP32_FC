@@ -59,7 +59,7 @@ Follow these steps to get the flight controller up and running on your ESP32.
 
 *   An ESP32 development board.
 *   [Arduino IDE](https://www.arduino.cc/en/software) or [Arduino CLI](https://arduino.github.io/arduino-cli/latest/) installed.
-*   All necessary hardware (MPU6050, ESCs, motors, RC receiver) connected according to the pin definitions in `src/config.h`.
+*   All necessary hardware (MPU6050, ESCs, motors, RC receiver) connected according to the pin definitions in `src/config/config.h`.
 
 ### Installation
 
@@ -144,7 +144,7 @@ This project stands on the shoulders of giants. The core hardware interaction is
 *   [**ESP32_MPU6050**](https://github.com/derdoktor667/ESP32_MPU6050): Driver for the MPU6050 IMU.
 *   [**FlyskyIBUS**](https://github.com/derdoktor667/FlyskyIBUS): Decodes the Flysky i-BUS protocol.
 *   [**MspParser**](https://github.com/derdoktor667/MspParser): A custom library for parsing and creating MSP messages.
-*   [**ArduinoJson**](https://github.com/bblanchon/ArduinoJson): Efficient JSON serialization/deserialization (used by the web app).
+
 
 ---
 
