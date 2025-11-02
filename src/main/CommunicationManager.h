@@ -74,9 +74,6 @@ public:
     // Constructor: Initializes the CommunicationManager with a pointer to the FlightController.
     CommunicationManager(FlightController *fc);
 
-    // Initializes serial communication.
-    void initializeCommunication();
-
     // Updates the communication manager, handling serial input and output.
     void processCommunication();
 
@@ -122,6 +119,13 @@ private:
     String _getUint8Name(uint8_t value) const;
     String _getULongName(unsigned long value) const;
     String _convertPayloadToString(const uint8_t *payload, uint16_t size) const;
+
+    // Helper functions for getting valid enum values as strings
+    String _getReceiverProtocolValues() const;
+    String _getImuProtocolValues() const;
+    String _getLpfBandwidthValues() const;
+    String _getImuRotationValues() const;
+    String _getDShotModeValues() const;
 
     static constexpr int RX_MAP_PREFIX_LENGTH = 7; // Length of "rx.map."
 

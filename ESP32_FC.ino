@@ -26,7 +26,6 @@ void setup()
     communicationManager = new CommunicationManager(flightController);
 
     flightController->initialize();
-    communicationManager->initializeCommunication();
 }
 
 void loop()

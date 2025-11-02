@@ -137,6 +137,32 @@ String CommunicationManager::_getULongName(unsigned long value) const
     return String(value);
 }
 
+// Helper functions for getting valid enum values as strings
+String CommunicationManager::_getReceiverProtocolValues() const
+{
+    return "IBUS, PPM";
+}
+
+String CommunicationManager::_getImuProtocolValues() const
+{
+    return "MPU6050";
+}
+
+String CommunicationManager::_getLpfBandwidthValues() const
+{
+    return "LPF_256HZ_N_0MS, LPF_188HZ_N_2MS, LPF_98HZ_N_3MS, LPF_42HZ_N_5MS, LPF_20HZ_N_10MS, LPF_10HZ_N_13MS, LPF_5HZ_N_18MS";
+}
+
+String CommunicationManager::_getImuRotationValues() const
+{
+    return "NONE, 90_CW, 180_CW, 270_CW, FLIP";
+}
+
+String CommunicationManager::_getDShotModeValues() const
+{
+    return "DSHOT_OFF, DSHOT150, DSHOT300, DSHOT600, DSHOT1200";
+}
+
 String CommunicationManager::_convertPayloadToString(const uint8_t *payload, uint16_t size) const
 {
     char buffer[size + 1];
@@ -966,8 +992,6 @@ void CommunicationManager::_processMspCommand(const MspMessage &message)
     }
 }
 
-void CommunicationManager::initializeCommunication() {}
-
 void CommunicationManager::processCommunication()
 {
     if (_currentOperatingMode == OperatingMode::MSP_API)
@@ -1071,17 +1095,20 @@ void CommunicationManager::_processMspApiInput()
 
 void CommunicationManager::_initializeCliCommandMap()
 {
-    _cliCommandMap["dump"] = [this](String args, bool isApiMode) {
+    _cliCommandMap["dump"] = [this](String args, bool isApiMode)
+    {
         _displayAllSettingsCliCommand();
     };
-    _cliCommandMap["save"] = [this](String args, bool isApiMode) {
+    _cliCommandMap["save"] = [this](String args, bool isApiMode)
+    {
         if (settings.logging.inCliMode)
             Serial.println("INFO: Settings saved. Rebooting...");
         saveSettings([](const String &) {});
         delay(CLI_REBOOT_DELAY_MS);
         ESP.restart();
     };
-    _cliCommandMap["reset"] = [this](String args, bool isApiMode) {
+    _cliCommandMap["reset"] = [this](String args, bool isApiMode)
+    {
         if (settings.logging.inCliMode)
             Serial.println("INFO: All settings have been reset to their default values and saved.");
         settings = FlightControllerSettings();
@@ -1089,30 +1116,37 @@ void CommunicationManager::_initializeCliCommandMap()
         delay(CLI_REBOOT_DELAY_MS);
         ESP.restart();
     };
-    _cliCommandMap["reboot"] = [this](String args, bool isApiMode) {
+    _cliCommandMap["reboot"] = [this](String args, bool isApiMode)
+    {
         if (settings.logging.inCliMode)
             Serial.println("Rebooting...");
         delay(CLI_REBOOT_DELAY_MS);
         ESP.restart();
     };
-    _cliCommandMap["status"] = [this](String args, bool isApiMode) {
+    _cliCommandMap["status"] = [this](String args, bool isApiMode)
+    {
         _displaySystemStatusCliCommand();
     };
-    _cliCommandMap["version"] = [this](String args, bool isApiMode) {
+    _cliCommandMap["version"] = [this](String args, bool isApiMode)
+    {
         _displayFirmwareVersionCliCommand();
     };
-    _cliCommandMap["calibrate_imu"] = [this](String args, bool isApiMode) {
+    _cliCommandMap["calibrate_imu"] = [this](String args, bool isApiMode)
+    {
         if (settings.logging.inCliMode)
             Serial.println("INFO: IMU calibration requested.");
         _flightController->requestImuCalibration();
     };
-    _cliCommandMap["help"] = [this](String args, bool isApiMode) {
+    _cliCommandMap["help"] = [this](String args, bool isApiMode)
+    {
         _displayCliHelp();
     };
-    _cliCommandMap["get"] = [this](String args, bool isApiMode) {
+    _cliCommandMap["get"] = [this](String args, bool isApiMode)
+    {
         _processGetSettingCliCommand(args, isApiMode);
     };
-    _cliCommandMap["set"] = [this](String args, bool isApiMode) {
+    _cliCommandMap["set"] = [this](String args, bool isApiMode)
+    {
         _processSetSettingCliCommand(args, isApiMode);
     };
 }
@@ -1516,41 +1550,31 @@ void CommunicationManager::_displayCliHelp()
             case SettingType::ENUM_IBUS_PROTOCOL:
             {
                 description += "[enum]  ";
-                ReceiverProtocol dummy;
-                _parseAndValidateReceiverProtocolSetting("invalid", dummy, expectedValue);
-                description += "Values: " + expectedValue;
+                description += "Values: " + _getReceiverProtocolValues();
                 break;
             }
             case SettingType::ENUM_IMU_PROTOCOL:
             {
                 description += "[enum]  ";
-                ImuProtocol dummy;
-                _parseAndValidateImuProtocolSetting("invalid", dummy, expectedValue);
-                description += "Values: " + expectedValue;
+                description += "Values: " + _getImuProtocolValues();
                 break;
             }
             case SettingType::ENUM_LPF_BANDWIDTH:
             {
                 description += "[enum]  ";
-                LpfBandwidth dummy;
-                _parseAndValidateLpfBandwidthSetting("invalid", dummy, expectedValue);
-                description += "Values: " + expectedValue;
+                description += "Values: " + _getLpfBandwidthValues();
                 break;
             }
             case SettingType::ENUM_IMU_ROTATION:
             {
                 description += "[enum]  ";
-                ImuRotation dummy;
-                _parseAndValidateImuRotationSetting("invalid", dummy, expectedValue);
-                description += "Values: " + expectedValue;
+                description += "Values: " + _getImuRotationValues();
                 break;
             }
             case SettingType::ENUM_DSHOT_MODE:
             {
                 description += "[enum]  ";
-                dshot_mode_t dummy;
-                _parseAndValidateDShotModeSetting("invalid", dummy, expectedValue);
-                description += "Values: " + expectedValue;
+                description += "Values: " + _getDShotModeValues();
                 break;
             }
             default:
