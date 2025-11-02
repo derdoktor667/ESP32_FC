@@ -18,6 +18,8 @@
 #include "src/config/MspCommands.h"
 #include <Arduino.h>
 #include <MspParser.h>
+#include <map>
+#include <functional>
 
 // Forward declarations for ESP system functions
 extern "C"
@@ -124,9 +126,11 @@ private:
     static constexpr int RX_MAP_PREFIX_LENGTH = 7; // Length of "rx.map."
 
     // Helper functions for parsing and validating setting values
+    bool _isStringNumericZero(const String &str) const;
     SetResult _parseAndValidateFloatSetting(const String &valueStr, float &outValue, float scaleFactor, String &expectedValue) const;
     SetResult _parseAndValidateIntSetting(const String &valueStr, int &outValue, String &expectedValue) const;
     SetResult _parseAndValidateUint16Setting(const String &valueStr, uint16_t &outValue, String &expectedValue) const;
+    SetResult _parseAndValidateUint8Setting(const String &valueStr, uint8_t &outValue, String &expectedValue) const;
     SetResult _parseAndValidateULongSetting(const String &valueStr, unsigned long &outValue, String &expectedValue) const;
     SetResult _parseAndValidateReceiverProtocolSetting(const String &valueStr, ReceiverProtocol &outValue, String &expectedValue) const;
     SetResult _parseAndValidateImuProtocolSetting(const String &valueStr, ImuProtocol &outValue, String &expectedValue) const;
@@ -146,6 +150,10 @@ private:
     void _processSetSettingCliCommand(String commandArgs, bool isApiMode);
     void _displayAllSettingsCliCommand();
     void _displayCliHelp();
+
+    // CLI command map
+    std::map<String, std::function<void(String, bool)>> _cliCommandMap;
+    void _initializeCliCommandMap();
 
     void _displaySystemStatusCliCommand() const;
     void _displayFirmwareVersionCliCommand() const;

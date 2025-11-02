@@ -9,11 +9,12 @@
 // License: MIT
 
 #include "src/hardware/receiver/PpmReceiver.h"
+#include "src/config/config.h"
 
 // --- Static variables for the Interrupt Service Routine (ISR) ---
 
 // Volatile is crucial here, as these variables are modified by an ISR and read in the main loop.
-static volatile uint16_t _ppm_channel_values[PpmReceiver::PPM_CHANNEL_COUNT] = {0};
+static volatile uint16_t _ppm_channel_values[PPM_CHANNEL_COUNT] = {0};
 static volatile int _ppm_current_channel = 0;
 static volatile unsigned long _ppm_last_valid_pulse_time = 0;   // Stores the microsecond timestamp of the last valid pulse edge.
 static volatile unsigned long _ppm_last_valid_frame_millis = 0; // Stores the millisecond timestamp of the last valid PPM frame sync.
@@ -26,7 +27,7 @@ void IRAM_ATTR _handle_ppm_interrupt()
     unsigned long pulse_width = now - _ppm_last_valid_pulse_time;
     _ppm_last_valid_pulse_time = now; // Update on every rising edge
 
-    if (pulse_width > PpmReceiver::PPM_SYNC_GAP_US)
+    if (pulse_width > PPM_SYNC_GAP_US)
     {
         // A long gap indicates the start of a new frame (sync pulse).
         _ppm_current_channel = 0;
@@ -35,7 +36,7 @@ void IRAM_ATTR _handle_ppm_interrupt()
     else
     {
         // A short gap is a channel pulse.
-        if (_ppm_current_channel < PpmReceiver::PPM_CHANNEL_COUNT)
+        if (_ppm_current_channel < PPM_CHANNEL_COUNT)
         {
             // PPM values are typically between 1000 and 2000 microseconds.
             _ppm_channel_values[_ppm_current_channel] = pulse_width;
@@ -72,9 +73,9 @@ void PpmReceiver::update()
 // Returns the channel value (typically 1000-2000 microseconds).
 uint16_t PpmReceiver::getChannel(int channel) const
 {
-    if (channel < 0 || channel >= PpmReceiver::PPM_CHANNEL_COUNT)
+    if (channel < 0 || channel >= PPM_CHANNEL_COUNT)
     {
-        return PpmReceiver::PPM_INVALID_CHANNEL_VALUE; // Return 0 for invalid channels
+        return PPM_INVALID_CHANNEL_VALUE; // Return 0 for invalid channels
     }
     // Read the volatile variable into a local variable to ensure atomicity.
     return _ppm_channel_values[channel];
@@ -84,5 +85,5 @@ uint16_t PpmReceiver::getChannel(int channel) const
 bool PpmReceiver::hasFailsafe() const
 {
     // Failsafe is active if no signal has been received for a certain period.
-    return (millis() - _ppm_last_valid_frame_millis > PpmReceiver::PPM_SIGNAL_TIMEOUT_MS);
+    return (millis() - _ppm_last_valid_frame_millis > PPM_SIGNAL_TIMEOUT_MS);
 }

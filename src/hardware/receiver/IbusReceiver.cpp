@@ -34,7 +34,7 @@ uint16_t IbusReceiver::getChannel(int channel) const
 {
     // The FlyskyIBUS library now handles failsafe internally, so we can directly
     // call its getChannel method.
-    return _ibus.getChannel(channel);
+    return _ibus.getChannel(channel + 1);
 }
 
 // Checks the failsafe status from the iBUS receiver.
