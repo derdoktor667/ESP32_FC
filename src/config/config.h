@@ -28,6 +28,10 @@ const gpio_num_t ESC_PIN_FRONT_LEFT = GPIO_NUM_25;  // Front-Left motor
 const gpio_num_t ESC_PIN_REAR_RIGHT = GPIO_NUM_26;  // Rear-Right motor
 const gpio_num_t ESC_PIN_REAR_LEFT = GPIO_NUM_33;   // Rear-Left motor
 
+// Define I2C pins for MPU6050
+const gpio_num_t I2C_SDA_PIN = GPIO_NUM_21;
+const gpio_num_t I2C_SCL_PIN = GPIO_NUM_22;
+
 // I2C clock speed for MPU6050
 static constexpr long I2C_CLOCK_SPEED_HZ = 400000;
 

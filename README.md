@@ -1,12 +1,32 @@
-# 🚁 ESP32 Flight Controller
+# 🚁 ESP32 Flight Controller [ARCHIVED]
 
 <p align="center">
-  <img src="https://img.shields.io/github/actions/workflow/status/derdoktor667/ESP32_FC/ci.yml?branch=main&style=for-the-badge" alt="Build Status"/>
+  <img src="https://img.shields.io/badge/Status-ARCHIVED-red?style=for-the-badge" alt="Archived Status"/>
   <img src="https://img.shields.io/github/license/derdoktor667/ESP32_FC?style=for-the-badge" alt="License"/>
   <img src="https://img.shields.io/badge/Platform-ESP32-purple?style=for-the-badge" alt="Platform"/>
   <img src="https://img.shields.io/badge/Framework-Arduino-00979D?style=for-the-badge" alt="Framework"/>
   <img src="https://img.shields.io/badge/Language-C++-00599C?style=for-the-badge" alt="Language"/>
 </p>
+
+---
+
+## ⚠️ Archival Notice
+
+This project has been archived and is no longer actively maintained.
+
+**➡️ Please use the current project instead:**
+
+### 🔗 [**flight32** - The New Flight Controller Project](https://github.com/derdoktor667/flight32)
+
+The new `flight32` project is the modernized and improved successor to this project, featuring enhanced capabilities, improved maintainability, and active development.
+
+---
+
+## 📖 Project Archive
+
+Below is the original documentation of the archived project:
+
+---
 
 <p align="center">
   An advanced, high-performance flight controller firmware for quadcopters, built on the ESP32 and the Arduino framework. This project features a highly modular, object-oriented C++ architecture and a robust communication protocol, paired with a powerful web-based configuration tool for real-time tuning and 3D visualization.
@@ -144,7 +164,6 @@ This project stands on the shoulders of giants. The core hardware interaction is
 *   [**ESP32_MPU6050**](https://github.com/derdoktor667/ESP32_MPU6050): Driver for the MPU6050 IMU.
 *   [**FlyskyIBUS**](https://github.com/derdoktor667/FlyskyIBUS): Decodes the Flysky i-BUS protocol.
 *   [**MspParser**](https://github.com/derdoktor667/MspParser): A custom library for parsing and creating MSP messages.
-
 
 ---
 
